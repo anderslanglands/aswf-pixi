@@ -1,0 +1,27 @@
+[workspace]
+name = "imath-3.2.2-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
+channel-priority = "strict"
+
+[feature.imath-lib.dependencies]
+imath-lib = "==3.2.2"
+
+[feature.imath-dev.dependencies]
+imath-dev = "==3.2.2"
+
+[feature.imath.dependencies]
+imath = "==3.2.2"
+
+[environments]
+imath-lib = ["imath-lib"]
+imath-dev = ["imath-dev"]
+imath = ["imath"]
+
+[tasks]
+list-imath-lib = { cmd = "pixi list", environment = "imath-lib" }
+list-imath-dev = { cmd = "pixi list", environment = "imath-dev" }
+list-imath = { cmd = "pixi list", environment = "imath" }

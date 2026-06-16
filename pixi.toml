@@ -1,0 +1,18 @@
+[workspace]
+name = "aswf-pixi"
+channels = [
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
+channel-priority = "strict"
+
+[dependencies]
+rattler-build = ">=0.40"
+anaconda-client = ">=1.12"
+
+[tasks]
+build-imath-3-2-2 = "rattler-build build --recipe imath/3.2.2/recipe.yaml --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --output-dir output"
+build-imath = { depends-on = ["build-imath-3-2-2"] }
+upload-imath-3-2-2-test = "anaconda upload --user anderslanglands --label test output/*/imath-lib-3.2.2-*.conda output/*/imath-dev-3.2.2-*.conda output/*/imath-3.2.2-*.conda"
+upload-imath-3-2-2 = "anaconda upload --user anderslanglands output/*/imath-lib-3.2.2-*.conda output/*/imath-dev-3.2.2-*.conda output/*/imath-3.2.2-*.conda"

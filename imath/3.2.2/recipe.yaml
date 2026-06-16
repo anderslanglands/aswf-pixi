@@ -1,0 +1,191 @@
+context:
+  version: "3.2.2"
+  build_number: 0
+
+recipe:
+  name: imath
+  version: ${{ version }}
+
+source:
+  url: https://github.com/AcademySoftwareFoundation/Imath/releases/download/v${{ version }}/Imath-${{ version }}.tar.gz
+  sha256: 0f5a783b424f374e6f27ec8b0c73130e89b08814ac8fa2e84fd7fe0b05862c53
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: imath-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DPYTHON=OFF \
+              -DPYBIND11=OFF \
+              -B $SRC_DIR/../build \
+              -S .
+
+            cmake --build $SRC_DIR/../build --target install
+          else: |
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DBUILD_TESTING=OFF ^
+              -DPYTHON=OFF ^
+              -DPYBIND11=OFF ^
+              -B %SRC_DIR%\..\build ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build --target install --config Release
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+
+  - package:
+      name: imath-lib
+    inherit: imath-build
+    build:
+      files:
+        - lib/libImath*.so*
+        - lib/libImath*.dylib*
+        - Library/bin/Imath*.dll
+    requirements:
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('imath-lib', upper_bound='x.x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/Imath/half.h
+              - lib/cmake/Imath/ImathConfig.cmake
+              - lib/pkgconfig/Imath.pc
+              - Library/include/Imath/half.h
+              - Library/lib/cmake/Imath/ImathConfig.cmake
+              - Library/lib/pkgconfig/Imath.pc
+      - script:
+          - if: linux
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libImath*.so*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: osx
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libImath*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: win
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'Imath*.dll')); assert paths; ctypes.WinDLL(paths[0])"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: imath-dev
+    inherit: imath-build
+    build:
+      files:
+        - include/Imath/**
+        - lib/cmake/Imath/**
+        - lib/pkgconfig/Imath.pc
+        - Library/include/Imath/**
+        - Library/lib/cmake/Imath/**
+        - Library/lib/pkgconfig/Imath.pc
+        - Library/lib/Imath*.lib
+    requirements:
+      run:
+        - ${{ pin_subpackage('imath-lib', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('imath-lib', upper_bound='x.x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - Imath/half.h
+            - Imath/ImathMath.h
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/Imath/ImathConfig.cmake"
+              - test -f "$PREFIX/lib/pkgconfig/Imath.pc"
+              - pkg-config --modversion Imath
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/imath_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\Imath\ImathConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\pkgconfig\Imath.pc" exit /b 1
+              - pkg-config --modversion Imath
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\imath_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/imath_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - pkg-config
+
+  - package:
+      name: imath
+    requirements:
+      run:
+        - ${{ pin_subpackage('imath-lib', exact=True) }}
+        - ${{ pin_subpackage('imath-dev', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('imath-lib', upper_bound='x.x.x') }}
+    tests:
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/Imath/ImathConfig.cmake"
+              - test -f "$PREFIX/lib/pkgconfig/Imath.pc"
+              - pkg-config --modversion Imath
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/imath_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\Imath\ImathConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\pkgconfig\Imath.pc" exit /b 1
+              - pkg-config --modversion Imath
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\imath_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/imath_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - pkg-config
+
+about:
+  homepage: https://github.com/AcademySoftwareFoundation/Imath
+  repository: https://github.com/AcademySoftwareFoundation/Imath
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  summary: C++ math library for 2D and 3D graphics
