@@ -227,6 +227,12 @@ outputs:
               -S .
 
             cmake --build %SRC_DIR%\..\build-python --target install --config Release
+
+            if exist "%LIBRARY_PREFIX%\lib\site-packages\PyOpenColorIO" (
+              if not exist "%SP_DIR%" mkdir "%SP_DIR%"
+              if exist "%SP_DIR%\PyOpenColorIO" rmdir /S /Q "%SP_DIR%\PyOpenColorIO"
+              move "%LIBRARY_PREFIX%\lib\site-packages\PyOpenColorIO" "%SP_DIR%\PyOpenColorIO"
+            )
     requirements:
       build:
         - ${{ compiler('c') }}
