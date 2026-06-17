@@ -1,0 +1,237 @@
+context:
+  version: "1.4.0"
+  build_number: 0
+
+recipe:
+  name: libuhdr
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/libultrahdr/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: e7e1252e2c44d8ed6b99ee0f67a3caf2d8a61c43834b13b1c3cd485574c03ab9
+  patches:
+    - add-cstdint.patch
+    - pkg-config-shared-cflags.patch
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: libuhdr-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DUHDR_BUILD_EXAMPLES=OFF \
+              -DUHDR_BUILD_TESTS=OFF \
+              -DUHDR_BUILD_BENCHMARK=OFF \
+              -DUHDR_BUILD_FUZZERS=OFF \
+              -DUHDR_BUILD_DEPS=OFF \
+              -DUHDR_BUILD_JAVA=OFF \
+              -DUHDR_BUILD_PACKAGING=OFF \
+              -DUHDR_ENABLE_GLES=OFF \
+              -DUHDR_ENABLE_INSTALL=ON \
+              -DUHDR_ENABLE_WERROR=OFF \
+              -B $SRC_DIR/../build \
+              -S .
+
+            cmake --build $SRC_DIR/../build --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DUHDR_BUILD_EXAMPLES=OFF ^
+              -DUHDR_BUILD_TESTS=OFF ^
+              -DUHDR_BUILD_BENCHMARK=OFF ^
+              -DUHDR_BUILD_FUZZERS=OFF ^
+              -DUHDR_BUILD_DEPS=OFF ^
+              -DUHDR_BUILD_JAVA=OFF ^
+              -DUHDR_BUILD_PACKAGING=OFF ^
+              -DUHDR_ENABLE_GLES=OFF ^
+              -DUHDR_ENABLE_INSTALL=ON ^
+              -DUHDR_ENABLE_WERROR=OFF ^
+              -B %SRC_DIR%\..\build ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build --config Release
+
+            if not exist "%LIBRARY_BIN%" mkdir "%LIBRARY_BIN%"
+            if not exist "%LIBRARY_INC%" mkdir "%LIBRARY_INC%"
+            if not exist "%LIBRARY_LIB%\pkgconfig" mkdir "%LIBRARY_LIB%\pkgconfig"
+
+            copy /Y "%SRC_DIR%\ultrahdr_api.h" "%LIBRARY_INC%\ultrahdr_api.h"
+            copy /Y "%SRC_DIR%\..\build\uhdr.dll" "%LIBRARY_BIN%\uhdr.dll"
+            copy /Y "%SRC_DIR%\..\build\uhdr.lib" "%LIBRARY_LIB%\uhdr.lib"
+
+            (
+              echo prefix=%LIBRARY_PREFIX%
+              echo libdir=${prefix}/lib
+              echo includedir=${prefix}/include
+              echo.
+              echo Name: libuhdr
+              echo Description: Library for encoding and decoding ultrahdr images
+              echo Version: ${{ version }}
+              echo Requires.private: libjpeg
+              echo Cflags: -DUHDR_USING_SHARED_LIBRARY -I${includedir}
+              echo Libs: -L${libdir} -luhdr
+              echo Libs.private:
+            ) > "%LIBRARY_LIB%\pkgconfig\libuhdr.pc"
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - libjpeg-turbo
+
+  - package:
+      name: libuhdr-lib
+    inherit: libuhdr-build
+    build:
+      files:
+        - lib/libuhdr.so*
+        - lib/libuhdr*.dylib*
+        - Library/bin/uhdr.dll
+    requirements:
+      run:
+        - libjpeg-turbo
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('libuhdr-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/ultrahdr_api.h
+              - lib/pkgconfig/libuhdr.pc
+              - Library/include/ultrahdr_api.h
+              - Library/lib/uhdr.lib
+              - Library/lib/pkgconfig/libuhdr.pc
+      - script:
+          - if: linux
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libuhdr.so*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: osx
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libuhdr*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: win
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'uhdr.dll')); assert paths; ctypes.WinDLL(paths[0])"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: libuhdr-dev
+    inherit: libuhdr-build
+    build:
+      files:
+        - include/ultrahdr_api.h
+        - lib/pkgconfig/libuhdr.pc
+        - Library/include/ultrahdr_api.h
+        - Library/lib/uhdr.lib
+        - Library/lib/pkgconfig/libuhdr.pc
+    requirements:
+      run:
+        - ${{ pin_subpackage('libuhdr-lib', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('libuhdr-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - ultrahdr_api.h
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/pkgconfig/libuhdr.pc"
+              - test "$(pkg-config --modversion libuhdr)" = "1.4.0"
+              - pkg-config --cflags libuhdr | grep UHDR_USING_SHARED_LIBRARY
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/libuhdr_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\pkgconfig\libuhdr.pc" exit /b 1
+              - pkg-config --modversion libuhdr | findstr /X /C:"1.4.0"
+              - if not exist "%LIBRARY_LIB%\uhdr.lib" exit /b 1
+              - pkg-config --cflags libuhdr | findstr UHDR_USING_SHARED_LIBRARY
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\libuhdr_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/libuhdr_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - pkg-config
+
+  - package:
+      name: libuhdr
+    requirements:
+      run:
+        - ${{ pin_subpackage('libuhdr-lib', exact=True) }}
+        - ${{ pin_subpackage('libuhdr-dev', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('libuhdr-lib', upper_bound='x.x') }}
+    tests:
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/pkgconfig/libuhdr.pc"
+              - test "$(pkg-config --modversion libuhdr)" = "1.4.0"
+              - pkg-config --cflags libuhdr | grep UHDR_USING_SHARED_LIBRARY
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/libuhdr_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\pkgconfig\libuhdr.pc" exit /b 1
+              - pkg-config --modversion libuhdr | findstr /X /C:"1.4.0"
+              - if not exist "%LIBRARY_LIB%\uhdr.lib" exit /b 1
+              - pkg-config --cflags libuhdr | findstr UHDR_USING_SHARED_LIBRARY
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\libuhdr_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/libuhdr_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - pkg-config
+
+about:
+  homepage: https://github.com/google/libultrahdr
+  repository: https://github.com/google/libultrahdr
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Reference codec for the JPEG/R gain map based Ultra HDR image format

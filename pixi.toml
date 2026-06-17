@@ -29,3 +29,7 @@ build-opencolorio-2-5-1 = "rattler-build build --recipe opencolorio/2.5.1/recipe
 build-opencolorio = { depends-on = ["build-opencolorio-2-5-1"] }
 upload-opencolorio-2-5-1-test = "anaconda upload --user anderslanglands --label test output/*/opencolorio-lib-2.5.1-*.conda output/*/opencolorio-dev-2.5.1-*.conda output/*/opencolorio-tools-2.5.1-*.conda output/*/opencolorio-python-2.5.1-*.conda output/*/opencolorio-2.5.1-*.conda"
 upload-opencolorio-2-5-1 = "anaconda upload --user anderslanglands output/*/opencolorio-lib-2.5.1-*.conda output/*/opencolorio-dev-2.5.1-*.conda output/*/opencolorio-tools-2.5.1-*.conda output/*/opencolorio-python-2.5.1-*.conda output/*/opencolorio-2.5.1-*.conda"
+build-libuhdr-1-4-0 = "rattler-build build --recipe libuhdr/1.4.0/recipe.yaml --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native"
+build-libuhdr = { depends-on = ["build-libuhdr-1-4-0"] }
+upload-libuhdr-1-4-0-test = "anaconda upload --user anderslanglands --label test output/*/libuhdr-lib-1.4.0-*.conda output/*/libuhdr-dev-1.4.0-*.conda output/*/libuhdr-1.4.0-*.conda"
+upload-libuhdr-1-4-0 = "anaconda upload --user anderslanglands output/*/libuhdr-lib-1.4.0-*.conda output/*/libuhdr-dev-1.4.0-*.conda output/*/libuhdr-1.4.0-*.conda"

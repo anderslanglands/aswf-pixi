@@ -77,3 +77,13 @@ MaterialX is an open standard for transferring rich material and look-developmen
 - `materialx-dev`: C++ headers, CMake package files, and Windows import libraries. Depends on the matching `materialx-lib`.
 - `materialx-python`: Python bindings for MaterialX, built for Python 3.10 through 3.14. Depends on the matching `materialx-lib`. Render Python modules and upstream helper scripts that require disabled render modules are not included.
 - `materialx`: Default metapackage for complete consumers. Depends on the matching `materialx-lib`, `materialx-dev`, and compatible `materialx-python`.
+
+## libuhdr
+
+Recipe versions: `1.4.0`
+
+libuhdr is Google's reference codec for the JPEG/R gain map based Ultra HDR image format.
+
+- `libuhdr-lib`: Shared libuhdr runtime library. Depends on libjpeg-turbo.
+- `libuhdr-dev`: Public `ultrahdr_api.h` header, pkg-config metadata, and Windows import library. Depends on the matching `libuhdr-lib`.
+- `libuhdr`: Default metapackage for C++ consumers. Depends on the matching `libuhdr-lib` and `libuhdr-dev`.

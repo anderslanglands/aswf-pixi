@@ -91,3 +91,12 @@ OpenColorIO packaging decisions:
 - Build `opencolorio-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
 - Build `opencolorio-tools` with `OCIO_USE_OIIO_FOR_APPS=OFF`; image tools should use OpenEXR rather than OpenImageIO until this repository has its own OpenImageIO package.
 - Keep Java, OpenFX, Nuke, docs, and tests disabled in package builds unless Anders explicitly asks for them.
+
+
+libuhdr packaging decisions:
+
+- Package libuhdr 1.4.0 as `libuhdr-lib`, `libuhdr-dev`, and a compatibility/default `libuhdr` metapackage.
+- The `libuhdr` metapackage should depend on the C++ runtime and development surface only.
+- Keep examples/tools, Java, GLES, tests, benchmarks, fuzzers, and vendored dependencies disabled unless Anders explicitly asks for them.
+- Use external `libjpeg-turbo` rather than the upstream vendored dependency path.
+- Prefer recipe-side manual install logic for Windows before carrying upstream CMake install patches; if that becomes brittle, discuss patching options with Anders.
