@@ -8,9 +8,9 @@ on:
         required: true
         default: "imath/3.2.2"
       platforms:
-        description: "Comma-separated target platforms: linux-64, osx-64, osx-arm64, win-64, or all"
+        description: "Target platforms: default, all, or comma-separated linux-64, win-64, osx-arm64, osx-64"
         required: true
-        default: "linux-64"
+        default: "default"
       publish_target:
         description: "Where to publish the built artifacts"
         required: true

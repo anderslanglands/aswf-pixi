@@ -16,6 +16,8 @@ RUNNERS = {
     "win-64": "windows-latest",
 }
 
+DEFAULT_PLATFORMS = ["linux-64", "win-64", "osx-arm64"]
+
 
 BUILD_NUMBER_RE = re.compile(r"[0-9]+")
 
@@ -30,11 +32,13 @@ def parse_platforms(value: str) -> list[str]:
         raise SystemExit("No platforms were requested.")
     if len(platforms) == 1 and platforms[0] == "all":
         return list(RUNNERS)
+    if len(platforms) == 1 and platforms[0] == "default":
+        return DEFAULT_PLATFORMS
 
     unknown = sorted(set(platforms) - set(RUNNERS))
     if unknown:
         known = ", ".join(sorted(RUNNERS))
-        raise SystemExit(f"Unsupported platform(s): {', '.join(unknown)}. Supported: {known}, all.")
+        raise SystemExit(f"Unsupported platform(s): {', '.join(unknown)}. Supported: {known}, default, all.")
     return platforms
 
 

@@ -44,6 +44,7 @@ Package conversion process:
 - The package build workflow accepts recipe directories, target platforms, publish target, and an optional integer build number override. Use the build number override when testing a repeated upload for the same package version.
 - GitHub Actions publishes with the `ANACONDA_TOKEN` repository secret, exposed to `rattler-build upload anaconda` as `ANACONDA_API_KEY`.
 - Keep the `test-label` publish path low-friction, but use the `anaconda-production` GitHub environment for `default-label` publishes so production uploads can require review in repository settings.
+- The manual workflow platform input accepts `default`, `all`, or an explicit comma-separated list. `default` means `linux-64,win-64,osx-arm64`; keep `osx-64` available for explicit compatibility builds but do not include it in the routine default set unless Anders asks.
 - CI builds should write an artifact `manifest.json` describing the exact package filename, build string, subdir, and version for every publishable output.
 - CI publish jobs should upload only packages listed in the artifact manifests, not arbitrary `.conda` files found under the artifact directory.
 - CI smoke tests should consume every manifest-listed package from the selected Anaconda label in clean pixi environments, verify `pixi list --json` resolves the exact uploaded build/source, and run recipe consumer tests for dev/top-level packages when present. They should not rely on package-local lockfiles.
