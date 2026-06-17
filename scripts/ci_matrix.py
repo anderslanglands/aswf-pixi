@@ -7,6 +7,7 @@ import argparse
 import json
 from pathlib import Path
 import re
+from typing import Any
 
 
 RUNNERS = {
@@ -20,6 +21,7 @@ DEFAULT_PLATFORMS = ["linux-64", "win-64", "osx-arm64"]
 
 
 BUILD_NUMBER_RE = re.compile(r"[0-9]+")
+AUTO_BUILD_NUMBER = "auto"
 
 
 def split_csv(value: str) -> list[str]:
@@ -59,8 +61,10 @@ def parse_recipes(value: str) -> list[Path]:
 
 
 def validate_build_number(value: str) -> None:
-    if value and not BUILD_NUMBER_RE.fullmatch(value):
-        raise SystemExit("Build number must be empty or a non-negative integer.")
+    if value in {"", AUTO_BUILD_NUMBER}:
+        return
+    if not BUILD_NUMBER_RE.fullmatch(value):
+        raise SystemExit("Build number must be empty, auto, or a non-negative integer.")
 
 
 def validate_publish_target(value: str) -> None:
@@ -70,20 +74,63 @@ def validate_publish_target(value: str) -> None:
         )
 
 
-def matrix(recipes: list[Path], platforms: list[str]) -> dict[str, list[dict[str, str]]]:
+def parse_resolved_build_numbers(
+    value: str,
+    recipes: list[Path],
+    requested_build_number: str,
+) -> dict[str, str]:
+    validate_build_number(requested_build_number)
+    recipe_keys = {recipe.as_posix() for recipe in recipes}
+    if not value:
+        if requested_build_number == AUTO_BUILD_NUMBER:
+            raise SystemExit("Auto build numbers must be resolved before preparing the matrix.")
+        return {recipe_key: requested_build_number for recipe_key in recipe_keys}
+
+    try:
+        raw_build_numbers: Any = json.loads(value)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Resolved build numbers must be a JSON object: {exc}") from exc
+
+    if not isinstance(raw_build_numbers, dict):
+        raise SystemExit("Resolved build numbers must be a JSON object.")
+
+    raw_keys = {str(key) for key in raw_build_numbers}
+    missing = sorted(recipe_keys - raw_keys)
+    unknown = sorted(raw_keys - recipe_keys)
+    if missing:
+        raise SystemExit(f"Missing resolved build number(s) for: {', '.join(missing)}")
+    if unknown:
+        raise SystemExit(f"Resolved build number(s) provided for unknown recipe(s): {', '.join(unknown)}")
+
+    build_numbers: dict[str, str] = {}
+    for recipe_key in sorted(recipe_keys):
+        build_number = str(raw_build_numbers[recipe_key])
+        if build_number and not BUILD_NUMBER_RE.fullmatch(build_number):
+            raise SystemExit(f"Resolved build number for {recipe_key} must be empty or a non-negative integer.")
+        build_numbers[recipe_key] = build_number
+    return build_numbers
+
+
+def matrix(
+    recipes: list[Path],
+    platforms: list[str],
+    build_numbers: dict[str, str],
+) -> dict[str, list[dict[str, str]]]:
     include: list[dict[str, str]] = []
     for recipe in recipes:
+        recipe_key = recipe.as_posix()
         package = recipe.parts[-2]
         version = recipe.parts[-1]
         for platform in platforms:
             include.append(
                 {
-                    "recipe": recipe.as_posix(),
+                    "recipe": recipe_key,
                     "package": package,
                     "version": version,
                     "platform": platform,
                     "runner": RUNNERS[platform],
                     "artifact": f"{package}-{version}-{platform}",
+                    "build_number": build_numbers[recipe_key],
                 }
             )
     return {"include": include}
@@ -95,13 +142,18 @@ def main() -> None:
     parser.add_argument("--platforms", required=True)
     parser.add_argument("--build-number", default="")
     parser.add_argument("--publish-target", required=True)
+    parser.add_argument("--resolved-build-numbers", default="")
     args = parser.parse_args()
 
     recipes = parse_recipes(args.recipes)
     platforms = parse_platforms(args.platforms)
-    validate_build_number(args.build_number)
     validate_publish_target(args.publish_target)
-    print(json.dumps(matrix(recipes, platforms), sort_keys=True))
+    build_numbers = parse_resolved_build_numbers(
+        args.resolved_build_numbers,
+        recipes,
+        args.build_number,
+    )
+    print(json.dumps(matrix(recipes, platforms, build_numbers), sort_keys=True))
 
 
 if __name__ == "__main__":

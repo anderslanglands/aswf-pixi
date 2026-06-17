@@ -21,7 +21,7 @@ on:
           - default-label
         default: artifact-only
       build_number:
-        description: "Optional integer build number override for all outputs"
+        description: "Optional integer build number override. Empty auto-increments for publish targets; artifact-only uses the recipe default."
         required: false
         default: ""
       run_smoke_tests:
@@ -55,7 +55,9 @@ jobs:
           BUILD_NUMBER: ${{ inputs.build_number }}
           PUBLISH_TARGET: ${{ inputs.publish_target }}
         run: |
-          matrix="$(python scripts/ci_matrix.py --recipes "$RECIPES" --platforms "$PLATFORMS" --build-number "$BUILD_NUMBER" --publish-target "$PUBLISH_TARGET")"
+          build_numbers="$(python scripts/resolve_build_numbers.py --recipes "$RECIPES" --platforms "$PLATFORMS" --target "$PUBLISH_TARGET" --build-number "$BUILD_NUMBER")"
+          echo "Resolved build numbers: ${build_numbers}"
+          matrix="$(python scripts/ci_matrix.py --recipes "$RECIPES" --platforms "$PLATFORMS" --build-number "$BUILD_NUMBER" --publish-target "$PUBLISH_TARGET" --resolved-build-numbers "$build_numbers")"
           echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
 
   build:
@@ -80,7 +82,7 @@ jobs:
         env:
           RECIPE: ${{ matrix.recipe }}
           PLATFORM: ${{ matrix.platform }}
-          BUILD_NUMBER: ${{ inputs.build_number }}
+          BUILD_NUMBER: ${{ matrix.build_number }}
         run: |
           args=(
             rattler-build build
@@ -110,7 +112,7 @@ jobs:
         env:
           RECIPE: ${{ matrix.recipe }}
           PLATFORM: ${{ matrix.platform }}
-          BUILD_NUMBER: ${{ inputs.build_number }}
+          BUILD_NUMBER: ${{ matrix.build_number }}
         run: |
           pixi run python scripts/collect_artifacts.py \
             --recipe "$RECIPE" \
