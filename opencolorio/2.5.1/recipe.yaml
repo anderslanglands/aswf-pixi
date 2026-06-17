@@ -1,0 +1,441 @@
+context:
+  version: "2.5.1"
+  build_number: 0
+
+recipe:
+  name: opencolorio
+  version: ${{ version }}
+
+source:
+  url: https://github.com/AcademySoftwareFoundation/OpenColorIO/releases/download/v${{ version }}/OpenColorIO-${{ version }}.tar.gz
+  sha256: 49ab04d023d7a7a7237e24f2cfead3171b0ff7f466ce20e6e32859ec8c7cc94b
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: opencolorio-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DOCIO_INSTALL_EXT_PACKAGES=NONE \
+              -DOCIO_BUILD_APPS=OFF \
+              -DOCIO_BUILD_TESTS=OFF \
+              -DOCIO_BUILD_GPU_TESTS=OFF \
+              -DOCIO_BUILD_DOCS=OFF \
+              -DOCIO_BUILD_PYTHON=OFF \
+              -DOCIO_BUILD_JAVA=OFF \
+              -DOCIO_BUILD_OPENFX=OFF \
+              -DOCIO_BUILD_NUKE=OFF \
+              -DOCIO_USE_OIIO_FOR_APPS=OFF \
+              -B $SRC_DIR/../build \
+              -S .
+
+            cmake --build $SRC_DIR/../build --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DOCIO_INSTALL_EXT_PACKAGES=NONE ^
+              -DOCIO_BUILD_APPS=OFF ^
+              -DOCIO_BUILD_TESTS=OFF ^
+              -DOCIO_BUILD_GPU_TESTS=OFF ^
+              -DOCIO_BUILD_DOCS=OFF ^
+              -DOCIO_BUILD_PYTHON=OFF ^
+              -DOCIO_BUILD_JAVA=OFF ^
+              -DOCIO_BUILD_OPENFX=OFF ^
+              -DOCIO_BUILD_NUKE=OFF ^
+              -DOCIO_USE_OIIO_FOR_APPS=OFF ^
+              -B %SRC_DIR%\..\build ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build --target install --config Release
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - expat
+        - imath-dev 3.2.*
+        - minizip
+        - pystring
+        - sse2neon
+        - yaml-cpp
+        - zlib
+
+  - staging:
+      name: opencolorio-tools-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-tools
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DOCIO_INSTALL_EXT_PACKAGES=NONE \
+              -DOCIO_BUILD_APPS=ON \
+              -DOCIO_BUILD_TESTS=OFF \
+              -DOCIO_BUILD_GPU_TESTS=OFF \
+              -DOCIO_BUILD_DOCS=OFF \
+              -DOCIO_BUILD_PYTHON=OFF \
+              -DOCIO_BUILD_JAVA=OFF \
+              -DOCIO_BUILD_OPENFX=OFF \
+              -DOCIO_BUILD_NUKE=OFF \
+              -DOCIO_USE_OIIO_FOR_APPS=OFF \
+              -B $SRC_DIR/../build-tools \
+              -S .
+
+            cmake --build $SRC_DIR/../build-tools --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-tools
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DOCIO_INSTALL_EXT_PACKAGES=NONE ^
+              -DOCIO_BUILD_APPS=ON ^
+              -DOCIO_BUILD_TESTS=OFF ^
+              -DOCIO_BUILD_GPU_TESTS=OFF ^
+              -DOCIO_BUILD_DOCS=OFF ^
+              -DOCIO_BUILD_PYTHON=OFF ^
+              -DOCIO_BUILD_JAVA=OFF ^
+              -DOCIO_BUILD_OPENFX=OFF ^
+              -DOCIO_BUILD_NUKE=OFF ^
+              -DOCIO_USE_OIIO_FOR_APPS=OFF ^
+              -B %SRC_DIR%\..\build-tools ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-tools --target install --config Release
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - expat
+        - imath-dev 3.2.*
+        - lcms2
+        - minizip
+        - openexr-dev 3.4.*
+        - pystring
+        - sse2neon
+        - yaml-cpp
+        - zlib
+        - if: linux
+          then: freeglut
+        - if: linux
+          then: glew
+        - if: linux
+          then: libgl-devel
+        - if: win
+          then: freeglut
+        - if: win
+          then: glew
+
+  - staging:
+      name: opencolorio-python-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-python
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DOCIO_INSTALL_EXT_PACKAGES=NONE \
+              -DOCIO_BUILD_APPS=OFF \
+              -DOCIO_BUILD_TESTS=OFF \
+              -DOCIO_BUILD_GPU_TESTS=OFF \
+              -DOCIO_BUILD_DOCS=OFF \
+              -DOCIO_BUILD_PYTHON=ON \
+              -DOCIO_PYTHON_VERSION=${{ python }} \
+              -DOCIO_BUILD_JAVA=OFF \
+              -DOCIO_BUILD_OPENFX=OFF \
+              -DOCIO_BUILD_NUKE=OFF \
+              -DOCIO_USE_OIIO_FOR_APPS=OFF \
+              -DPython_EXECUTABLE=$PYTHON \
+              -B $SRC_DIR/../build-python \
+              -S .
+
+            cmake --build $SRC_DIR/../build-python --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-python
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DOCIO_INSTALL_EXT_PACKAGES=NONE ^
+              -DOCIO_BUILD_APPS=OFF ^
+              -DOCIO_BUILD_TESTS=OFF ^
+              -DOCIO_BUILD_GPU_TESTS=OFF ^
+              -DOCIO_BUILD_DOCS=OFF ^
+              -DOCIO_BUILD_PYTHON=ON ^
+              -DOCIO_PYTHON_VERSION=${{ python }} ^
+              -DOCIO_BUILD_JAVA=OFF ^
+              -DOCIO_BUILD_OPENFX=OFF ^
+              -DOCIO_BUILD_NUKE=OFF ^
+              -DOCIO_USE_OIIO_FOR_APPS=OFF ^
+              -DPython_EXECUTABLE=%PYTHON% ^
+              -B %SRC_DIR%\..\build-python ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-python --target install --config Release
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - expat
+        - imath-dev 3.2.*
+        - minizip
+        - pybind11
+        - pystring
+        - python
+        - sse2neon
+        - yaml-cpp
+        - zlib
+
+  - package:
+      name: opencolorio-lib
+    inherit: opencolorio-build
+    build:
+      files:
+        - lib/libOpenColorIO*.so*
+        - lib/libOpenColorIO*.dylib*
+        - share/ocio/**
+        - Library/bin/OpenColorIO*.dll
+        - Library/share/ocio/**
+    requirements:
+      run:
+        - imath-lib 3.2.*
+        - libexpat
+        - libzlib
+        - minizip
+        - pystring
+        - yaml-cpp
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('opencolorio-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/OpenColorIO/OpenColorIO.h
+              - lib/cmake/OpenColorIO/OpenColorIOConfig.cmake
+              - lib/pkgconfig/OpenColorIO.pc
+              - Library/include/OpenColorIO/OpenColorIO.h
+              - Library/lib/cmake/OpenColorIO/OpenColorIOConfig.cmake
+              - Library/lib/pkgconfig/OpenColorIO.pc
+      - script:
+          - if: linux
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libOpenColorIO*.so*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: osx
+            then:
+              - test -f "$PREFIX/share/ocio/setup_ocio.sh"
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libOpenColorIO*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: win
+            then:
+              - if not exist "%LIBRARY_PREFIX%\share\ocio\setup_ocio.bat" exit /b 1
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'OpenColorIO*.dll')); assert paths; ctypes.WinDLL(paths[0])"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: opencolorio-dev
+    inherit: opencolorio-build
+    build:
+      files:
+        - include/OpenColorIO/**
+        - lib/cmake/OpenColorIO/**
+        - lib/pkgconfig/OpenColorIO.pc
+        - Library/include/OpenColorIO/**
+        - Library/lib/OpenColorIO*.lib
+        - Library/lib/cmake/OpenColorIO/**
+        - Library/lib/pkgconfig/OpenColorIO.pc
+    requirements:
+      run:
+        - ${{ pin_subpackage('opencolorio-lib', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('opencolorio-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - OpenColorIO/OpenColorIO.h
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenColorIO/OpenColorIOConfig.cmake"
+              - test -f "$PREFIX/lib/pkgconfig/OpenColorIO.pc"
+              - pkg-config --modversion OpenColorIO
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/opencolorio_consumer
+              - $CXX tests/opencolorio_consumer.cpp $(pkg-config --cflags --libs OpenColorIO) -o pkg_config_consumer
+              - ./pkg_config_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OpenColorIO\OpenColorIOConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\pkgconfig\OpenColorIO.pc" exit /b 1
+              - pkg-config --modversion OpenColorIO
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\opencolorio_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/opencolorio_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - pkg-config
+
+  - package:
+      name: opencolorio-tools
+    inherit: opencolorio-tools-build
+    build:
+      files:
+        - bin/ocio*
+        - Library/bin/ocio*.exe
+    requirements:
+      run:
+        - ${{ pin_subpackage('opencolorio-lib', exact=True) }}
+        - lcms2
+        - openexr-lib 3.4.*
+    tests:
+      - script:
+          - python tests/check_tools.py
+        files:
+          recipe:
+            - tests/check_tools.py
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: opencolorio-python
+    inherit: opencolorio-python-build
+    build:
+      string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+      files:
+        - lib/python*/site-packages/PyOpenColorIO/**
+        - Lib/site-packages/PyOpenColorIO/**
+    requirements:
+      run:
+        - python
+        - ${{ pin_subpackage('opencolorio-lib', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - PyOpenColorIO
+      - script:
+          - python -c "import PyOpenColorIO as ocio; assert ocio.GetVersion() == '${{ version }}'; assert ocio.GetVersionHex()"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: opencolorio
+    requirements:
+      run:
+        - ${{ pin_subpackage('opencolorio-lib', exact=True) }}
+        - ${{ pin_subpackage('opencolorio-dev', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('opencolorio-lib', upper_bound='x.x') }}
+    tests:
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenColorIO/OpenColorIOConfig.cmake"
+              - test -f "$PREFIX/lib/pkgconfig/OpenColorIO.pc"
+              - pkg-config --modversion OpenColorIO
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/opencolorio_consumer
+              - $CXX tests/opencolorio_consumer.cpp $(pkg-config --cflags --libs OpenColorIO) -o pkg_config_consumer
+              - ./pkg_config_consumer
+              - test ! -e "$PREFIX/bin/ociocheck"
+              - python -c "import importlib.util; assert importlib.util.find_spec('PyOpenColorIO') is None"
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OpenColorIO\OpenColorIOConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\pkgconfig\OpenColorIO.pc" exit /b 1
+              - pkg-config --modversion OpenColorIO
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\opencolorio_consumer.exe
+              - if exist "%LIBRARY_BIN%\ociocheck.exe" exit /b 1
+              - python -c "import importlib.util; assert importlib.util.find_spec('PyOpenColorIO') is None"
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/opencolorio_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - pkg-config
+            - python
+
+about:
+  homepage: https://opencolorio.org
+  repository: https://github.com/AcademySoftwareFoundation/OpenColorIO
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Complete color management solution geared toward motion picture production

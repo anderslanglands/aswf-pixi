@@ -37,6 +37,7 @@ Package conversion process:
 - Discuss which subpackages should exist, which outputs should be published, and which pixi features should expose them.
 - Prefer avoiding upstream patches. If builds fail, surface the problem to Anders with options and a recommendation before patching upstream library code.
 - Keep this `AGENTS.md` updated as the process evolves.
+- Keep `README.md` updated whenever package recipes or published package outputs are added, removed, renamed, or materially changed.
 - Keep root build tooling solvable before packages are uploaded; put package-specific consumer pixi feature manifests next to the versioned recipe when publishing has not happened yet.
 - For test-label validation, put `https://conda.anaconda.org/anderslanglands/label/test` before `https://conda.anaconda.org/anderslanglands` in consumer manifests.
 - Consumer validation manifests should list only platforms whose artifacts have actually been published for that label; broaden the platform list as CI publishes more platforms.
@@ -82,3 +83,11 @@ OpenEXR packaging decisions:
 - The `openexr` metapackage should depend on the full C++ runtime/dev/tools surface, but not `openexr-python`; keep Python opt-in as `openexr-python`.
 - Build `openexr-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
 - Use external `imath-dev` 3.2, `libdeflate`, `openjph`, and `zlib` dependencies rather than vendored copies.
+
+OpenColorIO packaging decisions:
+
+- Package OpenColorIO 2.5.1 as `opencolorio-lib`, `opencolorio-dev`, `opencolorio-tools`, `opencolorio-python`, and a compatibility/default `opencolorio` metapackage.
+- The `opencolorio` metapackage should depend on the C++ runtime and development surface only, not Python or tools; keep `opencolorio-python` and `opencolorio-tools` opt-in.
+- Build `opencolorio-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
+- Build `opencolorio-tools` with `OCIO_USE_OIIO_FOR_APPS=OFF`; image tools should use OpenEXR rather than OpenImageIO until this repository has its own OpenImageIO package.
+- Keep Java, OpenFX, Nuke, docs, and tests disabled in package builds unless Anders explicitly asks for them.
