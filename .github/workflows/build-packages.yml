@@ -106,6 +106,7 @@ jobs:
           pixi run "${args[@]}"
 
       - name: Collect artifact manifest
+        shell: bash
         env:
           RECIPE: ${{ matrix.recipe }}
           PLATFORM: ${{ matrix.platform }}
