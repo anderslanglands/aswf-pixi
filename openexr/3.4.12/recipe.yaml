@@ -100,7 +100,6 @@ outputs:
         - ${{ compiler('cxx') }}
         - cmake
         - ninja
-        - pkg-config
       host:
         - imath-dev 3.2.*
         - libdeflate
@@ -184,7 +183,6 @@ outputs:
         - ${{ compiler('cxx') }}
         - cmake
         - ninja
-        - pkg-config
       host:
         - imath-dev 3.2.*
         - libdeflate
@@ -217,10 +215,8 @@ outputs:
             not_exists:
               - include/OpenEXR/openexr.h
               - lib/cmake/OpenEXRCore/OpenEXRCoreConfig.cmake
-              - lib/pkgconfig/OpenEXRCore.pc
               - Library/include/OpenEXR/openexr.h
               - Library/lib/cmake/OpenEXRCore/OpenEXRCoreConfig.cmake
-              - Library/lib/pkgconfig/OpenEXRCore.pc
       - script:
           - if: linux
             then:
@@ -244,13 +240,11 @@ outputs:
         - include/OpenEXR/OpenEXRConfig.h
         - include/OpenEXR/IlmThreadConfig.h
         - lib/cmake/OpenEXRCore/**
-        - lib/pkgconfig/OpenEXRCore.pc
         - Library/include/OpenEXR/openexr*.h
         - Library/include/OpenEXR/OpenEXRConfig.h
         - Library/include/OpenEXR/IlmThreadConfig.h
         - Library/lib/OpenEXRCore*.lib
         - Library/lib/cmake/OpenEXRCore/**
-        - Library/lib/pkgconfig/OpenEXRCore.pc
     requirements:
       run:
         - ${{ pin_subpackage('openexr-core-lib', exact=True) }}
@@ -268,25 +262,19 @@ outputs:
               - include/OpenEXR/ImfHeader.h
               - include/OpenEXR/Iex.h
               - lib/cmake/OpenEXR/OpenEXRConfig.cmake
-              - lib/pkgconfig/OpenEXR.pc
               - Library/include/OpenEXR/ImfHeader.h
               - Library/include/OpenEXR/Iex.h
               - Library/lib/cmake/OpenEXR/OpenEXRConfig.cmake
-              - Library/lib/pkgconfig/OpenEXR.pc
       - script:
           - if: unix
             then:
               - test -f "$PREFIX/lib/cmake/OpenEXRCore/OpenEXRCoreConfig.cmake"
-              - test -f "$PREFIX/lib/pkgconfig/OpenEXRCore.pc"
-              - pkg-config --modversion OpenEXRCore
-              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENEXR_CONSUMER_TEST_PKG_CONFIG=ON
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\cmake\OpenEXRCore\OpenEXRCoreConfig.cmake" exit /b 1
-              - if not exist "%LIBRARY_LIB%\pkgconfig\OpenEXRCore.pc" exit /b 1
-              - pkg-config --modversion OpenEXRCore
-              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENEXR_CONSUMER_TEST_PKG_CONFIG=ON
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
               - cmake --build build --config Release
         files:
           recipe:
@@ -299,7 +287,6 @@ outputs:
             - ${{ compiler('cxx') }}
             - cmake
             - ninja
-            - pkg-config
 
   - package:
       name: openexr-lib
@@ -334,12 +321,10 @@ outputs:
               - include/OpenEXR/openexr.h
               - lib/cmake/OpenEXR/OpenEXRConfig.cmake
               - lib/cmake/OpenEXRCore/OpenEXRCoreConfig.cmake
-              - lib/pkgconfig/OpenEXR.pc
               - Library/include/OpenEXR/ImfHeader.h
               - Library/include/OpenEXR/openexr.h
               - Library/lib/cmake/OpenEXR/OpenEXRConfig.cmake
               - Library/lib/cmake/OpenEXRCore/OpenEXRCoreConfig.cmake
-              - Library/lib/pkgconfig/OpenEXR.pc
       - script:
           - if: linux
             then:
@@ -404,15 +389,11 @@ outputs:
           - if: unix
             then:
               - test -f "$PREFIX/lib/cmake/OpenEXR/OpenEXRConfig.cmake"
-              - test -f "$PREFIX/lib/pkgconfig/OpenEXR.pc"
-              - pkg-config --modversion OpenEXR
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENEXR_CONSUMER_EXPECT_FULL=ON
               - cmake --build build
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\cmake\OpenEXR\OpenEXRConfig.cmake" exit /b 1
-              - if not exist "%LIBRARY_LIB%\pkgconfig\OpenEXR.pc" exit /b 1
-              - pkg-config --modversion OpenEXR
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENEXR_CONSUMER_EXPECT_FULL=ON
               - cmake --build build --config Release
         files:
@@ -426,7 +407,6 @@ outputs:
             - ${{ compiler('cxx') }}
             - cmake
             - ninja
-            - pkg-config
 
   - package:
       name: openexr-tools
@@ -487,15 +467,11 @@ outputs:
           - if: unix
             then:
               - test -f "$PREFIX/lib/cmake/OpenEXR/OpenEXRConfig.cmake"
-              - test -f "$PREFIX/lib/pkgconfig/OpenEXR.pc"
-              - pkg-config --modversion OpenEXR
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENEXR_CONSUMER_EXPECT_FULL=ON
               - cmake --build build
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\cmake\OpenEXR\OpenEXRConfig.cmake" exit /b 1
-              - if not exist "%LIBRARY_LIB%\pkgconfig\OpenEXR.pc" exit /b 1
-              - pkg-config --modversion OpenEXR
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENEXR_CONSUMER_EXPECT_FULL=ON
               - cmake --build build --config Release
         files:
@@ -509,7 +485,6 @@ outputs:
             - ${{ compiler('cxx') }}
             - cmake
             - ninja
-            - pkg-config
 
 about:
   homepage: https://openexr.com

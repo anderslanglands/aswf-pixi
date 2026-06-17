@@ -7,8 +7,6 @@ set(_version "3.4.12")
 set(_api_suffix "-3_4")
 
 file(MAKE_DIRECTORY "${_prefix}/lib/cmake/OpenEXRCore")
-file(MAKE_DIRECTORY "${_prefix}/lib/pkgconfig")
-
 file(WRITE "${_prefix}/lib/cmake/OpenEXRCore/OpenEXRCoreConfig.cmake" [=[
 include(CMakeFindDependencyMacro)
 
@@ -52,19 +50,4 @@ endif()
 if(PACKAGE_FIND_VERSION VERSION_LESS PACKAGE_VERSION OR PACKAGE_FIND_VERSION VERSION_EQUAL PACKAGE_VERSION)
   set(PACKAGE_VERSION_COMPATIBLE TRUE)
 endif()
-")
-
-file(WRITE "${_prefix}/lib/pkgconfig/OpenEXRCore.pc" "prefix=\${pcfiledir}/../..
-exec_prefix=\${prefix}
-libdir=\${exec_prefix}/lib
-includedir=\${prefix}/include
-OpenEXR_includedir=\${includedir}/OpenEXR
-
-Name: OpenEXRCore
-Description: OpenEXR C core library
-Version: ${_version}
-
-Libs: -L\${libdir} -lOpenEXRCore${_api_suffix}
-Cflags: -I\${includedir} -I\${OpenEXR_includedir}
-Requires: Imath
 ")

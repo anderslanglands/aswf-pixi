@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 3.20)
 project(openexr_consumer LANGUAGES C CXX)
 
 option(OPENEXR_CONSUMER_EXPECT_FULL "Require the full OpenEXR C++ package" OFF)
-option(OPENEXR_CONSUMER_TEST_PKG_CONFIG "Build a consumer through pkg-config metadata" OFF)
-
 find_package(OpenEXRCore CONFIG REQUIRED)
 
 add_executable(openexr_core_consumer openexr_core_consumer.c)
@@ -13,18 +11,6 @@ add_custom_target(run_openexr_core_consumer ALL
   COMMAND openexr_core_consumer
   DEPENDS openexr_core_consumer
 )
-
-if(OPENEXR_CONSUMER_TEST_PKG_CONFIG)
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(OpenEXRCorePc REQUIRED IMPORTED_TARGET OpenEXRCore)
-
-  add_executable(openexr_core_pkg_config_consumer openexr_core_consumer.c)
-  target_link_libraries(openexr_core_pkg_config_consumer PRIVATE PkgConfig::OpenEXRCorePc)
-  add_custom_target(run_openexr_core_pkg_config_consumer ALL
-    COMMAND openexr_core_pkg_config_consumer
-    DEPENDS openexr_core_pkg_config_consumer
-  )
-endif()
 
 find_package(OpenEXR CONFIG QUIET)
 
