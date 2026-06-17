@@ -73,3 +73,4 @@ MaterialX packaging decisions:
 - Keep `materialx-python` co-installable with `materialx`/`materialx-dev`; the old `materialx` vs `materialx-python` conflict only existed because pixi-recipes used two monolithic packages with overlapping files.
 - Keep viewer, graph editor, and render modules disabled until Anders explicitly asks for GUI/render/OpenGL/X11 packages.
 - Do not carry the old MaterialX `add-cstdint.patch` into 1.39.4 unless a build proves it is still needed; upstream 1.39.4 release notes mention a GCC 15 missing-header fix.
+- MaterialX generator headers use C++17 library features such as `std::string_view`; downstream CMake consumer tests should request `cxx_std_17` for now. This is an upstream CMake export ergonomics gap: if we later want linked MaterialX targets to propagate that requirement automatically, discuss an upstream fix or a narrow recipe patch adding interface compile features.
