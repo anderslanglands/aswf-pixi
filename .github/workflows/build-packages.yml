@@ -1,0 +1,193 @@
+name: Build packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipes:
+        description: "Comma-separated recipe directories, for example imath/3.2.2"
+        required: true
+        default: "imath/3.2.2"
+      platforms:
+        description: "Comma-separated target platforms: linux-64, osx-64, osx-arm64, win-64, or all"
+        required: true
+        default: "linux-64"
+      publish_target:
+        description: "Where to publish the built artifacts"
+        required: true
+        type: choice
+        options:
+          - artifact-only
+          - test-label
+          - default-label
+        default: artifact-only
+      build_number:
+        description: "Optional integer build number override for all outputs"
+        required: false
+        default: ""
+      run_smoke_tests:
+        description: "Install every output package from the selected Anaconda label after publishing"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-build-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Prepare build matrix
+        id: matrix
+        env:
+          RECIPES: ${{ inputs.recipes }}
+          PLATFORMS: ${{ inputs.platforms }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          PUBLISH_TARGET: ${{ inputs.publish_target }}
+        run: |
+          matrix="$(python scripts/ci_matrix.py --recipes "$RECIPES" --platforms "$PLATFORMS" --build-number "$BUILD_NUMBER" --publish-target "$PUBLISH_TARGET")"
+          echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.recipe }} (${{ matrix.platform }})
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          pixi-version: v0.69.0
+          cache: true
+
+      - name: Build package
+        shell: bash
+        env:
+          RECIPE: ${{ matrix.recipe }}
+          PLATFORM: ${{ matrix.platform }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+        run: |
+          args=(
+            rattler-build build
+            --recipe "$RECIPE/recipe.yaml"
+            --target-platform "$PLATFORM"
+            --channel https://conda.anaconda.org/anderslanglands
+            --channel conda-forge
+            --channel-priority strict
+            --output-dir output
+            --package-format conda
+            --test native
+          )
+
+          if [[ -n "$BUILD_NUMBER" ]]; then
+            args+=(--build-num "$BUILD_NUMBER")
+          fi
+
+          pixi run "${args[@]}"
+
+      - name: Collect artifact manifest
+        env:
+          RECIPE: ${{ matrix.recipe }}
+          PLATFORM: ${{ matrix.platform }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+        run: |
+          pixi run python scripts/collect_artifacts.py \
+            --recipe "$RECIPE" \
+            --platform "$PLATFORM" \
+            --output-dir output \
+            --manifest output/manifest.json \
+            --build-number "$BUILD_NUMBER"
+
+      - name: Upload GitHub artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            output/manifest.json
+            output/${{ matrix.platform }}/*.conda
+          if-no-files-found: error
+
+  publish:
+    name: Publish to Anaconda
+    if: ${{ inputs.publish_target != 'artifact-only' }}
+    needs:
+      - prepare
+      - build
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.publish_target == 'default-label' && 'anaconda-production' || 'anaconda-test' }}
+    env:
+      ANACONDA_API_KEY: ${{ secrets.ANACONDA_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          pixi-version: v0.69.0
+          cache: true
+
+      - name: Download built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish packages
+        env:
+          PUBLISH_TARGET: ${{ inputs.publish_target }}
+        run: pixi run python scripts/publish_packages.py --target "$PUBLISH_TARGET" --root artifacts
+
+  smoke:
+    name: Smoke ${{ matrix.recipe }} (${{ matrix.platform }})
+    if: ${{ inputs.publish_target != 'artifact-only' && inputs.run_smoke_tests }}
+    needs:
+      - prepare
+      - publish
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          pixi-version: v0.69.0
+          cache: true
+
+      - name: Download matching build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: artifacts/${{ matrix.artifact }}
+
+      - name: Install packages from published label
+        shell: bash
+        env:
+          RECIPE: ${{ matrix.recipe }}
+          PLATFORM: ${{ matrix.platform }}
+          PUBLISH_TARGET: ${{ inputs.publish_target }}
+          ARTIFACT_MANIFEST: artifacts/${{ matrix.artifact }}/manifest.json
+        run: |
+          pixi run python scripts/smoke_consumers.py \
+            --recipe "$RECIPE" \
+            --platform "$PLATFORM" \
+            --target "$PUBLISH_TARGET" \
+            --artifact-manifest "$ARTIFACT_MANIFEST"

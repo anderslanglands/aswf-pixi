@@ -10,6 +10,7 @@ channel-priority = "strict"
 [dependencies]
 rattler-build = ">=0.40"
 anaconda-client = ">=1.12"
+python = ">=3.12"
 
 [tasks]
 build-imath-3-2-2 = "rattler-build build --recipe imath/3.2.2/recipe.yaml --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --output-dir output"

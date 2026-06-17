@@ -1,3 +1,5 @@
 .pixi/
+__pycache__/
 output/
 *.conda
+*/*/pixi.lock

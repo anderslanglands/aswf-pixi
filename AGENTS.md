@@ -38,3 +38,13 @@ Package conversion process:
 - Prefer avoiding upstream patches. If builds fail, surface the problem to Anders with options and a recommendation before patching upstream library code.
 - Keep this `AGENTS.md` updated as the process evolves.
 - Keep root build tooling solvable before packages are uploaded; put package-specific consumer pixi feature manifests next to the versioned recipe when publishing has not happened yet.
+- For test-label validation, put `https://conda.anaconda.org/anderslanglands/label/test` before `https://conda.anaconda.org/anderslanglands` in consumer manifests.
+- Consumer validation manifests should list only platforms whose artifacts have actually been published for that label; broaden the platform list as CI publishes more platforms.
+- GitHub Actions package builds are manually triggered with `workflow_dispatch`; do not add continuous package publishing on push without discussing it with Anders.
+- The package build workflow accepts recipe directories, target platforms, publish target, and an optional integer build number override. Use the build number override when testing a repeated upload for the same package version.
+- GitHub Actions publishes with the `ANACONDA_TOKEN` repository secret, exposed to `rattler-build upload anaconda` as `ANACONDA_API_KEY`.
+- Keep the `test-label` publish path low-friction, but use the `anaconda-production` GitHub environment for `default-label` publishes so production uploads can require review in repository settings.
+- CI builds should write an artifact `manifest.json` describing the exact package filename, build string, subdir, and version for every publishable output.
+- CI publish jobs should upload only packages listed in the artifact manifests, not arbitrary `.conda` files found under the artifact directory.
+- CI smoke tests should consume every manifest-listed package from the selected Anaconda label in clean pixi environments, verify `pixi list --json` resolves the exact uploaded build/source, and run recipe consumer tests for dev/top-level packages when present. They should not rely on package-local lockfiles.
+- Keep the GitHub Actions platform-to-runner mapping in `scripts/ci_matrix.py`, and re-check GitHub's current hosted runner labels before changing macOS runners.
