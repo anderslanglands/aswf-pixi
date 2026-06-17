@@ -1,4 +1,5 @@
 name: Build packages
+run-name: Build ${{ inputs.recipes }} (${{ inputs.platforms }}, ${{ inputs.publish_target }})
 
 on:
   workflow_dispatch:
