@@ -64,3 +64,12 @@ Local package preflight:
 - Dry-run the publish selection before uploading anything:
   `pixi run python scripts/publish_packages.py --target test-label --root output --dry-run`
 - Local preflight should normally stop before upload. Only upload locally to the `test` label when Anders explicitly wants a local test upload; otherwise use the manual GitHub Actions workflow with `publish_target = artifact-only` first, then `test-label`, then `default-label`.
+
+MaterialX packaging decisions:
+
+- Package MaterialX 1.39.4 as `materialx-lib`, `materialx-dev`, `materialx-python`, and a compatibility/default `materialx` metapackage.
+- The `materialx` metapackage should depend on `materialx-lib`, `materialx-dev`, and `materialx-python` so downstream consumers can depend on `materialx` for the complete default C++ and Python surface.
+- Build `materialx-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
+- Keep `materialx-python` co-installable with `materialx`/`materialx-dev`; the old `materialx` vs `materialx-python` conflict only existed because pixi-recipes used two monolithic packages with overlapping files.
+- Keep viewer, graph editor, and render modules disabled until Anders explicitly asks for GUI/render/OpenGL/X11 packages.
+- Do not carry the old MaterialX `add-cstdint.patch` into 1.39.4 unless a build proves it is still needed; upstream 1.39.4 release notes mention a GCC 15 missing-header fix.

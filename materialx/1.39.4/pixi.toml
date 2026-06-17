@@ -1,0 +1,27 @@
+[workspace]
+name = "materialx-1.39.4-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64", "win-64", "osx-arm64"]
+channel-priority = "strict"
+
+[feature.materialx-lib.dependencies]
+materialx-lib = "==1.39.4"
+
+[feature.materialx-dev.dependencies]
+materialx-dev = "==1.39.4"
+
+[feature.materialx-python.dependencies]
+materialx-python = "==1.39.4"
+
+[feature.materialx.dependencies]
+materialx = "==1.39.4"
+
+[environments]
+materialx-lib = ["materialx-lib"]
+materialx-dev = ["materialx-dev"]
+materialx-python = ["materialx-python"]
+materialx = ["materialx"]
