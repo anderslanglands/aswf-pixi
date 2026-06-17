@@ -347,7 +347,7 @@ outputs:
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/opencolorio_consumer
-              - $CXX tests/opencolorio_consumer.cpp $(pkg-config --cflags --libs OpenColorIO) ${LDFLAGS:-} -o pkg_config_consumer
+              - $CXX tests/opencolorio_consumer.cpp $(pkg-config --cflags --libs OpenColorIO) -Wl,-rpath,$PREFIX/lib ${LDFLAGS:-} -o pkg_config_consumer
               - ./pkg_config_consumer
           - if: win
             then:
@@ -431,7 +431,7 @@ outputs:
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/opencolorio_consumer
-              - $CXX tests/opencolorio_consumer.cpp $(pkg-config --cflags --libs OpenColorIO) ${LDFLAGS:-} -o pkg_config_consumer
+              - $CXX tests/opencolorio_consumer.cpp $(pkg-config --cflags --libs OpenColorIO) -Wl,-rpath,$PREFIX/lib ${LDFLAGS:-} -o pkg_config_consumer
               - ./pkg_config_consumer
               - test ! -e "$PREFIX/bin/ociocheck"
               - python -c "import importlib.util; assert importlib.util.find_spec('PyOpenColorIO') is None"
