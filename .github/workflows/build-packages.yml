@@ -45,7 +45,7 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Prepare build matrix
         id: matrix
@@ -67,7 +67,7 @@ jobs:
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.9.6
@@ -114,7 +114,7 @@ jobs:
             --build-number "$BUILD_NUMBER"
 
       - name: Upload GitHub artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact }}
           path: |
@@ -134,7 +134,7 @@ jobs:
       ANACONDA_API_KEY: ${{ secrets.ANACONDA_TOKEN }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.9.6
@@ -143,7 +143,7 @@ jobs:
           cache: true
 
       - name: Download built artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
 
@@ -164,7 +164,7 @@ jobs:
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.9.6
@@ -173,7 +173,7 @@ jobs:
           cache: true
 
       - name: Download matching build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: artifacts/${{ matrix.artifact }}

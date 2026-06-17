@@ -48,3 +48,17 @@ Package conversion process:
 - CI publish jobs should upload only packages listed in the artifact manifests, not arbitrary `.conda` files found under the artifact directory.
 - CI smoke tests should consume every manifest-listed package from the selected Anaconda label in clean pixi environments, verify `pixi list --json` resolves the exact uploaded build/source, and run recipe consumer tests for dev/top-level packages when present. They should not rely on package-local lockfiles.
 - Keep the GitHub Actions platform-to-runner mapping in `scripts/ci_matrix.py`, and re-check GitHub's current hosted runner labels before changing macOS runners.
+- Keep GitHub workflow actions on Node 24-capable versions instead of relying on temporary Node runtime override environment variables.
+
+Local package preflight:
+
+- Before pushing recipe or workflow changes, run a local native build on any platform that is readily available, especially when adding a new target platform.
+- Use a clean generated `output/` directory for local preflight builds so stale packages are not picked up by manifest or upload checks.
+- Match the GitHub Actions build command locally rather than relying only on shorthand tasks. For example, on a Windows machine validating Imath before enabling `win-64` in CI, run:
+  `pixi run rattler-build build --recipe imath/3.2.2/recipe.yaml --target-platform win-64 --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native`
+- If testing a repeated package version/build, pass the same explicit build number to both build and manifest collection, for example add `--build-num 1` to `rattler-build build` and `--build-number 1` to `scripts/collect_artifacts.py`.
+- After a successful local build, collect and validate the exact package set with:
+  `pixi run python scripts/collect_artifacts.py --recipe imath/3.2.2 --platform win-64 --output-dir output --manifest output/manifest.json`
+- Dry-run the publish selection before uploading anything:
+  `pixi run python scripts/publish_packages.py --target test-label --root output --dry-run`
+- Local preflight should normally stop before upload. Only upload locally to the `test` label when Anders explicitly wants a local test upload; otherwise use the manual GitHub Actions workflow with `publish_target = artifact-only` first, then `test-label`, then `default-label`.
