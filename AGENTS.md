@@ -55,7 +55,8 @@ Local package preflight:
 - Before pushing recipe or workflow changes, run a local native build on any platform that is readily available, especially when adding a new target platform.
 - Use a clean generated `output/` directory for local preflight builds so stale packages are not picked up by manifest or upload checks.
 - Match the GitHub Actions build command locally rather than relying only on shorthand tasks. For example, on a Windows machine validating Imath before enabling `win-64` in CI, run:
-  `pixi run rattler-build build --recipe imath/3.2.2/recipe.yaml --target-platform win-64 --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native`
+  `pixi run rattler-build build --recipe imath/3.2.2/recipe.yaml --target-platform win-64 --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native --variant c_compiler=vs2022 --variant cxx_compiler=vs2022`
+- Windows builds should pass both `--variant c_compiler=vs2022` and `--variant cxx_compiler=vs2022`; otherwise `rattler-build` currently renders `compiler('c')`/`compiler('cxx')` as `vs2017_win-64`, which is not available on current GitHub-hosted Windows runners.
 - If testing a repeated package version/build, pass the same explicit build number to both build and manifest collection, for example add `--build-num 1` to `rattler-build build` and `--build-number 1` to `scripts/collect_artifacts.py`.
 - After a successful local build, collect and validate the exact package set with:
   `pixi run python scripts/collect_artifacts.py --recipe imath/3.2.2 --platform win-64 --output-dir output --manifest output/manifest.json`

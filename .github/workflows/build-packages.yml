@@ -98,6 +98,11 @@ jobs:
             args+=(--build-num "$BUILD_NUMBER")
           fi
 
+          if [[ "$PLATFORM" == "win-64" ]]; then
+            args+=(--variant c_compiler=vs2022)
+            args+=(--variant cxx_compiler=vs2022)
+          fi
+
           pixi run "${args[@]}"
 
       - name: Collect artifact manifest
