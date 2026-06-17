@@ -39,7 +39,7 @@ def write_manifest(
     channels = "\n".join(f'  "{channel}",' for channel in CHANNELS[target])
     extra_deps = ""
     if run_cmake_consumer:
-        extra_deps = '\ncmake = ">=3.20"\nninja = "*"\nc-compiler = "*"\ncxx-compiler = "*"'
+        extra_deps = '\ncmake = ">=3.20"\nninja = "*"\npkg-config = "*"\nc-compiler = "*"\ncxx-compiler = "*"'
 
     path.write_text(
         f"""[workspace]
