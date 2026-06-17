@@ -21,3 +21,7 @@ build-materialx-1-39-4 = "rattler-build build --recipe materialx/1.39.4/recipe.y
 build-materialx = { depends-on = ["build-materialx-1-39-4"] }
 upload-materialx-1-39-4-test = "anaconda upload --user anderslanglands --label test output/*/materialx-lib-1.39.4-*.conda output/*/materialx-dev-1.39.4-*.conda output/*/materialx-python-1.39.4-*.conda output/*/materialx-1.39.4-*.conda"
 upload-materialx-1-39-4 = "anaconda upload --user anderslanglands output/*/materialx-lib-1.39.4-*.conda output/*/materialx-dev-1.39.4-*.conda output/*/materialx-python-1.39.4-*.conda output/*/materialx-1.39.4-*.conda"
+build-openexr-3-4-12 = "rattler-build build --recipe openexr/3.4.12/recipe.yaml --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native"
+build-openexr = { depends-on = ["build-openexr-3-4-12"] }
+upload-openexr-3-4-12-test = "anaconda upload --user anderslanglands --label test output/*/openexr-core-lib-3.4.12-*.conda output/*/openexr-core-dev-3.4.12-*.conda output/*/openexr-lib-3.4.12-*.conda output/*/openexr-dev-3.4.12-*.conda output/*/openexr-tools-3.4.12-*.conda output/*/openexr-python-3.4.12-*.conda output/*/openexr-3.4.12-*.conda"
+upload-openexr-3-4-12 = "anaconda upload --user anderslanglands output/*/openexr-core-lib-3.4.12-*.conda output/*/openexr-core-dev-3.4.12-*.conda output/*/openexr-lib-3.4.12-*.conda output/*/openexr-dev-3.4.12-*.conda output/*/openexr-tools-3.4.12-*.conda output/*/openexr-python-3.4.12-*.conda output/*/openexr-3.4.12-*.conda"

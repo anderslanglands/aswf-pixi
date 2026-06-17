@@ -74,3 +74,11 @@ MaterialX packaging decisions:
 - Keep viewer, graph editor, and render modules disabled until Anders explicitly asks for GUI/render/OpenGL/X11 packages.
 - Do not carry the old MaterialX `add-cstdint.patch` into 1.39.4 unless a build proves it is still needed; upstream 1.39.4 release notes mention a GCC 15 missing-header fix.
 - MaterialX generator headers use C++17 library features such as `std::string_view`; downstream CMake consumer tests should request `cxx_std_17` for now. This is an upstream CMake export ergonomics gap: if we later want linked MaterialX targets to propagate that requirement automatically, discuss an upstream fix or a narrow recipe patch adding interface compile features.
+
+OpenEXR packaging decisions:
+
+- Package OpenEXR 3.4.12 as `openexr-core-lib`, `openexr-core-dev`, `openexr-lib`, `openexr-dev`, `openexr-tools`, `openexr-python`, and a compatibility/default `openexr` metapackage.
+- Keep `OpenEXRCore` consumable on its own: `openexr-core-dev` carries the C API headers plus a small `OpenEXRCoreConfig.cmake` and `OpenEXRCore.pc`, while the upstream full `OpenEXRConfig.cmake` and `OpenEXR.pc` stay in `openexr-dev`.
+- The `openexr` metapackage should depend on the full C++ runtime/dev/tools surface, but not `openexr-python`; keep Python opt-in as `openexr-python`.
+- Build `openexr-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
+- Use external `imath-dev` 3.2, `libdeflate`, `openjph`, and `zlib` dependencies rather than vendored copies.

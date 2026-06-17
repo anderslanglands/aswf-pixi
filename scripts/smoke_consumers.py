@@ -39,7 +39,7 @@ def write_manifest(
     channels = "\n".join(f'  "{channel}",' for channel in CHANNELS[target])
     extra_deps = ""
     if run_cmake_consumer:
-        extra_deps = '\ncmake = ">=3.20"\nninja = "*"\ncxx-compiler = "*"'
+        extra_deps = '\ncmake = ">=3.20"\nninja = "*"\nc-compiler = "*"\ncxx-compiler = "*"'
 
     path.write_text(
         f"""[workspace]
@@ -106,7 +106,16 @@ def package_needs_consumer_test(root_package: str, package: dict[str, object], r
     return name == root_package or name.endswith("-dev")
 
 
-def run_cmake_consumer(manifest: Path, recipe: Path, package: dict[str, object], tmp: Path) -> None:
+def cmake_consumer_args(root_package: str, package: dict[str, object]) -> list[str]:
+    name = str(package["name"])
+    if root_package == "openexr" and name in {"openexr", "openexr-dev"}:
+        return ["-DOPENEXR_CONSUMER_EXPECT_FULL=ON"]
+    if root_package == "openexr" and name == "openexr-core-dev":
+        return ["-DOPENEXR_CONSUMER_TEST_PKG_CONFIG=ON"]
+    return []
+
+
+def run_cmake_consumer(manifest: Path, recipe: Path, root_package: str, package: dict[str, object], tmp: Path) -> None:
     source = recipe.resolve() / "tests"
     build = tmp / f"build-{package['name']}"
     pixi(
@@ -120,6 +129,7 @@ def run_cmake_consumer(manifest: Path, recipe: Path, package: dict[str, object],
         str(build),
         "-G",
         "Ninja",
+        *cmake_consumer_args(root_package, package),
     )
     pixi("run", "--manifest-path", str(manifest), "cmake", "--build", str(build))
 
@@ -158,7 +168,7 @@ def main() -> None:
             pixi("install", "--manifest-path", str(manifest))
             check_installed_package(manifest, package, target=args.target)
             if run_consumer:
-                run_cmake_consumer(manifest, recipe, package, tmp)
+                run_cmake_consumer(manifest, recipe, root_package, package, tmp)
 
     print(
         f"Smoke-tested {len(artifact_manifest['packages'])} package(s) from "

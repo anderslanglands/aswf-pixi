@@ -1,0 +1,519 @@
+context:
+  version: "3.4.12"
+  build_number: 0
+
+recipe:
+  name: openexr
+  version: ${{ version }}
+
+source:
+  url: https://github.com/AcademySoftwareFoundation/openexr/releases/download/v${{ version }}/openexr-${{ version }}.tar.gz
+  sha256: 2d45db1d4bb78a5b263cd21cefa93119e1fcd37a13fa446c74663b6b8ec02d00
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: openexr-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DOPENEXR_BUILD_LIBS=ON \
+              -DOPENEXR_BUILD_TOOLS=ON \
+              -DOPENEXR_INSTALL_TOOLS=ON \
+              -DOPENEXR_INSTALL_DEVELOPER_TOOLS=OFF \
+              -DOPENEXR_BUILD_EXAMPLES=OFF \
+              -DOPENEXR_BUILD_PYTHON=OFF \
+              -DOPENEXR_INSTALL_DOCS=OFF \
+              -DOPENEXR_FORCE_INTERNAL_IMATH=OFF \
+              -DOPENEXR_FORCE_INTERNAL_DEFLATE=OFF \
+              -DOPENEXR_FORCE_INTERNAL_OPENJPH=OFF \
+              -B $SRC_DIR/../build \
+              -S .
+
+            cmake --build $SRC_DIR/../build --target install
+
+            for lib in OpenEXR OpenEXRCore OpenEXRUtil Iex IlmThread; do
+              if [ -e "$PREFIX/lib/lib${lib}-3_4.so.33" ] && [ ! -e "$PREFIX/lib/lib${lib}.so.33" ]; then
+                ln -s "lib${lib}-3_4.so.33" "$PREFIX/lib/lib${lib}.so.33"
+              fi
+            done
+
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake -DOPENEXR_CORE_METADATA_PREFIX="$PREFIX" \
+              -P "$recipe_dir/cmake/install-openexr-core-metadata.cmake"
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DBUILD_TESTING=OFF ^
+              -DOPENEXR_BUILD_LIBS=ON ^
+              -DOPENEXR_BUILD_TOOLS=ON ^
+              -DOPENEXR_INSTALL_TOOLS=ON ^
+              -DOPENEXR_INSTALL_DEVELOPER_TOOLS=OFF ^
+              -DOPENEXR_BUILD_EXAMPLES=OFF ^
+              -DOPENEXR_BUILD_PYTHON=OFF ^
+              -DOPENEXR_INSTALL_DOCS=OFF ^
+              -DOPENEXR_FORCE_INTERNAL_IMATH=OFF ^
+              -DOPENEXR_FORCE_INTERNAL_DEFLATE=OFF ^
+              -DOPENEXR_FORCE_INTERNAL_OPENJPH=OFF ^
+              -B %SRC_DIR%\..\build ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build --target install --config Release
+
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake -DOPENEXR_CORE_METADATA_PREFIX="%LIBRARY_PREFIX%" ^
+              -P "%RECIPE_DIR_VAR%\cmake\install-openexr-core-metadata.cmake"
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - imath-dev 3.2.*
+        - libdeflate
+        - openjph
+        - zlib
+
+  - staging:
+      name: openexr-python-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-python
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DOPENEXR_BUILD_LIBS=ON \
+              -DOPENEXR_BUILD_TOOLS=OFF \
+              -DOPENEXR_INSTALL_TOOLS=OFF \
+              -DOPENEXR_INSTALL_DEVELOPER_TOOLS=OFF \
+              -DOPENEXR_BUILD_EXAMPLES=OFF \
+              -DOPENEXR_BUILD_PYTHON=ON \
+              -DOPENEXR_INSTALL_DOCS=OFF \
+              -DOPENEXR_FORCE_INTERNAL_IMATH=OFF \
+              -DOPENEXR_FORCE_INTERNAL_DEFLATE=OFF \
+              -DOPENEXR_FORCE_INTERNAL_OPENJPH=OFF \
+              -DPython3_EXECUTABLE=$PYTHON \
+              -B $SRC_DIR/../build-python \
+              -S .
+
+            cmake --build $SRC_DIR/../build-python --target install
+
+            if [ -d "$PREFIX/python/OpenEXR" ]; then
+              mkdir -p "$SP_DIR"
+              mv "$PREFIX/python/OpenEXR"/* "$SP_DIR/"
+              rm -rf "$PREFIX/python"
+            fi
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-python
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DBUILD_TESTING=OFF ^
+              -DOPENEXR_BUILD_LIBS=ON ^
+              -DOPENEXR_BUILD_TOOLS=OFF ^
+              -DOPENEXR_INSTALL_TOOLS=OFF ^
+              -DOPENEXR_INSTALL_DEVELOPER_TOOLS=OFF ^
+              -DOPENEXR_BUILD_EXAMPLES=OFF ^
+              -DOPENEXR_BUILD_PYTHON=ON ^
+              -DOPENEXR_INSTALL_DOCS=OFF ^
+              -DOPENEXR_FORCE_INTERNAL_IMATH=OFF ^
+              -DOPENEXR_FORCE_INTERNAL_DEFLATE=OFF ^
+              -DOPENEXR_FORCE_INTERNAL_OPENJPH=OFF ^
+              -DPython3_EXECUTABLE=%PYTHON% ^
+              -B %SRC_DIR%\..\build-python ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-python --target install --config Release
+
+            if exist "%LIBRARY_PREFIX%\python\OpenEXR" (
+              if not exist "%SP_DIR%" mkdir "%SP_DIR%"
+              move "%LIBRARY_PREFIX%\python\OpenEXR\*" "%SP_DIR%"
+              rmdir /S /Q "%LIBRARY_PREFIX%\python"
+            )
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - imath-dev 3.2.*
+        - libdeflate
+        - numpy
+        - openjph
+        - pybind11
+        - python
+        - zlib
+
+  - package:
+      name: openexr-core-lib
+    inherit: openexr-build
+    build:
+      files:
+        - lib/libOpenEXRCore*.so*
+        - lib/libOpenEXRCore*.dylib*
+        - Library/bin/OpenEXRCore*.dll
+    requirements:
+      run:
+        - imath-lib 3.2.*
+        - libdeflate
+        - libzlib
+        - openjph
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openexr-core-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/OpenEXR/openexr.h
+              - lib/cmake/OpenEXRCore/OpenEXRCoreConfig.cmake
+              - lib/pkgconfig/OpenEXRCore.pc
+              - Library/include/OpenEXR/openexr.h
+              - Library/lib/cmake/OpenEXRCore/OpenEXRCoreConfig.cmake
+              - Library/lib/pkgconfig/OpenEXRCore.pc
+      - script:
+          - if: linux
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libOpenEXRCore*.so*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: osx
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libOpenEXRCore*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: win
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'OpenEXRCore*.dll')); assert paths; ctypes.WinDLL(paths[0])"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: openexr-core-dev
+    inherit: openexr-build
+    build:
+      files:
+        - include/OpenEXR/openexr*.h
+        - include/OpenEXR/OpenEXRConfig.h
+        - include/OpenEXR/IlmThreadConfig.h
+        - lib/cmake/OpenEXRCore/**
+        - lib/pkgconfig/OpenEXRCore.pc
+        - Library/include/OpenEXR/openexr*.h
+        - Library/include/OpenEXR/OpenEXRConfig.h
+        - Library/include/OpenEXR/IlmThreadConfig.h
+        - Library/lib/OpenEXRCore*.lib
+        - Library/lib/cmake/OpenEXRCore/**
+        - Library/lib/pkgconfig/OpenEXRCore.pc
+    requirements:
+      run:
+        - ${{ pin_subpackage('openexr-core-lib', exact=True) }}
+        - imath-dev 3.2.*
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openexr-core-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - OpenEXR/openexr.h
+            - OpenEXR/openexr_version.h
+          files:
+            not_exists:
+              - include/OpenEXR/ImfHeader.h
+              - include/OpenEXR/Iex.h
+              - lib/cmake/OpenEXR/OpenEXRConfig.cmake
+              - lib/pkgconfig/OpenEXR.pc
+              - Library/include/OpenEXR/ImfHeader.h
+              - Library/include/OpenEXR/Iex.h
+              - Library/lib/cmake/OpenEXR/OpenEXRConfig.cmake
+              - Library/lib/pkgconfig/OpenEXR.pc
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenEXRCore/OpenEXRCoreConfig.cmake"
+              - test -f "$PREFIX/lib/pkgconfig/OpenEXRCore.pc"
+              - pkg-config --modversion OpenEXRCore
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENEXR_CONSUMER_TEST_PKG_CONFIG=ON
+              - cmake --build build
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OpenEXRCore\OpenEXRCoreConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\pkgconfig\OpenEXRCore.pc" exit /b 1
+              - pkg-config --modversion OpenEXRCore
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENEXR_CONSUMER_TEST_PKG_CONFIG=ON
+              - cmake --build build --config Release
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openexr_core_consumer.c
+            - tests/openexr_cpp_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - pkg-config
+
+  - package:
+      name: openexr-lib
+    inherit: openexr-build
+    build:
+      files:
+        - lib/libOpenEXR-3_4*.so*
+        - lib/libOpenEXR.so*
+        - lib/libOpenEXRUtil*.so*
+        - lib/libIex*.so*
+        - lib/libIlmThread*.so*
+        - lib/libOpenEXR-3_4*.dylib*
+        - lib/libOpenEXR.dylib*
+        - lib/libOpenEXRUtil*.dylib*
+        - lib/libIex*.dylib*
+        - lib/libIlmThread*.dylib*
+        - Library/bin/OpenEXR-3_4*.dll
+        - Library/bin/OpenEXRUtil*.dll
+        - Library/bin/Iex*.dll
+        - Library/bin/IlmThread*.dll
+    requirements:
+      run:
+        - ${{ pin_subpackage('openexr-core-lib', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openexr-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/OpenEXR/ImfHeader.h
+              - include/OpenEXR/openexr.h
+              - lib/cmake/OpenEXR/OpenEXRConfig.cmake
+              - lib/cmake/OpenEXRCore/OpenEXRCoreConfig.cmake
+              - lib/pkgconfig/OpenEXR.pc
+              - Library/include/OpenEXR/ImfHeader.h
+              - Library/include/OpenEXR/openexr.h
+              - Library/lib/cmake/OpenEXR/OpenEXRConfig.cmake
+              - Library/lib/cmake/OpenEXRCore/OpenEXRCoreConfig.cmake
+              - Library/lib/pkgconfig/OpenEXR.pc
+      - script:
+          - if: linux
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libOpenEXR-3_4*.so*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: osx
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libOpenEXR-3_4*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: win
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'OpenEXR-3_4*.dll')); assert paths; ctypes.WinDLL(paths[0])"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: openexr-dev
+    inherit: openexr-build
+    build:
+      files:
+        - include/OpenEXR/Imf*.h
+        - include/OpenEXR/Iex*.h
+        - include/OpenEXR/IlmThread.h
+        - include/OpenEXR/IlmThreadExport.h
+        - include/OpenEXR/IlmThreadForward.h
+        - include/OpenEXR/IlmThreadMutex.h
+        - include/OpenEXR/IlmThreadNamespace.h
+        - include/OpenEXR/IlmThreadPool.h
+        - include/OpenEXR/IlmThreadProcessGroup.h
+        - include/OpenEXR/IlmThreadSemaphore.h
+        - lib/cmake/OpenEXR/**
+        - lib/pkgconfig/OpenEXR.pc
+        - Library/include/OpenEXR/Imf*.h
+        - Library/include/OpenEXR/Iex*.h
+        - Library/include/OpenEXR/IlmThread.h
+        - Library/include/OpenEXR/IlmThreadExport.h
+        - Library/include/OpenEXR/IlmThreadForward.h
+        - Library/include/OpenEXR/IlmThreadMutex.h
+        - Library/include/OpenEXR/IlmThreadNamespace.h
+        - Library/include/OpenEXR/IlmThreadPool.h
+        - Library/include/OpenEXR/IlmThreadProcessGroup.h
+        - Library/include/OpenEXR/IlmThreadSemaphore.h
+        - Library/lib/OpenEXR-3_4*.lib
+        - Library/lib/OpenEXRUtil*.lib
+        - Library/lib/Iex*.lib
+        - Library/lib/IlmThread*.lib
+        - Library/lib/cmake/OpenEXR/**
+        - Library/lib/pkgconfig/OpenEXR.pc
+    requirements:
+      run:
+        - ${{ pin_subpackage('openexr-core-dev', exact=True) }}
+        - ${{ pin_subpackage('openexr-lib', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openexr-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - OpenEXR/ImfHeader.h
+            - OpenEXR/Iex.h
+            - OpenEXR/IlmThread.h
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenEXR/OpenEXRConfig.cmake"
+              - test -f "$PREFIX/lib/pkgconfig/OpenEXR.pc"
+              - pkg-config --modversion OpenEXR
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENEXR_CONSUMER_EXPECT_FULL=ON
+              - cmake --build build
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OpenEXR\OpenEXRConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\pkgconfig\OpenEXR.pc" exit /b 1
+              - pkg-config --modversion OpenEXR
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENEXR_CONSUMER_EXPECT_FULL=ON
+              - cmake --build build --config Release
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openexr_core_consumer.c
+            - tests/openexr_cpp_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - pkg-config
+
+  - package:
+      name: openexr-tools
+    inherit: openexr-build
+    build:
+      files:
+        - bin/exr*
+        - Library/bin/exr*.exe
+    requirements:
+      run:
+        - ${{ pin_subpackage('openexr-lib', exact=True) }}
+    tests:
+      - script:
+          - exrinfo --help
+          - exrheader --help
+          - exrmakepreview --help
+
+  - package:
+      name: openexr-python
+    inherit: openexr-python-build
+    build:
+      string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+      files:
+        - lib/python*/site-packages/OpenEXR*.so
+        - lib/python*/site-packages/Imath.py
+        - Lib/site-packages/OpenEXR*.pyd
+        - Lib/site-packages/Imath.py
+    requirements:
+      run:
+        - python
+        - numpy
+        - ${{ pin_subpackage('openexr-lib', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - OpenEXR
+      - script:
+          - >-
+            python -c "import OpenEXR, numpy as np; header = {'compression': OpenEXR.ZIP_COMPRESSION, 'type': OpenEXR.scanlineimage}; channels = {'RGB': np.zeros((1, 1, 3), dtype=np.float32)}; f = OpenEXR.File(header, channels); f.write('test.exr'); g = OpenEXR.File('test.exr'); assert g.channels()['RGB'].pixels.shape == (1, 1, 3)"
+        requirements:
+          run:
+            - python
+            - numpy
+
+  - package:
+      name: openexr
+    requirements:
+      run:
+        - ${{ pin_subpackage('openexr-lib', exact=True) }}
+        - ${{ pin_subpackage('openexr-dev', exact=True) }}
+        - ${{ pin_subpackage('openexr-tools', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openexr-lib', upper_bound='x.x') }}
+    tests:
+      - script:
+          - exrinfo --help
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenEXR/OpenEXRConfig.cmake"
+              - test -f "$PREFIX/lib/pkgconfig/OpenEXR.pc"
+              - pkg-config --modversion OpenEXR
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENEXR_CONSUMER_EXPECT_FULL=ON
+              - cmake --build build
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OpenEXR\OpenEXRConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\pkgconfig\OpenEXR.pc" exit /b 1
+              - pkg-config --modversion OpenEXR
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENEXR_CONSUMER_EXPECT_FULL=ON
+              - cmake --build build --config Release
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openexr_core_consumer.c
+            - tests/openexr_cpp_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - pkg-config
+
+about:
+  homepage: https://openexr.com
+  repository: https://github.com/AcademySoftwareFoundation/openexr
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  summary: High dynamic-range image file format and libraries
