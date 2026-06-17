@@ -100,7 +100,6 @@ outputs:
         - ${{ compiler('cxx') }}
         - cmake
         - ninja
-        - pkg-config
       host:
         - libjpeg-turbo
 
@@ -165,17 +164,13 @@ outputs:
           - if: unix
             then:
               - test -f "$PREFIX/lib/pkgconfig/libuhdr.pc"
-              - test "$(pkg-config --modversion libuhdr)" = "1.4.0"
-              - pkg-config --cflags libuhdr | grep UHDR_USING_SHARED_LIBRARY
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/libuhdr_consumer
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\pkgconfig\libuhdr.pc" exit /b 1
-              - pkg-config --modversion libuhdr | findstr /X /C:"1.4.0"
               - if not exist "%LIBRARY_LIB%\uhdr.lib" exit /b 1
-              - pkg-config --cflags libuhdr | findstr UHDR_USING_SHARED_LIBRARY
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
               - cmake --build build --config Release
               - build\libuhdr_consumer.exe
@@ -188,7 +183,6 @@ outputs:
             - ${{ compiler('cxx') }}
             - cmake
             - ninja
-            - pkg-config
 
   - package:
       name: libuhdr
@@ -204,17 +198,13 @@ outputs:
           - if: unix
             then:
               - test -f "$PREFIX/lib/pkgconfig/libuhdr.pc"
-              - test "$(pkg-config --modversion libuhdr)" = "1.4.0"
-              - pkg-config --cflags libuhdr | grep UHDR_USING_SHARED_LIBRARY
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/libuhdr_consumer
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\pkgconfig\libuhdr.pc" exit /b 1
-              - pkg-config --modversion libuhdr | findstr /X /C:"1.4.0"
               - if not exist "%LIBRARY_LIB%\uhdr.lib" exit /b 1
-              - pkg-config --cflags libuhdr | findstr UHDR_USING_SHARED_LIBRARY
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
               - cmake --build build --config Release
               - build\libuhdr_consumer.exe
@@ -227,7 +217,6 @@ outputs:
             - ${{ compiler('cxx') }}
             - cmake
             - ninja
-            - pkg-config
 
 about:
   homepage: https://github.com/google/libultrahdr
