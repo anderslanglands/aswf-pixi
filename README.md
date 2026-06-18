@@ -67,6 +67,23 @@ OpenColorIO is a color management solution for motion picture production.
 - `opencolorio-python`: Python bindings for OpenColorIO, built for Python 3.10 through 3.14. Depends on the matching `opencolorio-lib`.
 - `opencolorio`: Default metapackage for C++ consumers. Depends on the matching `opencolorio-lib` and `opencolorio-dev`.
 
+## OpenVDB and NanoVDB
+
+Recipe versions: `13.0.0`
+
+OpenVDB provides sparse volumetric data structures, file I/O, and tools. NanoVDB provides compact mostly read-only VDB grids for GPU-friendly and header-only workflows.
+
+- `openvdb-lib`: Shared OpenVDB runtime library. Depends on Boost, Blosc, TBB, and zlib runtime libraries.
+- `openvdb-dev`: C++ headers and CMake package files. Depends on the matching `openvdb-lib`.
+- `openvdb-tools`: Core command-line tools, currently `vdb_print` and `vdb_lod`. Depends on the matching `openvdb-lib`.
+- `openvdb-guitools`: GUI/render tools, currently `vdb_view` and `vdb_render`, with PNG and OpenEXR output support enabled for `vdb_render`. Depends on the matching `openvdb-lib`.
+- `openvdb-python`: Python bindings for OpenVDB, built for Python 3.11 through 3.14. Depends on the matching `openvdb-lib`.
+- `openvdb`: Default metapackage for C++ consumers. Depends on the matching `openvdb-lib`, `openvdb-dev`, and `openvdb-tools`; Python bindings, GUI/render tools, and NanoVDB are opt-in.
+- `nanovdb-dev`: Standalone NanoVDB headers. Does not depend on OpenVDB.
+- `nanovdb-tools`: Standalone NanoVDB command-line tools, currently `nanovdb_print` and `nanovdb_validate`. Does not depend on OpenVDB.
+- `nanovdb-openvdb-tools`: NanoVDB/OpenVDB bridge tool, currently `nanovdb_convert`. Depends on the matching `openvdb-lib`.
+- `nanovdb`: Default metapackage for standalone NanoVDB consumers. Depends on the matching `nanovdb-dev` and `nanovdb-tools`; OpenVDB conversion is opt-in.
+
 ## MaterialX
 
 Recipe versions: `1.39.4`

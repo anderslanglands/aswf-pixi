@@ -92,6 +92,18 @@ OpenColorIO packaging decisions:
 - Build `opencolorio-tools` with `OCIO_USE_OIIO_FOR_APPS=OFF`; image tools should use OpenEXR rather than OpenImageIO until this repository has its own OpenImageIO package.
 - Keep Java, OpenFX, Nuke, docs, and tests disabled in package builds unless Anders explicitly asks for them.
 
+OpenVDB packaging decisions:
+
+- Package OpenVDB 13.0.0 as `openvdb-lib`, `openvdb-dev`, `openvdb-tools`, `openvdb-guitools`, `openvdb-python`, `nanovdb-dev`, `nanovdb-tools`, `nanovdb-openvdb-tools`, `nanovdb`, and a compatibility/default `openvdb` metapackage.
+- The `openvdb` metapackage should depend on the C++ runtime, development surface, and core command-line tools only; keep Python bindings, GUI/render tools, and NanoVDB opt-in.
+- Build `openvdb-python` for Python 3.11, 3.12, 3.13, and 3.14.
+- Keep AX, `vdb_tool`, Houdini, Maya, docs, and upstream unit tests disabled unless Anders explicitly asks for them.
+- Package `openvdb-tools` with non-GUI tools only: `vdb_print` and `vdb_lod`.
+- Package `openvdb-guitools` with `vdb_view` and `vdb_render`; enable PNG and OpenEXR support for `vdb_render`.
+- Package standalone NanoVDB as `nanovdb-dev`, `nanovdb-tools`, and a default `nanovdb` metapackage that does not depend on OpenVDB.
+- Package OpenVDB-dependent NanoVDB conversion separately as `nanovdb-openvdb-tools`.
+- Pin OpenVDB and NanoVDB builds to the TBB 2022 line for now (`>=2022.3,<2023`); OpenVDB 13.0.0 fails to compile with conda-forge `tbb-devel` 2023 because its `tbb::task::self()` fallback is selected against headers where that API is gone.
+
 
 libuhdr packaging decisions:
 

@@ -1,0 +1,26 @@
+cmake_minimum_required(VERSION 3.20)
+project(openvdb_consumers LANGUAGES CXX)
+
+option(BUILD_OPENVDB_CONSUMER "Build the OpenVDB CMake consumer test" ON)
+option(BUILD_NANOVDB_CONSUMER "Build the NanoVDB header consumer test" ON)
+
+if(DEFINED ENV{LIBRARY_PREFIX})
+  set(PACKAGE_PREFIX "$ENV{LIBRARY_PREFIX}")
+else()
+  set(PACKAGE_PREFIX "$ENV{PREFIX}")
+endif()
+
+if(BUILD_OPENVDB_CONSUMER)
+  add_executable(openvdb_consumer openvdb_consumer.cpp)
+  find_package(OpenVDB 13.0.0 REQUIRED CONFIG)
+  target_link_libraries(openvdb_consumer PRIVATE OpenVDB::openvdb)
+  target_compile_features(openvdb_consumer PRIVATE cxx_std_17)
+endif()
+
+if(BUILD_NANOVDB_CONSUMER)
+  add_executable(nanovdb_consumer nanovdb_consumer.cpp)
+  target_include_directories(nanovdb_consumer PRIVATE "${PACKAGE_PREFIX}/include")
+  find_package(TBB REQUIRED COMPONENTS tbb)
+  target_link_libraries(nanovdb_consumer PRIVATE TBB::tbb)
+  target_compile_features(nanovdb_consumer PRIVATE cxx_std_17)
+endif()

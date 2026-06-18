@@ -1,0 +1,1090 @@
+context:
+  version: "13.0.0"
+  build_number: 0
+
+recipe:
+  name: openvdb
+  version: ${{ version }}
+
+source:
+  url: https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 4d6a91df5f347017496fe8d22c3dbb7c4b5d7289499d4eb4d53dd2c75bb454e1
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: openvdb-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DOPENVDB_BUILD_CORE=ON \
+              -DOPENVDB_CORE_SHARED=ON \
+              -DOPENVDB_CORE_STATIC=OFF \
+              -DOPENVDB_BUILD_BINARIES=ON \
+              -DOPENVDB_BUILD_VDB_PRINT=ON \
+              -DOPENVDB_BUILD_VDB_LOD=ON \
+              -DOPENVDB_BUILD_VDB_RENDER=OFF \
+              -DOPENVDB_BUILD_VDB_VIEW=OFF \
+              -DOPENVDB_BUILD_VDB_TOOL=OFF \
+              -DOPENVDB_BUILD_VDB_AX=OFF \
+              -DOPENVDB_BUILD_PYTHON_MODULE=OFF \
+              -DOPENVDB_BUILD_UNITTESTS=OFF \
+              -DOPENVDB_BUILD_DOCS=OFF \
+              -DOPENVDB_BUILD_HOUDINI_PLUGIN=OFF \
+              -DOPENVDB_BUILD_MAYA_PLUGIN=OFF \
+              -DOPENVDB_BUILD_AX=OFF \
+              -DOPENVDB_BUILD_NANOVDB=OFF \
+              -DOPENVDB_INSTALL_CMAKE_MODULES=ON \
+              -DOPENVDB_ENABLE_UNINSTALL=OFF \
+              -DUSE_BLOSC=ON \
+              -DUSE_ZLIB=ON \
+              -DUSE_TBB=ON \
+              -DUSE_LOG4CPLUS=OFF \
+              -DUSE_EXR=OFF \
+              -DUSE_IMATH_HALF=OFF \
+              -DUSE_PNG=OFF \
+              -DUSE_AX=OFF \
+              -DUSE_NANOVDB=OFF \
+              -DUSE_CCACHE=OFF \
+              -DCONCURRENT_MALLOC=None \
+              -DTBB_ROOT=$PREFIX \
+              -DBoost_ROOT=$PREFIX \
+              -DBlosc_ROOT=$PREFIX \
+              -B $SRC_DIR/../build \
+              -S .
+
+            cmake --build $SRC_DIR/../build --target install
+
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake -DOPENVDB_CONFIG_PREFIX="$PREFIX" \
+              -DOPENVDB_CONFIG_VERSION="${{ version }}" \
+              -P "$recipe_dir/cmake/install-openvdb-config.cmake"
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DOPENVDB_BUILD_CORE=ON ^
+              -DOPENVDB_CORE_SHARED=ON ^
+              -DOPENVDB_CORE_STATIC=OFF ^
+              -DOPENVDB_BUILD_BINARIES=ON ^
+              -DOPENVDB_BUILD_VDB_PRINT=ON ^
+              -DOPENVDB_BUILD_VDB_LOD=ON ^
+              -DOPENVDB_BUILD_VDB_RENDER=OFF ^
+              -DOPENVDB_BUILD_VDB_VIEW=OFF ^
+              -DOPENVDB_BUILD_VDB_TOOL=OFF ^
+              -DOPENVDB_BUILD_VDB_AX=OFF ^
+              -DOPENVDB_BUILD_PYTHON_MODULE=OFF ^
+              -DOPENVDB_BUILD_UNITTESTS=OFF ^
+              -DOPENVDB_BUILD_DOCS=OFF ^
+              -DOPENVDB_BUILD_HOUDINI_PLUGIN=OFF ^
+              -DOPENVDB_BUILD_MAYA_PLUGIN=OFF ^
+              -DOPENVDB_BUILD_AX=OFF ^
+              -DOPENVDB_BUILD_NANOVDB=OFF ^
+              -DOPENVDB_INSTALL_CMAKE_MODULES=ON ^
+              -DOPENVDB_ENABLE_UNINSTALL=OFF ^
+              -DUSE_BLOSC=ON ^
+              -DUSE_ZLIB=ON ^
+              -DUSE_TBB=ON ^
+              -DUSE_LOG4CPLUS=OFF ^
+              -DUSE_EXR=OFF ^
+              -DUSE_IMATH_HALF=OFF ^
+              -DUSE_PNG=OFF ^
+              -DUSE_AX=OFF ^
+              -DUSE_NANOVDB=OFF ^
+              -DUSE_CCACHE=OFF ^
+              -DCONCURRENT_MALLOC=None ^
+              -DTBB_ROOT=%LIBRARY_PREFIX% ^
+              -DBoost_ROOT=%LIBRARY_PREFIX% ^
+              -DBlosc_ROOT=%LIBRARY_PREFIX% ^
+              -B %SRC_DIR%\..\build ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build --target install --config Release
+
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake -DOPENVDB_CONFIG_PREFIX="%LIBRARY_PREFIX%" ^
+              -DOPENVDB_CONFIG_VERSION="${{ version }}" ^
+              -P "%RECIPE_DIR_VAR%\cmake\install-openvdb-config.cmake"
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - blosc
+        - libboost-devel
+        - tbb-devel >=2022.3,<2023
+        - zlib
+
+  - staging:
+      name: openvdb-guitools-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-guitools
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DOPENVDB_BUILD_CORE=ON \
+              -DOPENVDB_CORE_SHARED=ON \
+              -DOPENVDB_CORE_STATIC=OFF \
+              -DOPENVDB_BUILD_BINARIES=ON \
+              -DOPENVDB_BUILD_VDB_PRINT=OFF \
+              -DOPENVDB_BUILD_VDB_LOD=OFF \
+              -DOPENVDB_BUILD_VDB_RENDER=ON \
+              -DOPENVDB_BUILD_VDB_VIEW=ON \
+              -DOPENVDB_BUILD_VDB_TOOL=OFF \
+              -DOPENVDB_BUILD_VDB_AX=OFF \
+              -DOPENVDB_BUILD_PYTHON_MODULE=OFF \
+              -DOPENVDB_BUILD_UNITTESTS=OFF \
+              -DOPENVDB_BUILD_DOCS=OFF \
+              -DOPENVDB_BUILD_HOUDINI_PLUGIN=OFF \
+              -DOPENVDB_BUILD_MAYA_PLUGIN=OFF \
+              -DOPENVDB_BUILD_AX=OFF \
+              -DOPENVDB_BUILD_NANOVDB=OFF \
+              -DOPENVDB_INSTALL_CMAKE_MODULES=OFF \
+              -DOPENVDB_ENABLE_UNINSTALL=OFF \
+              -DUSE_BLOSC=ON \
+              -DUSE_ZLIB=ON \
+              -DUSE_TBB=ON \
+              -DUSE_LOG4CPLUS=OFF \
+              -DUSE_EXR=ON \
+              -DUSE_IMATH_HALF=OFF \
+              -DUSE_PNG=ON \
+              -DUSE_AX=OFF \
+              -DUSE_NANOVDB=OFF \
+              -DUSE_CCACHE=OFF \
+              -DCONCURRENT_MALLOC=None \
+              -DTBB_ROOT=$PREFIX \
+              -DBoost_ROOT=$PREFIX \
+              -DBlosc_ROOT=$PREFIX \
+              -B $SRC_DIR/../build-guitools \
+              -S .
+
+            cmake --build $SRC_DIR/../build-guitools --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-guitools
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DOPENVDB_BUILD_CORE=ON ^
+              -DOPENVDB_CORE_SHARED=ON ^
+              -DOPENVDB_CORE_STATIC=OFF ^
+              -DOPENVDB_BUILD_BINARIES=ON ^
+              -DOPENVDB_BUILD_VDB_PRINT=OFF ^
+              -DOPENVDB_BUILD_VDB_LOD=OFF ^
+              -DOPENVDB_BUILD_VDB_RENDER=ON ^
+              -DOPENVDB_BUILD_VDB_VIEW=ON ^
+              -DOPENVDB_BUILD_VDB_TOOL=OFF ^
+              -DOPENVDB_BUILD_VDB_AX=OFF ^
+              -DOPENVDB_BUILD_PYTHON_MODULE=OFF ^
+              -DOPENVDB_BUILD_UNITTESTS=OFF ^
+              -DOPENVDB_BUILD_DOCS=OFF ^
+              -DOPENVDB_BUILD_HOUDINI_PLUGIN=OFF ^
+              -DOPENVDB_BUILD_MAYA_PLUGIN=OFF ^
+              -DOPENVDB_BUILD_AX=OFF ^
+              -DOPENVDB_BUILD_NANOVDB=OFF ^
+              -DOPENVDB_INSTALL_CMAKE_MODULES=OFF ^
+              -DOPENVDB_ENABLE_UNINSTALL=OFF ^
+              -DUSE_BLOSC=ON ^
+              -DUSE_ZLIB=ON ^
+              -DUSE_TBB=ON ^
+              -DUSE_LOG4CPLUS=OFF ^
+              -DUSE_EXR=ON ^
+              -DUSE_IMATH_HALF=OFF ^
+              -DUSE_PNG=ON ^
+              -DUSE_AX=OFF ^
+              -DUSE_NANOVDB=OFF ^
+              -DUSE_CCACHE=OFF ^
+              -DCONCURRENT_MALLOC=None ^
+              -DTBB_ROOT=%LIBRARY_PREFIX% ^
+              -DBoost_ROOT=%LIBRARY_PREFIX% ^
+              -DBlosc_ROOT=%LIBRARY_PREFIX% ^
+              -B %SRC_DIR%\..\build-guitools ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-guitools --target install --config Release
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - blosc
+        - glfw
+        - libboost-devel
+        - libpng
+        - openexr-dev 3.4.*
+        - tbb-devel >=2022.3,<2023
+        - zlib
+        - if: linux
+          then: libgl-devel
+        - if: linux
+          then: libglu
+        - if: win
+          then: glew
+
+  - staging:
+      name: openvdb-python-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-python
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DOPENVDB_BUILD_CORE=ON \
+              -DOPENVDB_CORE_SHARED=ON \
+              -DOPENVDB_CORE_STATIC=OFF \
+              -DOPENVDB_BUILD_BINARIES=OFF \
+              -DOPENVDB_BUILD_PYTHON_MODULE=ON \
+              -DOPENVDB_PYTHON_WRAP_ALL_GRID_TYPES=OFF \
+              -DOPENVDB_PYTHON_USE_AX=OFF \
+              -DOPENVDB_BUILD_PYTHON_UNITTESTS=OFF \
+              -DOPENVDB_BUILD_UNITTESTS=OFF \
+              -DOPENVDB_BUILD_DOCS=OFF \
+              -DOPENVDB_BUILD_HOUDINI_PLUGIN=OFF \
+              -DOPENVDB_BUILD_MAYA_PLUGIN=OFF \
+              -DOPENVDB_BUILD_AX=OFF \
+              -DOPENVDB_BUILD_NANOVDB=OFF \
+              -DOPENVDB_INSTALL_CMAKE_MODULES=ON \
+              -DOPENVDB_ENABLE_UNINSTALL=OFF \
+              -DUSE_BLOSC=ON \
+              -DUSE_ZLIB=ON \
+              -DUSE_TBB=ON \
+              -DUSE_LOG4CPLUS=OFF \
+              -DUSE_EXR=OFF \
+              -DUSE_IMATH_HALF=OFF \
+              -DUSE_PNG=OFF \
+              -DUSE_AX=OFF \
+              -DUSE_NANOVDB=OFF \
+              -DUSE_CCACHE=OFF \
+              -DCONCURRENT_MALLOC=None \
+              -DTBB_ROOT=$PREFIX \
+              -DBoost_ROOT=$PREFIX \
+              -DBlosc_ROOT=$PREFIX \
+              -DPython_EXECUTABLE=$PYTHON \
+              -DPython_ROOT_DIR=$PREFIX \
+              -DPython_FIND_STRATEGY=LOCATION \
+              -DPython_FIND_REGISTRY=NEVER \
+              -DPython_FIND_FRAMEWORK=NEVER \
+              -Dnanobind_DIR=$SP_DIR/nanobind/cmake \
+              -DVDB_PYTHON_INSTALL_DIRECTORY=$SP_DIR \
+              -B $SRC_DIR/../build-python \
+              -S .
+
+            cmake --build $SRC_DIR/../build-python --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-python
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DOPENVDB_BUILD_CORE=ON ^
+              -DOPENVDB_CORE_SHARED=ON ^
+              -DOPENVDB_CORE_STATIC=OFF ^
+              -DOPENVDB_BUILD_BINARIES=OFF ^
+              -DOPENVDB_BUILD_PYTHON_MODULE=ON ^
+              -DOPENVDB_PYTHON_WRAP_ALL_GRID_TYPES=OFF ^
+              -DOPENVDB_PYTHON_USE_AX=OFF ^
+              -DOPENVDB_BUILD_PYTHON_UNITTESTS=OFF ^
+              -DOPENVDB_BUILD_UNITTESTS=OFF ^
+              -DOPENVDB_BUILD_DOCS=OFF ^
+              -DOPENVDB_BUILD_HOUDINI_PLUGIN=OFF ^
+              -DOPENVDB_BUILD_MAYA_PLUGIN=OFF ^
+              -DOPENVDB_BUILD_AX=OFF ^
+              -DOPENVDB_BUILD_NANOVDB=OFF ^
+              -DOPENVDB_INSTALL_CMAKE_MODULES=ON ^
+              -DOPENVDB_ENABLE_UNINSTALL=OFF ^
+              -DUSE_BLOSC=ON ^
+              -DUSE_ZLIB=ON ^
+              -DUSE_TBB=ON ^
+              -DUSE_LOG4CPLUS=OFF ^
+              -DUSE_EXR=OFF ^
+              -DUSE_IMATH_HALF=OFF ^
+              -DUSE_PNG=OFF ^
+              -DUSE_AX=OFF ^
+              -DUSE_NANOVDB=OFF ^
+              -DUSE_CCACHE=OFF ^
+              -DCONCURRENT_MALLOC=None ^
+              -DTBB_ROOT=%LIBRARY_PREFIX% ^
+              -DBoost_ROOT=%LIBRARY_PREFIX% ^
+              -DBlosc_ROOT=%LIBRARY_PREFIX% ^
+              -DPython_EXECUTABLE=%PYTHON% ^
+              -DPython_ROOT_DIR=%PREFIX% ^
+              -DPython_FIND_STRATEGY=LOCATION ^
+              -DPython_FIND_REGISTRY=NEVER ^
+              -DPython_FIND_FRAMEWORK=NEVER ^
+              -Dnanobind_DIR=%SP_DIR%\nanobind\cmake ^
+              -DVDB_PYTHON_INSTALL_DIRECTORY=%SP_DIR% ^
+              -B %SRC_DIR%\..\build-python ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-python --target install --config Release
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - blosc
+        - libboost-devel
+        - nanobind
+        - numpy
+        - python
+        - tbb-devel >=2022.3,<2023
+        - zlib
+
+  - staging:
+      name: nanovdb-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-nanovdb
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DOPENVDB_BUILD_CORE=OFF \
+              -DOPENVDB_BUILD_BINARIES=OFF \
+              -DOPENVDB_BUILD_PYTHON_MODULE=OFF \
+              -DOPENVDB_BUILD_UNITTESTS=OFF \
+              -DOPENVDB_BUILD_DOCS=OFF \
+              -DOPENVDB_BUILD_HOUDINI_PLUGIN=OFF \
+              -DOPENVDB_BUILD_MAYA_PLUGIN=OFF \
+              -DOPENVDB_BUILD_AX=OFF \
+              -DOPENVDB_BUILD_NANOVDB=ON \
+              -DOPENVDB_ENABLE_UNINSTALL=OFF \
+              -DUSE_BLOSC=ON \
+              -DUSE_ZLIB=ON \
+              -DUSE_TBB=ON \
+              -DUSE_LOG4CPLUS=OFF \
+              -DUSE_EXR=OFF \
+              -DUSE_IMATH_HALF=OFF \
+              -DUSE_PNG=OFF \
+              -DUSE_AX=OFF \
+              -DUSE_NANOVDB=ON \
+              -DUSE_CCACHE=OFF \
+              -DNANOVDB_BUILD_TOOLS=ON \
+              -DNANOVDB_BUILD_UNITTESTS=OFF \
+              -DNANOVDB_BUILD_EXAMPLES=OFF \
+              -DNANOVDB_BUILD_PYTHON_MODULE=OFF \
+              -DNANOVDB_USE_OPENVDB=OFF \
+              -DNANOVDB_USE_BLOSC=ON \
+              -DNANOVDB_USE_ZLIB=ON \
+              -DNANOVDB_USE_TBB=ON \
+              -DNANOVDB_USE_CUDA=OFF \
+              -DNANOVDB_USE_MAGICAVOXEL=OFF \
+              -DNANOVDB_ALLOW_FETCHCONTENT=OFF \
+              -DTBB_ROOT=$PREFIX \
+              -DBlosc_ROOT=$PREFIX \
+              -B $SRC_DIR/../build-nanovdb \
+              -S .
+
+            cmake --build $SRC_DIR/../build-nanovdb --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-nanovdb
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DOPENVDB_BUILD_CORE=OFF ^
+              -DOPENVDB_BUILD_BINARIES=OFF ^
+              -DOPENVDB_BUILD_PYTHON_MODULE=OFF ^
+              -DOPENVDB_BUILD_UNITTESTS=OFF ^
+              -DOPENVDB_BUILD_DOCS=OFF ^
+              -DOPENVDB_BUILD_HOUDINI_PLUGIN=OFF ^
+              -DOPENVDB_BUILD_MAYA_PLUGIN=OFF ^
+              -DOPENVDB_BUILD_AX=OFF ^
+              -DOPENVDB_BUILD_NANOVDB=ON ^
+              -DOPENVDB_ENABLE_UNINSTALL=OFF ^
+              -DUSE_BLOSC=ON ^
+              -DUSE_ZLIB=ON ^
+              -DUSE_TBB=ON ^
+              -DUSE_LOG4CPLUS=OFF ^
+              -DUSE_EXR=OFF ^
+              -DUSE_IMATH_HALF=OFF ^
+              -DUSE_PNG=OFF ^
+              -DUSE_AX=OFF ^
+              -DUSE_NANOVDB=ON ^
+              -DUSE_CCACHE=OFF ^
+              -DNANOVDB_BUILD_TOOLS=ON ^
+              -DNANOVDB_BUILD_UNITTESTS=OFF ^
+              -DNANOVDB_BUILD_EXAMPLES=OFF ^
+              -DNANOVDB_BUILD_PYTHON_MODULE=OFF ^
+              -DNANOVDB_USE_OPENVDB=OFF ^
+              -DNANOVDB_USE_BLOSC=ON ^
+              -DNANOVDB_USE_ZLIB=ON ^
+              -DNANOVDB_USE_TBB=ON ^
+              -DNANOVDB_USE_CUDA=OFF ^
+              -DNANOVDB_USE_MAGICAVOXEL=OFF ^
+              -DNANOVDB_ALLOW_FETCHCONTENT=OFF ^
+              -DTBB_ROOT=%LIBRARY_PREFIX% ^
+              -DBlosc_ROOT=%LIBRARY_PREFIX% ^
+              -B %SRC_DIR%\..\build-nanovdb ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-nanovdb --target install --config Release
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - blosc
+        - tbb-devel >=2022.3,<2023
+        - zlib
+
+  - staging:
+      name: nanovdb-openvdb-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-nanovdb-openvdb
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DOPENVDB_BUILD_CORE=ON \
+              -DOPENVDB_CORE_SHARED=ON \
+              -DOPENVDB_CORE_STATIC=OFF \
+              -DOPENVDB_BUILD_BINARIES=OFF \
+              -DOPENVDB_BUILD_PYTHON_MODULE=OFF \
+              -DOPENVDB_BUILD_UNITTESTS=OFF \
+              -DOPENVDB_BUILD_DOCS=OFF \
+              -DOPENVDB_BUILD_HOUDINI_PLUGIN=OFF \
+              -DOPENVDB_BUILD_MAYA_PLUGIN=OFF \
+              -DOPENVDB_BUILD_AX=OFF \
+              -DOPENVDB_BUILD_NANOVDB=ON \
+              -DOPENVDB_INSTALL_CMAKE_MODULES=OFF \
+              -DOPENVDB_ENABLE_UNINSTALL=OFF \
+              -DUSE_BLOSC=ON \
+              -DUSE_ZLIB=ON \
+              -DUSE_TBB=ON \
+              -DUSE_LOG4CPLUS=OFF \
+              -DUSE_EXR=OFF \
+              -DUSE_IMATH_HALF=OFF \
+              -DUSE_PNG=OFF \
+              -DUSE_AX=OFF \
+              -DUSE_NANOVDB=ON \
+              -DUSE_CCACHE=OFF \
+              -DNANOVDB_BUILD_TOOLS=ON \
+              -DNANOVDB_BUILD_UNITTESTS=OFF \
+              -DNANOVDB_BUILD_EXAMPLES=OFF \
+              -DNANOVDB_BUILD_PYTHON_MODULE=OFF \
+              -DNANOVDB_USE_OPENVDB=ON \
+              -DNANOVDB_USE_BLOSC=ON \
+              -DNANOVDB_USE_ZLIB=ON \
+              -DNANOVDB_USE_TBB=ON \
+              -DNANOVDB_USE_CUDA=OFF \
+              -DNANOVDB_USE_MAGICAVOXEL=OFF \
+              -DNANOVDB_ALLOW_FETCHCONTENT=OFF \
+              -DCONCURRENT_MALLOC=None \
+              -DTBB_ROOT=$PREFIX \
+              -DBoost_ROOT=$PREFIX \
+              -DBlosc_ROOT=$PREFIX \
+              -B $SRC_DIR/../build-nanovdb-openvdb \
+              -S .
+
+            cmake --build $SRC_DIR/../build-nanovdb-openvdb --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-nanovdb-openvdb
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DOPENVDB_BUILD_CORE=ON ^
+              -DOPENVDB_CORE_SHARED=ON ^
+              -DOPENVDB_CORE_STATIC=OFF ^
+              -DOPENVDB_BUILD_BINARIES=OFF ^
+              -DOPENVDB_BUILD_PYTHON_MODULE=OFF ^
+              -DOPENVDB_BUILD_UNITTESTS=OFF ^
+              -DOPENVDB_BUILD_DOCS=OFF ^
+              -DOPENVDB_BUILD_HOUDINI_PLUGIN=OFF ^
+              -DOPENVDB_BUILD_MAYA_PLUGIN=OFF ^
+              -DOPENVDB_BUILD_AX=OFF ^
+              -DOPENVDB_BUILD_NANOVDB=ON ^
+              -DOPENVDB_INSTALL_CMAKE_MODULES=OFF ^
+              -DOPENVDB_ENABLE_UNINSTALL=OFF ^
+              -DUSE_BLOSC=ON ^
+              -DUSE_ZLIB=ON ^
+              -DUSE_TBB=ON ^
+              -DUSE_LOG4CPLUS=OFF ^
+              -DUSE_EXR=OFF ^
+              -DUSE_IMATH_HALF=OFF ^
+              -DUSE_PNG=OFF ^
+              -DUSE_AX=OFF ^
+              -DUSE_NANOVDB=ON ^
+              -DUSE_CCACHE=OFF ^
+              -DNANOVDB_BUILD_TOOLS=ON ^
+              -DNANOVDB_BUILD_UNITTESTS=OFF ^
+              -DNANOVDB_BUILD_EXAMPLES=OFF ^
+              -DNANOVDB_BUILD_PYTHON_MODULE=OFF ^
+              -DNANOVDB_USE_OPENVDB=ON ^
+              -DNANOVDB_USE_BLOSC=ON ^
+              -DNANOVDB_USE_ZLIB=ON ^
+              -DNANOVDB_USE_TBB=ON ^
+              -DNANOVDB_USE_CUDA=OFF ^
+              -DNANOVDB_USE_MAGICAVOXEL=OFF ^
+              -DNANOVDB_ALLOW_FETCHCONTENT=OFF ^
+              -DCONCURRENT_MALLOC=None ^
+              -DTBB_ROOT=%LIBRARY_PREFIX% ^
+              -DBoost_ROOT=%LIBRARY_PREFIX% ^
+              -DBlosc_ROOT=%LIBRARY_PREFIX% ^
+              -B %SRC_DIR%\..\build-nanovdb-openvdb ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-nanovdb-openvdb --target install --config Release
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - blosc
+        - libboost-devel
+        - tbb-devel >=2022.3,<2023
+        - zlib
+
+  - package:
+      name: openvdb-lib
+    inherit: openvdb-build
+    build:
+      files:
+        - lib/libopenvdb*.so*
+        - lib/libopenvdb*.dylib*
+        - Library/bin/openvdb*.dll
+    requirements:
+      run:
+        - blosc
+        - libboost
+        - libzlib
+        - tbb >=2022.3,<2023
+      run_constraints:
+        - tbb >=2022.3,<2023
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openvdb-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/openvdb/openvdb.h
+              - include/nanovdb/NanoVDB.h
+              - lib/cmake/OpenVDB/FindOpenVDB.cmake
+              - bin/vdb_print
+              - bin/vdb_view
+              - Library/include/openvdb/openvdb.h
+              - Library/include/nanovdb/NanoVDB.h
+              - Library/lib/cmake/OpenVDB/FindOpenVDB.cmake
+              - Library/bin/vdb_print.exe
+              - Library/bin/vdb_view.exe
+      - script:
+          - if: linux
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libopenvdb.so*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: osx
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libopenvdb*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: win
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'openvdb*.dll')); assert paths; ctypes.WinDLL(paths[0])"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: openvdb-dev
+    inherit: openvdb-build
+    build:
+      files:
+        - include/openvdb/**
+        - lib/cmake/OpenVDB/**
+        - Library/include/openvdb/**
+        - Library/lib/openvdb*.lib
+        - Library/lib/cmake/OpenVDB/**
+    requirements:
+      run:
+        - ${{ pin_subpackage('openvdb-lib', exact=True) }}
+        - tbb >=2022.3,<2023
+        - blosc
+        - libboost-devel
+        - tbb-devel >=2022.3,<2023
+        - zlib
+      run_constraints:
+        - tbb >=2022.3,<2023
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openvdb-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - openvdb/openvdb.h
+            - openvdb/version.h
+          files:
+            not_exists:
+              - include/nanovdb/NanoVDB.h
+              - bin/vdb_print
+              - Library/include/nanovdb/NanoVDB.h
+              - Library/bin/vdb_print.exe
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenVDB/OpenVDBConfig.cmake"
+              - test -f "$PREFIX/lib/cmake/OpenVDB/FindOpenVDB.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DBUILD_NANOVDB_CONSUMER=OFF
+              - cmake --build build --target openvdb_consumer
+              - ./build/openvdb_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OpenVDB\OpenVDBConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\cmake\OpenVDB\FindOpenVDB.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DBUILD_NANOVDB_CONSUMER=OFF
+              - cmake --build build --target openvdb_consumer --config Release
+              - build\openvdb_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openvdb_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: openvdb-tools
+    inherit: openvdb-build
+    build:
+      files:
+        - bin/vdb_print
+        - bin/vdb_lod
+        - Library/bin/vdb_print.exe
+        - Library/bin/vdb_lod.exe
+    requirements:
+      run:
+        - ${{ pin_subpackage('openvdb-lib', exact=True) }}
+        - tbb >=2022.3,<2023
+      run_constraints:
+        - tbb >=2022.3,<2023
+    tests:
+      - script:
+          - vdb_print --version
+          - vdb_lod --version
+          - if: unix
+            then:
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DBUILD_NANOVDB_CONSUMER=OFF
+              - cmake --build build --target openvdb_consumer
+              - ./build/openvdb_consumer recipe-test.vdb
+              - vdb_print recipe-test.vdb
+              - vdb_lod recipe-test.vdb recipe-test-lod.vdb -range 0-1
+              - test -s recipe-test-lod.vdb
+              - test ! -e "$PREFIX/bin/vdb_render"
+              - test ! -e "$PREFIX/bin/vdb_view"
+          - if: win
+            then:
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DBUILD_NANOVDB_CONSUMER=OFF
+              - cmake --build build --target openvdb_consumer --config Release
+              - build\openvdb_consumer.exe recipe-test.vdb
+              - vdb_print recipe-test.vdb
+              - vdb_lod recipe-test.vdb recipe-test-lod.vdb -range 0-1
+              - if not exist recipe-test-lod.vdb exit /b 1
+              - for %%I in (recipe-test-lod.vdb) do if %%~zI LEQ 0 exit /b 1
+              - if exist "%LIBRARY_BIN%\vdb_render.exe" exit /b 1
+              - if exist "%LIBRARY_BIN%\vdb_view.exe" exit /b 1
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openvdb_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - ${{ pin_subpackage('openvdb-dev', exact=True) }}
+
+  - package:
+      name: openvdb-guitools
+    inherit: openvdb-guitools-build
+    build:
+      files:
+        - bin/vdb_render
+        - bin/vdb_view
+        - Library/bin/vdb_render.exe
+        - Library/bin/vdb_view.exe
+    requirements:
+      run:
+        - ${{ pin_subpackage('openvdb-lib', exact=True) }}
+        - glfw
+        - libpng
+        - openexr-lib 3.4.*
+        - tbb >=2022.3,<2023
+        - if: linux
+          then: libgl
+        - if: linux
+          then: libglu
+        - if: win
+          then: glew
+      run_constraints:
+        - tbb >=2022.3,<2023
+    tests:
+      - script:
+          - vdb_render --version
+          - if: unix
+            then:
+              - test -x "$PREFIX/bin/vdb_view"
+              - vdb_render -help 2>&1 | grep "ppm,exr,png"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DBUILD_NANOVDB_CONSUMER=OFF
+              - cmake --build build --target openvdb_consumer
+              - ./build/openvdb_consumer recipe-test.vdb
+              - vdb_render recipe-test.vdb render-test.png -res 8x8 -cpus 1 -samples 1
+              - test -s render-test.png
+              - vdb_render recipe-test.vdb render-test.exr -res 8x8 -cpus 1 -samples 1
+              - test -s render-test.exr
+              - test ! -e "$PREFIX/bin/vdb_print"
+              - test ! -e "$PREFIX/bin/vdb_lod"
+          - if: win
+            then:
+              - if not exist "%LIBRARY_BIN%\vdb_view.exe" exit /b 1
+              - vdb_render -help 2>&1 | findstr /C:"ppm,exr,png"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DBUILD_NANOVDB_CONSUMER=OFF
+              - cmake --build build --target openvdb_consumer --config Release
+              - build\openvdb_consumer.exe recipe-test.vdb
+              - vdb_render recipe-test.vdb render-test.png -res 8x8 -cpus 1 -samples 1
+              - if not exist render-test.png exit /b 1
+              - for %%I in (render-test.png) do if %%~zI LEQ 0 exit /b 1
+              - vdb_render recipe-test.vdb render-test.exr -res 8x8 -cpus 1 -samples 1
+              - if not exist render-test.exr exit /b 1
+              - for %%I in (render-test.exr) do if %%~zI LEQ 0 exit /b 1
+              - if exist "%LIBRARY_BIN%\vdb_print.exe" exit /b 1
+              - if exist "%LIBRARY_BIN%\vdb_lod.exe" exit /b 1
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openvdb_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - ${{ pin_subpackage('openvdb-dev', exact=True) }}
+
+  - package:
+      name: openvdb-python
+    inherit: openvdb-python-build
+    build:
+      string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+      files:
+        - lib/python*/site-packages/openvdb*.so
+        - Lib/site-packages/openvdb*.pyd
+    requirements:
+      run:
+        - ${{ pin_subpackage('openvdb-lib', exact=True) }}
+        - numpy
+        - python
+        - tbb >=2022.3,<2023
+      run_constraints:
+        - tbb >=2022.3,<2023
+    tests:
+      - python:
+          imports:
+            - openvdb
+      - script:
+          - python -c "import openvdb; grid = openvdb.FloatGrid(); assert grid is not None; assert openvdb.FloatGrid"
+          - if: unix
+            then:
+              - test ! -e "$PREFIX/bin/vdb_print"
+          - if: win
+            then:
+              - if exist "%LIBRARY_BIN%\vdb_print.exe" exit /b 1
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: nanovdb-dev
+    inherit: nanovdb-build
+    build:
+      files:
+        - include/nanovdb/**
+        - Library/include/nanovdb/**
+    requirements:
+      run:
+        - tbb >=2022.3,<2023
+        - tbb-devel >=2022.3,<2023
+      run_constraints:
+        - tbb >=2022.3,<2023
+    tests:
+      - package_contents:
+          include:
+            - nanovdb/NanoVDB.h
+            - nanovdb/GridHandle.h
+          files:
+            not_exists:
+              - include/openvdb/openvdb.h
+              - bin/nanovdb_print
+              - bin/nanovdb_convert
+              - Library/include/openvdb/openvdb.h
+              - Library/bin/nanovdb_print.exe
+              - Library/bin/nanovdb_convert.exe
+      - script:
+          - if: unix
+            then:
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DBUILD_OPENVDB_CONSUMER=OFF
+              - cmake --build build --target nanovdb_consumer
+              - ./build/nanovdb_consumer
+          - if: win
+            then:
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DBUILD_OPENVDB_CONSUMER=OFF
+              - cmake --build build --target nanovdb_consumer --config Release
+              - build\nanovdb_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/nanovdb_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: nanovdb-tools
+    inherit: nanovdb-build
+    build:
+      files:
+        - bin/nanovdb_print
+        - bin/nanovdb_validate
+        - Library/bin/nanovdb_print.exe
+        - Library/bin/nanovdb_validate.exe
+    requirements:
+      run:
+        - blosc
+        - libzlib
+        - tbb >=2022.3,<2023
+      run_constraints:
+        - tbb >=2022.3,<2023
+    tests:
+      - script:
+          - nanovdb_print --help
+          - nanovdb_validate --help
+          - if: unix
+            then:
+              - test ! -e "$PREFIX/bin/nanovdb_convert"
+          - if: win
+            then:
+              - if exist "%LIBRARY_BIN%\nanovdb_convert.exe" exit /b 1
+
+  - package:
+      name: nanovdb-openvdb-tools
+    inherit: nanovdb-openvdb-build
+    build:
+      files:
+        - bin/nanovdb_convert
+        - Library/bin/nanovdb_convert.exe
+    requirements:
+      run:
+        - ${{ pin_subpackage('openvdb-lib', exact=True) }}
+        - tbb >=2022.3,<2023
+      run_constraints:
+        - tbb >=2022.3,<2023
+    tests:
+      - script:
+          - nanovdb_convert --help
+          - if: unix
+            then:
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DBUILD_NANOVDB_CONSUMER=OFF
+              - cmake --build build --target openvdb_consumer
+              - ./build/openvdb_consumer recipe-test.vdb
+              - nanovdb_convert -f recipe-test.vdb recipe-test.nvdb
+              - test -s recipe-test.nvdb
+              - test ! -e "$PREFIX/bin/nanovdb_print"
+              - test ! -e "$PREFIX/bin/nanovdb_validate"
+          - if: win
+            then:
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DBUILD_NANOVDB_CONSUMER=OFF
+              - cmake --build build --target openvdb_consumer --config Release
+              - build\openvdb_consumer.exe recipe-test.vdb
+              - nanovdb_convert -f recipe-test.vdb recipe-test.nvdb
+              - if not exist recipe-test.nvdb exit /b 1
+              - for %%I in (recipe-test.nvdb) do if %%~zI LEQ 0 exit /b 1
+              - if exist "%LIBRARY_BIN%\nanovdb_print.exe" exit /b 1
+              - if exist "%LIBRARY_BIN%\nanovdb_validate.exe" exit /b 1
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openvdb_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - ${{ pin_subpackage('openvdb-dev', exact=True) }}
+
+  - package:
+      name: nanovdb
+    requirements:
+      run:
+        - ${{ pin_subpackage('nanovdb-dev', exact=True) }}
+        - ${{ pin_subpackage('nanovdb-tools', exact=True) }}
+    tests:
+      - script:
+          - nanovdb_print --help
+          - nanovdb_validate --help
+          - if: unix
+            then:
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DBUILD_OPENVDB_CONSUMER=OFF
+              - cmake --build build --target nanovdb_consumer
+              - ./build/nanovdb_consumer
+              - test ! -e "$PREFIX/bin/nanovdb_convert"
+          - if: win
+            then:
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DBUILD_OPENVDB_CONSUMER=OFF
+              - cmake --build build --target nanovdb_consumer --config Release
+              - build\nanovdb_consumer.exe
+              - if exist "%LIBRARY_BIN%\nanovdb_convert.exe" exit /b 1
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/nanovdb_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: openvdb
+    requirements:
+      run:
+        - ${{ pin_subpackage('openvdb-lib', exact=True) }}
+        - ${{ pin_subpackage('openvdb-dev', exact=True) }}
+        - ${{ pin_subpackage('openvdb-tools', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openvdb-lib', upper_bound='x.x') }}
+    tests:
+      - script:
+          - vdb_print --version
+          - vdb_lod --version
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenVDB/OpenVDBConfig.cmake"
+              - test -f "$PREFIX/lib/cmake/OpenVDB/FindOpenVDB.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DBUILD_NANOVDB_CONSUMER=OFF
+              - cmake --build build --target openvdb_consumer
+              - ./build/openvdb_consumer recipe-test.vdb
+              - vdb_print recipe-test.vdb
+              - vdb_lod recipe-test.vdb recipe-test-lod.vdb -range 0-1
+              - test -s recipe-test-lod.vdb
+              - python -c "import importlib.util; assert importlib.util.find_spec('openvdb') is None"
+              - test ! -e "$PREFIX/bin/vdb_render"
+              - test ! -e "$PREFIX/bin/vdb_view"
+              - test ! -e "$PREFIX/bin/nanovdb_print"
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OpenVDB\OpenVDBConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\cmake\OpenVDB\FindOpenVDB.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DBUILD_NANOVDB_CONSUMER=OFF
+              - cmake --build build --target openvdb_consumer --config Release
+              - build\openvdb_consumer.exe recipe-test.vdb
+              - vdb_print recipe-test.vdb
+              - vdb_lod recipe-test.vdb recipe-test-lod.vdb -range 0-1
+              - if not exist recipe-test-lod.vdb exit /b 1
+              - for %%I in (recipe-test-lod.vdb) do if %%~zI LEQ 0 exit /b 1
+              - python -c "import importlib.util; assert importlib.util.find_spec('openvdb') is None"
+              - if exist "%LIBRARY_BIN%\vdb_render.exe" exit /b 1
+              - if exist "%LIBRARY_BIN%\vdb_view.exe" exit /b 1
+              - if exist "%LIBRARY_BIN%\nanovdb_print.exe" exit /b 1
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openvdb_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - python
+
+about:
+  homepage: https://www.openvdb.org
+  repository: https://github.com/AcademySoftwareFoundation/openvdb
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - RE-LICENSE_NOTE.txt
+  summary: Sparse volume data structure and tools
