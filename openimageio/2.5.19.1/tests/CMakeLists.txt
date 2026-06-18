@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 project(OpenImageIOConsumer LANGUAGES CXX)
 
-set(OPENIMAGEIO_EXPECTED_VERSION "3.1.14.0" CACHE STRING "Expected OpenImageIO version")
+set(OPENIMAGEIO_EXPECTED_VERSION "2.5.19.1" CACHE STRING "Expected OpenImageIO version")
 find_package(OpenImageIO ${OPENIMAGEIO_EXPECTED_VERSION} EXACT CONFIG REQUIRED)
 
 add_executable(openimageio_consumer openimageio_consumer.cpp)

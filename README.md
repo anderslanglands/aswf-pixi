@@ -107,18 +107,18 @@ libuhdr is Google's reference codec for the JPEG/R gain map based Ultra HDR imag
 
 ## OpenImageIO
 
-Recipe versions: `3.1.14.0`
+Recipe versions: `2.5.19.1`, `3.0.19.1`, `3.1.14.0`
 
 OpenImageIO provides image file I/O libraries, command-line tools, texture utilities, and optional format plugins.
 
-- `openimageio-lib`: Shared OpenImageIO and OpenImageIO_Util runtime libraries with common formats embedded, including OpenEXR, TIFF, JPEG, PNG/ICO, BMP, DPX, HDR, PNM, PSD, SGI, TGA, Cineon, DDS, FITS, IFF, RLA, Softimage, Zfile, null, and terminal output. The JPEG support is built with libuhdr.
+- `openimageio-lib`: Shared OpenImageIO and OpenImageIO_Util runtime libraries with common formats embedded, including OpenEXR, TIFF, JPEG, PNG/ICO, BMP, DPX, HDR, PNM, PSD, SGI, TGA, Cineon, DDS, FITS, IFF, RLA, Softimage, Zfile, null, and terminal output. JPEG support is built with libuhdr for 3.0.19.1 and 3.1.14.0; 2.5.19.1 predates that upstream integration.
 - `openimageio-dev`: C++ headers, CMake package files, pkg-config metadata, and Windows import libraries. Depends on the matching `openimageio-lib`.
 - `openimageio-tools`: Headless command-line tools: `oiiotool`, `maketx`, `iconvert`, `idiff`, `igrep`, and `iinfo`. Depends on the matching `openimageio-lib`.
 - `openimageio-python`: Python bindings for OpenImageIO, built for Python 3.10 through 3.14. Depends on the matching `openimageio-lib`.
 - `openimageio-format-gif`: GIF format plugin.
 - `openimageio-format-webp`: WebP format plugin.
 - `openimageio-format-jpeg2000`: JPEG 2000 format plugin with OpenJPEG and OpenJPH support.
-- `openimageio-format-jpegxl`: JPEG XL format plugin.
+- `openimageio-format-jpegxl`: JPEG XL format plugin for 3.0.19.1 and 3.1.14.0. Upstream 2.5.19.1 does not provide this plugin.
 - `openimageio-format-heif`: HEIF/HEIC/AVIF format plugin.
 - `openimageio-format-raw`: LibRaw camera RAW input plugin.
 - `openimageio-format-dicom`: DICOM input plugin.

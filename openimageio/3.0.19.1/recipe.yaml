@@ -1,5 +1,5 @@
 context:
-  version: "3.1.14.0"
+  version: "3.0.19.1"
   build_number: 0
 
 recipe:
@@ -8,7 +8,7 @@ recipe:
 
 source:
   url: https://github.com/AcademySoftwareFoundation/OpenImageIO/releases/download/v${{ version }}/OpenImageIO-${{ version }}.tar.gz
-  sha256: ced98eff58fe27fc2fad5b789ee9cb43dda5f415700bb2f36229ad7fd32a6ea9
+  sha256: 1d5b5b4ac35d2c8db16b2e7759879af3f5c0c0a1f1551b5aff7c135ece697eb6
   patches:
     - patches/cmake-4-private-plugin-linking.patch
     - patches/heif-plugin-init-symbol.patch

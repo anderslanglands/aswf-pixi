@@ -115,13 +115,13 @@ libuhdr packaging decisions:
 
 OpenImageIO packaging decisions:
 
-- Package OpenImageIO 3.1.14.0 as `openimageio-lib`, `openimageio-dev`, `openimageio-tools`, `openimageio-python`, individual optional format plugin packages, and a compatibility/default `openimageio` metapackage.
+- Package OpenImageIO 2.5.19.1, 3.0.19.1, and 3.1.14.0 as `openimageio-lib`, `openimageio-dev`, `openimageio-tools`, `openimageio-python`, individual optional format plugin packages, and a compatibility/default `openimageio` metapackage.
 - Build common OpenImageIO formats into `openimageio-lib` with `EMBEDPLUGINS=ON`; this avoids private-symbol leakage seen when OpenEXR/TIFF/JPEG/PNG-class core formats are shipped as external DSOs.
 - Keep `openimageio-dev` CMake metadata free of tool and plugin targets by building the runtime/development surface, tools, Python bindings, and plugins from separate staging builds.
 - The `openimageio` metapackage should depend on the C++ runtime, development surface, and headless tools; keep Python bindings and extra format plugins opt-in.
 - `openimageio-lib` should embed common formats: OpenEXR, TIFF, JPEG, PNG/ICO, BMP, DPX, HDR, PNM, PSD, SGI, TGA, Cineon, DDS, FITS, IFF, RLA, Softimage, Zfile, null, and terminal output.
-- Build the core JPEG plugin with libuhdr support now that `libuhdr-lib`/`libuhdr-dev` are published.
-- Package optional plugins as `openimageio-format-gif`, `openimageio-format-webp`, `openimageio-format-jpeg2000`, `openimageio-format-jpegxl`, `openimageio-format-heif`, `openimageio-format-raw`, `openimageio-format-dicom`, `openimageio-format-ffmpeg`, and `openimageio-format-openvdb`.
+- Build the core JPEG plugin with libuhdr support for upstream versions that support it; omit libuhdr from 2.5.19.1.
+- Package optional plugins as `openimageio-format-gif`, `openimageio-format-webp`, `openimageio-format-jpeg2000`, `openimageio-format-jpegxl`, `openimageio-format-heif`, `openimageio-format-raw`, `openimageio-format-dicom`, `openimageio-format-ffmpeg`, and `openimageio-format-openvdb`, but omit `openimageio-format-jpegxl` from 2.5.19.1 because upstream does not provide it there.
 - `openimageio-format-openvdb` should depend on `openvdb-lib`, not `openvdb-python` or the OpenVDB compatibility metapackage.
 - Build `openimageio-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14; it depends on `openimageio-lib`, which carries the common read/write formats by default.
 - Keep Qt viewer (`iv`), OpenCV, Freetype text rendering support, Ptex, R3DSDK, Nuke, docs, tests, and fonts disabled unless Anders explicitly asks for them.

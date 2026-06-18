@@ -13,7 +13,6 @@ import subprocess
 ROUNDTRIP_EXTENSIONS = {
     "gif": "gif",
     "webp": "webp",
-    "jpegxl": "jxl",
     "heif": "heif",
 }
 

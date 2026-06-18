@@ -1,0 +1,64 @@
+[workspace]
+name = "openimageio-2.5.19.1-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.openimageio-lib.dependencies]
+openimageio-lib = "==2.5.19.1"
+
+[feature.openimageio-dev.dependencies]
+openimageio-dev = "==2.5.19.1"
+
+[feature.openimageio-tools.dependencies]
+openimageio-tools = "==2.5.19.1"
+
+[feature.openimageio-python.dependencies]
+openimageio-python = "==2.5.19.1"
+
+[feature.openimageio-format-gif.dependencies]
+openimageio-format-gif = "==2.5.19.1"
+
+[feature.openimageio-format-webp.dependencies]
+openimageio-format-webp = "==2.5.19.1"
+
+[feature.openimageio-format-jpeg2000.dependencies]
+openimageio-format-jpeg2000 = "==2.5.19.1"
+
+
+[feature.openimageio-format-heif.dependencies]
+openimageio-format-heif = "==2.5.19.1"
+
+[feature.openimageio-format-raw.dependencies]
+openimageio-format-raw = "==2.5.19.1"
+
+[feature.openimageio-format-dicom.dependencies]
+openimageio-format-dicom = "==2.5.19.1"
+
+[feature.openimageio-format-ffmpeg.dependencies]
+openimageio-format-ffmpeg = "==2.5.19.1"
+
+[feature.openimageio-format-openvdb.dependencies]
+openimageio-format-openvdb = "==2.5.19.1"
+
+[feature.openimageio.dependencies]
+openimageio = "==2.5.19.1"
+
+[environments]
+openimageio-lib = ["openimageio-lib"]
+openimageio-dev = ["openimageio-dev"]
+openimageio-tools = ["openimageio-tools"]
+openimageio-python = ["openimageio-python"]
+openimageio-format-gif = ["openimageio-format-gif"]
+openimageio-format-webp = ["openimageio-format-webp"]
+openimageio-format-jpeg2000 = ["openimageio-format-jpeg2000"]
+openimageio-format-heif = ["openimageio-format-heif"]
+openimageio-format-raw = ["openimageio-format-raw"]
+openimageio-format-dicom = ["openimageio-format-dicom"]
+openimageio-format-ffmpeg = ["openimageio-format-ffmpeg"]
+openimageio-format-openvdb = ["openimageio-format-openvdb"]
+openimageio = ["openimageio"]

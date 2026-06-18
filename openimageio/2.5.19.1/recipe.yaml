@@ -1,5 +1,5 @@
 context:
-  version: "3.1.14.0"
+  version: "2.5.19.1"
   build_number: 0
 
 recipe:
@@ -8,7 +8,7 @@ recipe:
 
 source:
   url: https://github.com/AcademySoftwareFoundation/OpenImageIO/releases/download/v${{ version }}/OpenImageIO-${{ version }}.tar.gz
-  sha256: ced98eff58fe27fc2fad5b789ee9cb43dda5f415700bb2f36229ad7fd32a6ea9
+  sha256: 8e3d7473d7a42e527426c38c35187519488ea2a34e994782bd3e6504a209719f
   patches:
     - patches/cmake-4-private-plugin-linking.patch
     - patches/heif-plugin-init-symbol.patch
@@ -28,6 +28,7 @@ outputs:
             cmake $CMAKE_ARGS \
               -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_CXX_STANDARD=17 \
               -DCMAKE_INSTALL_PREFIX=$PREFIX \
               -DCMAKE_INSTALL_LIBDIR=lib \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
@@ -43,8 +44,6 @@ outputs:
               -DPLUGIN_SEARCH_PATH=$PREFIX/lib \
               -DUSE_PYTHON=OFF \
               -DUSE_QT=OFF \
-              -DUSE_libuhdr=ON \
-              -DUSE_JXL=OFF \
               -DUSE_Freetype=OFF \
               -DUSE_OpenCV=OFF \
               -DUSE_DCMTK=OFF \
@@ -73,7 +72,6 @@ outputs:
               -DENABLE_iff=ON \
               -DENABLE_jpeg=ON \
               -DENABLE_jpeg2000=OFF \
-              -DENABLE_jpegxl=OFF \
               -DENABLE_null=ON \
               -DENABLE_openexr=ON \
               -DENABLE_openvdb=OFF \
@@ -120,6 +118,7 @@ outputs:
             cmake %CMAKE_ARGS% ^
               -GNinja ^
               -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_CXX_STANDARD=17 ^
               -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
@@ -135,8 +134,6 @@ outputs:
               -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN% ^
               -DUSE_PYTHON=OFF ^
               -DUSE_QT=OFF ^
-              -DUSE_libuhdr=ON ^
-              -DUSE_JXL=OFF ^
               -DUSE_Freetype=OFF ^
               -DUSE_OpenCV=OFF ^
               -DUSE_DCMTK=OFF ^
@@ -165,7 +162,6 @@ outputs:
               -DENABLE_iff=ON ^
               -DENABLE_jpeg=ON ^
               -DENABLE_jpeg2000=OFF ^
-              -DENABLE_jpegxl=OFF ^
               -DENABLE_null=ON ^
               -DENABLE_openexr=ON ^
               -DENABLE_openvdb=OFF ^
@@ -236,10 +232,10 @@ outputs:
       host:
         - fmt
         - imath-dev 3.2.*
+        - libboost-devel
         - libjpeg-turbo
         - libpng
         - libtiff
-        - libuhdr-dev 1.4.*
         - openexr-dev 3.4.*
         - opencolorio-dev 2.5.*
         - tsl_robin_map 1.4.*
@@ -256,6 +252,7 @@ outputs:
             cmake $CMAKE_ARGS \
               -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_CXX_STANDARD=17 \
               -DCMAKE_INSTALL_PREFIX=$PREFIX \
               -DCMAKE_INSTALL_LIBDIR=lib \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
@@ -271,8 +268,6 @@ outputs:
               -DPLUGIN_SEARCH_PATH=$PREFIX/lib \
               -DUSE_PYTHON=OFF \
               -DUSE_QT=OFF \
-              -DUSE_libuhdr=OFF \
-              -DUSE_JXL=OFF \
               -DUSE_Freetype=OFF \
               -DUSE_OpenCV=OFF \
               -DUSE_DCMTK=OFF \
@@ -303,7 +298,6 @@ outputs:
               -DENABLE_iff=OFF \
               -DENABLE_jpeg=OFF \
               -DENABLE_jpeg2000=OFF \
-              -DENABLE_jpegxl=OFF \
               -DENABLE_null=OFF \
               -DENABLE_openexr=OFF \
               -DENABLE_openvdb=OFF \
@@ -331,6 +325,7 @@ outputs:
             cmake %CMAKE_ARGS% ^
               -GNinja ^
               -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_CXX_STANDARD=17 ^
               -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
@@ -346,8 +341,6 @@ outputs:
               -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN% ^
               -DUSE_PYTHON=OFF ^
               -DUSE_QT=OFF ^
-              -DUSE_libuhdr=OFF ^
-              -DUSE_JXL=OFF ^
               -DUSE_Freetype=OFF ^
               -DUSE_OpenCV=OFF ^
               -DUSE_DCMTK=OFF ^
@@ -378,7 +371,6 @@ outputs:
               -DENABLE_iff=OFF ^
               -DENABLE_jpeg=OFF ^
               -DENABLE_jpeg2000=OFF ^
-              -DENABLE_jpegxl=OFF ^
               -DENABLE_null=OFF ^
               -DENABLE_openexr=OFF ^
               -DENABLE_openvdb=OFF ^
@@ -410,6 +402,7 @@ outputs:
       host:
         - fmt
         - imath-dev 3.2.*
+        - libboost-devel
         - libjpeg-turbo
         - libtiff
         - openexr-dev 3.4.*
@@ -428,6 +421,7 @@ outputs:
             cmake $CMAKE_ARGS \
               -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_CXX_STANDARD=17 \
               -DCMAKE_INSTALL_PREFIX=$PREFIX \
               -DCMAKE_INSTALL_LIBDIR=lib \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
@@ -445,8 +439,6 @@ outputs:
               -DPYTHON_VERSION="${{ python }}" \
               -DPython3_EXECUTABLE=$PYTHON \
               -DUSE_QT=OFF \
-              -DUSE_libuhdr=OFF \
-              -DUSE_JXL=OFF \
               -DUSE_Freetype=OFF \
               -DUSE_OpenCV=OFF \
               -DUSE_DCMTK=OFF \
@@ -475,7 +467,6 @@ outputs:
               -DENABLE_iff=OFF \
               -DENABLE_jpeg=OFF \
               -DENABLE_jpeg2000=OFF \
-              -DENABLE_jpegxl=OFF \
               -DENABLE_null=OFF \
               -DENABLE_openexr=OFF \
               -DENABLE_openvdb=OFF \
@@ -503,6 +494,7 @@ outputs:
             cmake %CMAKE_ARGS% ^
               -GNinja ^
               -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_CXX_STANDARD=17 ^
               -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
@@ -520,8 +512,6 @@ outputs:
               -DPYTHON_VERSION="${{ python }}" ^
               -DPython3_EXECUTABLE=%PYTHON% ^
               -DUSE_QT=OFF ^
-              -DUSE_libuhdr=OFF ^
-              -DUSE_JXL=OFF ^
               -DUSE_Freetype=OFF ^
               -DUSE_OpenCV=OFF ^
               -DUSE_DCMTK=OFF ^
@@ -550,7 +540,6 @@ outputs:
               -DENABLE_iff=OFF ^
               -DENABLE_jpeg=OFF ^
               -DENABLE_jpeg2000=OFF ^
-              -DENABLE_jpegxl=OFF ^
               -DENABLE_null=OFF ^
               -DENABLE_openexr=OFF ^
               -DENABLE_openvdb=OFF ^
@@ -582,6 +571,7 @@ outputs:
       host:
         - fmt
         - imath-dev 3.2.*
+        - libboost-devel
         - libjpeg-turbo
         - libtiff
         - openexr-dev 3.4.*
@@ -602,6 +592,7 @@ outputs:
             cmake $CMAKE_ARGS \
               -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_CXX_STANDARD=17 \
               -DCMAKE_INSTALL_PREFIX=$PREFIX \
               -DCMAKE_INSTALL_LIBDIR=lib \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
@@ -617,8 +608,6 @@ outputs:
               -DPLUGIN_SEARCH_PATH=$PREFIX/lib \
               -DUSE_PYTHON=OFF \
               -DUSE_QT=OFF \
-              -DUSE_libuhdr=OFF \
-              -DUSE_JXL=ON \
               -DUSE_Freetype=OFF \
               -DUSE_OpenCV=OFF \
               -DUSE_DCMTK=ON \
@@ -659,7 +648,6 @@ outputs:
               -DENABLE_gif=ON \
               -DENABLE_heif=ON \
               -DENABLE_jpeg2000=ON \
-              -DENABLE_jpegxl=ON \
               -DENABLE_openvdb=ON \
               -DENABLE_raw=ON \
               -DENABLE_webp=ON \
@@ -677,6 +665,7 @@ outputs:
             cmake %CMAKE_ARGS% ^
               -GNinja ^
               -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_CXX_STANDARD=17 ^
               -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
@@ -692,8 +681,6 @@ outputs:
               -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN% ^
               -DUSE_PYTHON=OFF ^
               -DUSE_QT=OFF ^
-              -DUSE_libuhdr=OFF ^
-              -DUSE_JXL=ON ^
               -DUSE_Freetype=OFF ^
               -DUSE_OpenCV=OFF ^
               -DUSE_DCMTK=ON ^
@@ -734,7 +721,6 @@ outputs:
               -DENABLE_gif=ON ^
               -DENABLE_heif=ON ^
               -DENABLE_jpeg2000=ON ^
-              -DENABLE_jpegxl=ON ^
               -DENABLE_openvdb=ON ^
               -DENABLE_raw=ON ^
               -DENABLE_webp=ON ^
@@ -764,7 +750,6 @@ outputs:
         - libboost-devel
         - libheif
         - libjpeg-turbo
-        - libjxl
         - libpng
         - libraw
         - libtiff
@@ -795,7 +780,6 @@ outputs:
         - libjpeg-turbo
         - libpng
         - libtiff
-        - libuhdr-lib 1.4.*
         - libzlib
         - openexr-lib 3.4.*
         - opencolorio-lib 2.5.*
@@ -1009,30 +993,6 @@ outputs:
     tests:
       - script:
           - python tests/check_formats.py jpeg2000 --read-fixture jpeg2000
-        files:
-          recipe:
-            - tests/check_formats.py
-        requirements:
-          run:
-            - python
-            - ${{ pin_subpackage('openimageio-tools', exact=True) }}
-
-  - package:
-      name: openimageio-format-jpegxl
-    inherit:
-      from: openimageio-plugins-build
-      run_exports: false
-    build:
-      files:
-        - lib/jpegxl.imageio.*
-        - Library/bin/jpegxl.imageio.dll
-    requirements:
-      run:
-        - ${{ pin_subpackage('openimageio-lib', exact=True) }}
-        - libjxl
-    tests:
-      - script:
-          - python tests/check_formats.py jpegxl --roundtrip jpegxl
         files:
           recipe:
             - tests/check_formats.py
