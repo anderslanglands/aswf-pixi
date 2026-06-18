@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       recipes:
-        description: "Comma-separated recipe directories, for example imath/3.2.2"
+        description: "Comma-separated recipe selectors, for example imath/3.2.2 or libuhdr/*"
         required: true
         default: "imath/3.2.2"
       platforms:
@@ -20,7 +20,7 @@ on:
           - artifact-only
           - test-label
           - default-label
-        default: artifact-only
+        default: default-label
       build_number:
         description: "Optional integer build number override. Empty auto-increments for publish targets; artifact-only uses the recipe default."
         required: false

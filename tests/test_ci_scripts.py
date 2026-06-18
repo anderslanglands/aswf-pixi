@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -16,6 +18,71 @@ import resolve_build_numbers
 
 
 class CiMatrixTests(unittest.TestCase):
+    def test_parse_recipes_expands_package_wildcard(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            for version in ["1.0.0", "1.1.0"]:
+                recipe = tmp / "foo" / version
+                recipe.mkdir(parents=True)
+                (recipe / "recipe.yaml").write_text(f"recipe:\n  name: foo\n  version: {version}\n", encoding="utf-8")
+            (tmp / "foo" / "notes").mkdir()
+
+            cwd = Path.cwd()
+            try:
+                os.chdir(tmp)
+                self.assertEqual(
+                    ci_matrix.parse_recipes("foo/*"),
+                    [Path("foo/1.0.0"), Path("foo/1.1.0")],
+                )
+            finally:
+                os.chdir(cwd)
+
+    def test_parse_recipes_rejects_unsupported_wildcard_shape(self) -> None:
+        with self.assertRaisesRegex(SystemExit, r"must look like package/\*"):
+            ci_matrix.parse_recipes("foo/1.*")
+
+    def test_ci_matrix_cli_expands_wildcard_recipe_selector(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            for version in ["1.0.0", "1.1.0"]:
+                recipe = tmp / "foo" / version
+                recipe.mkdir(parents=True)
+                (recipe / "recipe.yaml").write_text(f"recipe:\n  name: foo\n  version: {version}\n", encoding="utf-8")
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "ci_matrix.py"),
+                    "--recipes",
+                    "foo/*",
+                    "--platforms",
+                    "linux-64",
+                    "--build-number",
+                    "4",
+                    "--publish-target",
+                    "default-label",
+                ],
+                cwd=tmp,
+                check=True,
+                stdout=subprocess.PIPE,
+                text=True,
+            )
+
+            matrix = json.loads(completed.stdout)
+            self.assertEqual(
+                [item["recipe"] for item in matrix["include"]],
+                ["foo/1.0.0", "foo/1.1.0"],
+            )
+            self.assertEqual([item["build_number"] for item in matrix["include"]], ["4", "4"])
+
+    def test_build_packages_workflow_defaults_to_default_label(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "build-packages.yml").read_text(encoding="utf-8")
+        match = re.search(r"(?ms)^      publish_target:\n(?P<body>(?:        .*\n)+)", workflow)
+        self.assertIsNotNone(match)
+        assert match is not None
+        self.assertIn("default: default-label", match.group("body"))
+        self.assertNotIn("default: artifact-only", match.group("body"))
+
     def test_matrix_carries_resolved_build_number(self) -> None:
         recipe = Path("foo/1.0.0")
         result = ci_matrix.matrix(
@@ -215,6 +282,36 @@ outputs:
                 ),
                 {recipe.as_posix(): "7"},
             )
+
+    def test_resolve_build_numbers_cli_expands_wildcard_recipe_selector(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            for version in ["1.0.0", "1.1.0"]:
+                recipe = tmp / "foo" / version
+                recipe.mkdir(parents=True)
+                (recipe / "recipe.yaml").write_text(f"recipe:\n  name: foo\n  version: {version}\n", encoding="utf-8")
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "resolve_build_numbers.py"),
+                    "--recipes",
+                    "foo/*",
+                    "--platforms",
+                    "linux-64",
+                    "--target",
+                    "default-label",
+                    "--build-number",
+                    "7",
+                ],
+                cwd=tmp,
+                check=True,
+                stdout=subprocess.PIPE,
+                text=True,
+            )
+
+            self.assertEqual(json.loads(completed.stdout), {"foo/1.0.0": "7", "foo/1.1.0": "7"})
+
 
     def test_explicit_build_number_resolver_cli_does_not_need_network(self) -> None:
         completed = subprocess.run(

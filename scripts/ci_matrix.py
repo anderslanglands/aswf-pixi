@@ -44,19 +44,54 @@ def parse_platforms(value: str) -> list[str]:
     return platforms
 
 
+def validate_recipe_path(recipe: Path) -> None:
+    recipe_file = recipe / "recipe.yaml"
+    if recipe.is_absolute() or ".." in recipe.parts:
+        raise SystemExit(f"Recipe directory {recipe} must be a relative package/version path.")
+    if not recipe_file.is_file():
+        raise SystemExit(f"Recipe directory {recipe} does not contain recipe.yaml.")
+    if len(recipe.parts) < 2:
+        raise SystemExit(f"Recipe directory {recipe} should look like package/version.")
+
+
+def expand_recipe_selector(selector: str) -> list[Path]:
+    recipe = Path(selector)
+    if "*" not in selector:
+        return [recipe]
+
+    if recipe.is_absolute() or ".." in recipe.parts:
+        raise SystemExit(f"Recipe directory {recipe} must be a relative package/version path.")
+    if len(recipe.parts) != 2 or recipe.parts[-1] != "*" or any("*" in part for part in recipe.parts[:-1]):
+        raise SystemExit(f"Recipe wildcard selector {recipe} must look like package/*.")
+
+    package_dir = recipe.parent
+    if not package_dir.is_dir():
+        raise SystemExit(f"Recipe wildcard selector {recipe} did not match a package directory.")
+
+    matches = [
+        candidate
+        for candidate in sorted(package_dir.iterdir(), key=lambda path: path.name)
+        if candidate.is_dir() and (candidate / "recipe.yaml").is_file()
+    ]
+    if not matches:
+        raise SystemExit(f"Recipe wildcard selector {recipe} did not match any version recipes.")
+    return matches
+
+
 def parse_recipes(value: str) -> list[Path]:
-    recipes = [Path(item) for item in split_csv(value)]
-    if not recipes:
+    recipes: list[Path] = []
+    seen: set[str] = set()
+    selectors = split_csv(value)
+    if not selectors:
         raise SystemExit("No recipes were requested.")
 
-    for recipe in recipes:
-        recipe_file = recipe / "recipe.yaml"
-        if recipe.is_absolute() or ".." in recipe.parts:
-            raise SystemExit(f"Recipe directory {recipe} must be a relative package/version path.")
-        if not recipe_file.is_file():
-            raise SystemExit(f"Recipe directory {recipe} does not contain recipe.yaml.")
-        if len(recipe.parts) < 2:
-            raise SystemExit(f"Recipe directory {recipe} should look like package/version.")
+    for selector in selectors:
+        for recipe in expand_recipe_selector(selector):
+            validate_recipe_path(recipe)
+            key = recipe.as_posix()
+            if key not in seen:
+                recipes.append(recipe)
+                seen.add(key)
     return recipes
 
 
