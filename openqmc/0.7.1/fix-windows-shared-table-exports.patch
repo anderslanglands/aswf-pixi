@@ -1,0 +1,144 @@
+diff --git a/include/oqmc/bntables.h b/include/oqmc/bntables.h
+index 0829ef5..16cf9f2 100644
+--- a/include/oqmc/bntables.h
++++ b/include/oqmc/bntables.h
+@@ -15,6 +15,12 @@
+ 
+ #include <cstdint>
+ 
++#if defined(OQMC_ENABLE_BINARY) && defined(OQMC_SHARED_LIBRARY) && defined(_WIN32)
++#define OQMC_TABLE_API __declspec(dllimport)
++#else
++#define OQMC_TABLE_API
++#endif
++
+ namespace oqmc
+ {
+ 
+@@ -72,10 +78,10 @@ namespace pmj
+ #if defined(OQMC_ENABLE_BINARY)
+ 
+ /// Optimised blue noise key table for pmj.
+-extern const std::uint32_t keyTable[size];
++extern OQMC_TABLE_API const std::uint32_t keyTable[size];
+ 
+ /// Optimised blue noise rank table for pmj.
+-extern const std::uint32_t rankTable[size];
++extern OQMC_TABLE_API const std::uint32_t rankTable[size];
+ 
+ #else
+ 
+@@ -105,10 +111,10 @@ namespace sobol
+ #if defined(OQMC_ENABLE_BINARY)
+ 
+ /// Optimised blue noise key table for sobol.
+-extern const std::uint32_t keyTable[size];
++extern OQMC_TABLE_API const std::uint32_t keyTable[size];
+ 
+ /// Optimised blue noise rank table for sobol.
+-extern const std::uint32_t rankTable[size];
++extern OQMC_TABLE_API const std::uint32_t rankTable[size];
+ 
+ #else
+ 
+@@ -138,10 +144,10 @@ namespace lattice
+ #if defined(OQMC_ENABLE_BINARY)
+ 
+ /// Optimised blue noise key table for lattice.
+-extern const std::uint32_t keyTable[size];
++extern OQMC_TABLE_API const std::uint32_t keyTable[size];
+ 
+ /// Optimised blue noise rank table for lattice.
+-extern const std::uint32_t rankTable[size];
++extern OQMC_TABLE_API const std::uint32_t rankTable[size];
+ 
+ #else
+ 
+@@ -162,3 +168,5 @@ constexpr std::uint32_t rankTable[] = {
+ } // namespace bntables
+ 
+ } // namespace oqmc
++
++#undef OQMC_TABLE_API
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index b397463..deefc49 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -35,6 +35,10 @@ endif()
+ if(OPENQMC_ENABLE_BINARY)
+ 	target_compile_definitions(${PROJECT_NAME} INTERFACE OQMC_ENABLE_BINARY)
+ endif()
++
++if(OPENQMC_ENABLE_BINARY AND OPENQMC_SHARED_LIB)
++	target_compile_definitions(${PROJECT_NAME} PUBLIC OQMC_SHARED_LIBRARY)
++endif()
+ 
+ target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_14)
+ 
+diff --git a/src/bntables.cpp b/src/bntables.cpp
+index 9c59cb2..9114f1d 100644
+--- a/src/bntables.cpp
++++ b/src/bntables.cpp
+@@ -3,6 +3,12 @@
+ 
+ #include <cstdint>
+ 
++#if defined(OQMC_SHARED_LIBRARY) && defined(_WIN32)
++#define OQMC_TABLE_EXPORT __declspec(dllexport)
++#else
++#define OQMC_TABLE_EXPORT
++#endif
++
+ namespace oqmc
+ {
+ 
+@@ -12,43 +18,45 @@ namespace pmj
+ {
+ 
+-extern const std::uint32_t keyTable[] = {
++extern OQMC_TABLE_EXPORT const std::uint32_t keyTable[] = {
+ #include <oqmc/data/pmj/keys.txt>
+ };
+ 
+-extern const std::uint32_t rankTable[] = {
++extern OQMC_TABLE_EXPORT const std::uint32_t rankTable[] = {
+ #include <oqmc/data/pmj/ranks.txt>
+ };
+ 
+ } // namespace pmj
+ 
+ namespace sobol
+ {
+ 
+-extern const std::uint32_t keyTable[] = {
++extern OQMC_TABLE_EXPORT const std::uint32_t keyTable[] = {
+ #include <oqmc/data/sobol/keys.txt>
+ };
+ 
+-extern const std::uint32_t rankTable[] = {
++extern OQMC_TABLE_EXPORT const std::uint32_t rankTable[] = {
+ #include <oqmc/data/sobol/ranks.txt>
+ };
+ 
+ } // namespace sobol
+ 
+ namespace lattice
+ {
+ 
+-extern const std::uint32_t keyTable[] = {
++extern OQMC_TABLE_EXPORT const std::uint32_t keyTable[] = {
+ #include <oqmc/data/lattice/keys.txt>
+ };
+ 
+-extern const std::uint32_t rankTable[] = {
++extern OQMC_TABLE_EXPORT const std::uint32_t rankTable[] = {
+ #include <oqmc/data/lattice/ranks.txt>
+ };
+ 
+ } // namespace lattice
+ 
+ } // namespace bntables
+ 
+ } // namespace oqmc
++
++#undef OQMC_TABLE_EXPORT

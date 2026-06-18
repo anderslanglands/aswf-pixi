@@ -121,6 +121,7 @@ OpenQMC packaging decisions:
 - `openqmc-dev` and `openqmc-header-only` both install `include/oqmc/**` and `lib/cmake/OpenQMC/**`; keep them mutually exclusive with package constraints.
 - Keep OpenQMC tools disabled unless Anders explicitly asks for them. Upstream tools use TBB/glm and install broad command names such as `benchmark`, `generate`, `plot`, and `trace`.
 - Carry the narrow project-version patch for 0.7.1 so installed CMake package version metadata reports 0.7.1 instead of upstream's `project(OpenQMC VERSION 0.1.0)`.
+- Carry the narrow Windows shared-library table export patch for 0.7.1 so MSVC consumers import the binary blue-noise table data from `OpenQMC.dll` correctly.
 
 OpenImageIO packaging decisions:
 

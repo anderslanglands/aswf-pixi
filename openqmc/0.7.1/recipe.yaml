@@ -11,6 +11,7 @@ source:
   sha256: 07ce1161506af09edc1db424bf829609f31d4babf28a6158ae5154fcc1bd0f29
   patches:
     - fix-project-version.patch
+    - fix-windows-shared-table-exports.patch
 
 build:
   number: ${{ build_number }}
