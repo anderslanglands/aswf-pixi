@@ -1,12 +1,13 @@
 #include <oqmc/oqmc.h>
 
-#include <array>
 #include <cstddef>
+#include <vector>
 
 template <std::size_t Size>
 struct CacheStorage
 {
-    alignas(std::max_align_t) std::array<char, Size == 0 ? 1 : Size> bytes{};
+    std::vector<std::max_align_t> bytes = std::vector<std::max_align_t>(
+        (Size + sizeof(std::max_align_t) - 1) / sizeof(std::max_align_t));
 
     void* data()
     {
