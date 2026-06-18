@@ -103,6 +103,8 @@ def package_needs_consumer_test(root_package: str, package: dict[str, object], r
         return False
 
     name = str(package["name"])
+    if root_package == "openvdb" and name == "nanovdb":
+        return True
     return name == root_package or name.endswith("-dev")
 
 
@@ -110,6 +112,11 @@ def cmake_consumer_args(root_package: str, package: dict[str, object]) -> list[s
     name = str(package["name"])
     if root_package == "openexr" and name in {"openexr", "openexr-dev"}:
         return ["-DOPENEXR_CONSUMER_EXPECT_FULL=ON"]
+    if root_package == "openvdb":
+        if name in {"openvdb", "openvdb-dev"}:
+            return ["-DBUILD_NANOVDB_CONSUMER=OFF"]
+        if name in {"nanovdb", "nanovdb-dev"}:
+            return ["-DBUILD_OPENVDB_CONSUMER=OFF"]
     return []
 
 
