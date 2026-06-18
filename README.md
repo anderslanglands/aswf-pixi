@@ -104,3 +104,24 @@ libuhdr is Google's reference codec for the JPEG/R gain map based Ultra HDR imag
 - `libuhdr-lib`: Shared libuhdr runtime library. Depends on libjpeg-turbo.
 - `libuhdr-dev`: Public `ultrahdr_api.h` header, pkg-config metadata, and Windows import library. Depends on the matching `libuhdr-lib`.
 - `libuhdr`: Default metapackage for C++ consumers. Depends on the matching `libuhdr-lib` and `libuhdr-dev`.
+
+## OpenImageIO
+
+Recipe versions: `3.1.14.0`
+
+OpenImageIO provides image file I/O libraries, command-line tools, texture utilities, and optional format plugins.
+
+- `openimageio-lib`: Shared OpenImageIO and OpenImageIO_Util runtime libraries with common formats embedded, including OpenEXR, TIFF, JPEG, PNG/ICO, BMP, DPX, HDR, PNM, PSD, SGI, TGA, Cineon, DDS, FITS, IFF, RLA, Softimage, Zfile, null, and terminal output. The JPEG support is built with libuhdr.
+- `openimageio-dev`: C++ headers, CMake package files, pkg-config metadata, and Windows import libraries. Depends on the matching `openimageio-lib`.
+- `openimageio-tools`: Headless command-line tools: `oiiotool`, `maketx`, `iconvert`, `idiff`, `igrep`, and `iinfo`. Depends on the matching `openimageio-lib`.
+- `openimageio-python`: Python bindings for OpenImageIO, built for Python 3.10 through 3.14. Depends on the matching `openimageio-lib`.
+- `openimageio-format-gif`: GIF format plugin.
+- `openimageio-format-webp`: WebP format plugin.
+- `openimageio-format-jpeg2000`: JPEG 2000 format plugin with OpenJPEG and OpenJPH support.
+- `openimageio-format-jpegxl`: JPEG XL format plugin.
+- `openimageio-format-heif`: HEIF/HEIC/AVIF format plugin.
+- `openimageio-format-raw`: LibRaw camera RAW input plugin.
+- `openimageio-format-dicom`: DICOM input plugin.
+- `openimageio-format-ffmpeg`: FFmpeg movie input plugin.
+- `openimageio-format-openvdb`: OpenVDB input plugin. Depends on the matching OpenVDB runtime package.
+- `openimageio`: Default metapackage for C++ and tool consumers. Depends on the matching `openimageio-lib`, `openimageio-dev`, and `openimageio-tools`; Python bindings and extra format plugins are opt-in.
