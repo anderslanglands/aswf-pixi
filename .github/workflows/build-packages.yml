@@ -35,8 +35,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: package-build-publish-${{ github.ref }}
+  group: package-build-publish-${{ inputs.recipes }}
   cancel-in-progress: false
+  queue: max
 
 jobs:
   prepare:

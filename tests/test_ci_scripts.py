@@ -84,6 +84,18 @@ class CiMatrixTests(unittest.TestCase):
         self.assertIn("default: default-label", match.group("body"))
         self.assertNotIn("default: artifact-only", match.group("body"))
 
+    def test_build_packages_workflow_concurrency_scopes_by_recipe(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "build-packages.yml").read_text(encoding="utf-8")
+        match = re.search(r"(?m)^concurrency:\n(?P<body>(?:^  .*\n)+)", workflow)
+        self.assertIsNotNone(match)
+        assert match is not None
+        self.assertEqual(
+            match.group("body"),
+            "  group: package-build-publish-${{ inputs.recipes }}\n"
+            "  cancel-in-progress: false\n"
+            "  queue: max\n",
+        )
+
     def test_matrix_carries_resolved_build_number(self) -> None:
         recipe = Path("foo/1.0.0")
         result = ci_matrix.matrix(
