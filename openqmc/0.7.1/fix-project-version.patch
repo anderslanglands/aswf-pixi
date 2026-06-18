@@ -1,0 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 98f0612..d59b030 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -5,7 +5,7 @@
+ 
+ # Create the project and set the version
+ 
+-project(OpenQMC VERSION 0.1.0 LANGUAGES CXX)
++project(OpenQMC VERSION 0.7.1 LANGUAGES CXX)
+ 
+ # Prevent in source builds
+ # https://cliutils.gitlab.io/modern-cmake/chapters/basics/structure.html

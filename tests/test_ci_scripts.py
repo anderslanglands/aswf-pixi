@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import ci_matrix
 import resolve_build_numbers
+import smoke_consumers
 
 
 class CiMatrixTests(unittest.TestCase):
@@ -420,6 +421,85 @@ outputs:
                 "https://api.anaconda.org/package/anderslanglands/foo/files",
                 fetched_urls,
             )
+
+
+class SmokeConsumersTests(unittest.TestCase):
+    def test_run_cmake_consumer_runs_ctest_after_build(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            recipe = tmp / "openqmc" / "0.7.1"
+            tests = recipe / "tests"
+            tests.mkdir(parents=True)
+            (tests / "CMakeLists.txt").write_text(
+                "cmake_minimum_required(VERSION 3.15)\n",
+                encoding="utf-8",
+            )
+            manifest = tmp / "pixi.toml"
+            manifest.write_text("", encoding="utf-8")
+
+            calls: list[tuple[str, ...]] = []
+            original_pixi = smoke_consumers.pixi
+
+            def fake_pixi(*args: str) -> None:
+                calls.append(args)
+
+            try:
+                smoke_consumers.pixi = fake_pixi
+                smoke_consumers.run_cmake_consumer(
+                    manifest,
+                    recipe,
+                    "openqmc",
+                    {"name": "openqmc-header-only"},
+                    tmp,
+                )
+            finally:
+                smoke_consumers.pixi = original_pixi
+
+            build = tmp / "build-openqmc-header-only"
+            self.assertEqual(calls[-1], (
+                "run",
+                "--manifest-path",
+                str(manifest),
+                "ctest",
+                "--test-dir",
+                str(build),
+                "--output-on-failure",
+            ))
+
+    def test_openqmc_header_only_runs_cmake_consumer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            recipe = Path(tmp_raw) / "openqmc" / "0.7.1"
+            tests = recipe / "tests"
+            tests.mkdir(parents=True)
+            (tests / "CMakeLists.txt").write_text(
+                "cmake_minimum_required(VERSION 3.15)\n",
+                encoding="utf-8",
+            )
+
+            self.assertTrue(
+                smoke_consumers.package_needs_consumer_test(
+                    "openqmc",
+                    {"name": "openqmc-header-only"},
+                    recipe,
+                )
+            )
+
+    def test_openqmc_header_only_passes_expected_cmake_flag(self) -> None:
+        self.assertEqual(
+            smoke_consumers.cmake_consumer_args("openqmc", {"name": "openqmc-header-only"}),
+            ["-DOPENQMC_CONSUMER_EXPECT_HEADER_ONLY=ON"],
+        )
+
+    def test_openqmc_flavor_packages_are_mutually_exclusive(self) -> None:
+        recipe = (ROOT / "openqmc" / "0.7.1" / "recipe.yaml").read_text(encoding="utf-8")
+        self.assertRegex(
+            recipe,
+            r"(?ms)name: openqmc-dev.*run_constraints:\n\s+- openqmc-header-only <0a0",
+        )
+        self.assertRegex(
+            recipe,
+            r"(?ms)name: openqmc-header-only.*run_constraints:\n\s+- openqmc-dev <0a0",
+        )
 
 
 if __name__ == "__main__":

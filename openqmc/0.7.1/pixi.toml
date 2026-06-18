@@ -1,0 +1,27 @@
+[workspace]
+name = "openqmc-0.7.1-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.openqmc-lib.dependencies]
+openqmc-lib = "==0.7.1"
+
+[feature.openqmc-dev.dependencies]
+openqmc-dev = "==0.7.1"
+
+[feature.openqmc-header-only.dependencies]
+openqmc-header-only = "==0.7.1"
+
+[feature.openqmc.dependencies]
+openqmc = "==0.7.1"
+
+[environments]
+openqmc-lib = ["openqmc-lib"]
+openqmc-dev = ["openqmc-dev"]
+openqmc-header-only = ["openqmc-header-only"]
+openqmc = ["openqmc"]

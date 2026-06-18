@@ -103,6 +103,8 @@ def package_needs_consumer_test(root_package: str, package: dict[str, object], r
         return False
 
     name = str(package["name"])
+    if root_package == "openqmc" and name == "openqmc-header-only":
+        return True
     if root_package == "openvdb" and name == "nanovdb":
         return True
     return name == root_package or name.endswith("-dev")
@@ -112,6 +114,8 @@ def cmake_consumer_args(root_package: str, package: dict[str, object]) -> list[s
     name = str(package["name"])
     if root_package == "openexr" and name in {"openexr", "openexr-dev"}:
         return ["-DOPENEXR_CONSUMER_EXPECT_FULL=ON"]
+    if root_package == "openqmc" and name == "openqmc-header-only":
+        return ["-DOPENQMC_CONSUMER_EXPECT_HEADER_ONLY=ON"]
     if root_package == "openvdb":
         if name in {"openvdb", "openvdb-dev"}:
             return ["-DBUILD_NANOVDB_CONSUMER=OFF"]
@@ -138,6 +142,15 @@ def run_cmake_consumer(manifest: Path, recipe: Path, root_package: str, package:
         *cmake_consumer_args(root_package, package),
     )
     pixi("run", "--manifest-path", str(manifest), "cmake", "--build", str(build))
+    pixi(
+        "run",
+        "--manifest-path",
+        str(manifest),
+        "ctest",
+        "--test-dir",
+        str(build),
+        "--output-on-failure",
+    )
 
 
 def load_artifact_manifest(path: Path, recipe: Path, platform: str) -> dict[str, object]:

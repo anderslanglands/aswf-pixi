@@ -105,6 +105,17 @@ libuhdr is Google's reference codec for the JPEG/R gain map based Ultra HDR imag
 - `libuhdr-dev`: Public `ultrahdr_api.h` header, pkg-config metadata, and Windows import library. Depends on the matching `libuhdr-lib`.
 - `libuhdr`: Default metapackage for C++ consumers. Depends on the matching `libuhdr-lib` and `libuhdr-dev`.
 
+## OpenQMC
+
+Recipe versions: `0.7.1`
+
+OpenQMC provides Quasi-Monte Carlo sampling APIs for rendering and graphics applications.
+
+- `openqmc-lib`: Shared OpenQMC runtime library for the binary table build.
+- `openqmc-dev`: Headers, installed table include fragments, CMake package files, and Windows import library for the binary table build. Depends on the matching `openqmc-lib` and conflicts with `openqmc-header-only`.
+- `openqmc-header-only`: Header-only CMake package exporting `OpenQMC::OpenQMC` without `OQMC_ENABLE_BINARY` or a shared runtime library. Conflicts with `openqmc-dev`.
+- `openqmc`: Default metapackage matching the old pixi-recipes behavior. Depends on the matching `openqmc-lib` and `openqmc-dev`; use `openqmc-header-only` to opt into the interface-library flavor.
+
 ## OpenImageIO
 
 Recipe versions: `2.5.19.1`, `3.0.19.1`, `3.1.14.0`

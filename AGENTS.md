@@ -113,6 +113,15 @@ libuhdr packaging decisions:
 - Use external `libjpeg-turbo` rather than the upstream vendored dependency path.
 - Prefer recipe-side manual install logic for Windows before carrying upstream CMake install patches; if that becomes brittle, discuss patching options with Anders.
 
+OpenQMC packaging decisions:
+
+- Package OpenQMC 0.7.1 as `openqmc-lib`, `openqmc-dev`, `openqmc-header-only`, and a compatibility/default `openqmc` metapackage.
+- The `openqmc` metapackage should match the old pixi-recipes behavior: binary table build with `OPENQMC_ENABLE_BINARY=ON`, depending on the matching `openqmc-lib` and `openqmc-dev`.
+- `openqmc-header-only` should build with `OPENQMC_ENABLE_BINARY=OFF` and export the same `OpenQMC::OpenQMC` CMake target as an interface library.
+- `openqmc-dev` and `openqmc-header-only` both install `include/oqmc/**` and `lib/cmake/OpenQMC/**`; keep them mutually exclusive with package constraints.
+- Keep OpenQMC tools disabled unless Anders explicitly asks for them. Upstream tools use TBB/glm and install broad command names such as `benchmark`, `generate`, `plot`, and `trace`.
+- Carry the narrow project-version patch for 0.7.1 so installed CMake package version metadata reports 0.7.1 instead of upstream's `project(OpenQMC VERSION 0.1.0)`.
+
 OpenImageIO packaging decisions:
 
 - Package OpenImageIO 2.5.19.1, 3.0.19.1, and 3.1.14.0 as `openimageio-lib`, `openimageio-dev`, `openimageio-tools`, `openimageio-python`, individual optional format plugin packages, and a compatibility/default `openimageio` metapackage.

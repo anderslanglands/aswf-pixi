@@ -1,0 +1,314 @@
+context:
+  version: "0.7.1"
+  build_number: 0
+
+recipe:
+  name: openqmc
+  version: ${{ version }}
+
+source:
+  url: https://github.com/AcademySoftwareFoundation/openqmc/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 07ce1161506af09edc1db424bf829609f31d4babf28a6158ae5154fcc1bd0f29
+  patches:
+    - fix-project-version.patch
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: openqmc-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DOPENQMC_ARCH_TYPE=Scalar \
+              -DOPENQMC_ENABLE_BINARY=ON \
+              -DOPENQMC_SHARED_LIB=ON \
+              -DOPENQMC_BUILD_TOOLS=OFF \
+              -DOPENQMC_BUILD_TESTING=OFF \
+              -DOPENQMC_FORCE_DOWNLOAD=OFF \
+              -B $SRC_DIR/../build \
+              -S .
+
+            cmake --build $SRC_DIR/../build --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DOPENQMC_ARCH_TYPE=Scalar ^
+              -DOPENQMC_ENABLE_BINARY=ON ^
+              -DOPENQMC_SHARED_LIB=ON ^
+              -DOPENQMC_BUILD_TOOLS=OFF ^
+              -DOPENQMC_BUILD_TESTING=OFF ^
+              -DOPENQMC_FORCE_DOWNLOAD=OFF ^
+              -B %SRC_DIR%\..\build ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build --target install --config Release
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+
+  - staging:
+      name: openqmc-header-only-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-header-only
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DOPENQMC_ARCH_TYPE=Scalar \
+              -DOPENQMC_ENABLE_BINARY=OFF \
+              -DOPENQMC_SHARED_LIB=OFF \
+              -DOPENQMC_BUILD_TOOLS=OFF \
+              -DOPENQMC_BUILD_TESTING=OFF \
+              -DOPENQMC_FORCE_DOWNLOAD=OFF \
+              -B $SRC_DIR/../build-header-only \
+              -S .
+
+            cmake --build $SRC_DIR/../build-header-only --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-header-only
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DOPENQMC_ARCH_TYPE=Scalar ^
+              -DOPENQMC_ENABLE_BINARY=OFF ^
+              -DOPENQMC_SHARED_LIB=OFF ^
+              -DOPENQMC_BUILD_TOOLS=OFF ^
+              -DOPENQMC_BUILD_TESTING=OFF ^
+              -DOPENQMC_FORCE_DOWNLOAD=OFF ^
+              -B %SRC_DIR%\..\build-header-only ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-header-only --target install --config Release
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+
+  - package:
+      name: openqmc-lib
+    inherit: openqmc-build
+    build:
+      files:
+        - lib/libOpenQMC.so*
+        - lib/libOpenQMC*.dylib*
+        - Library/bin/OpenQMC.dll
+    requirements:
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openqmc-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/oqmc/oqmc.h
+              - lib/cmake/OpenQMC/OpenQMCConfig.cmake
+              - Library/include/oqmc/oqmc.h
+              - Library/lib/cmake/OpenQMC/OpenQMCConfig.cmake
+      - script:
+          - if: linux
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libOpenQMC.so*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: osx
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libOpenQMC*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: win
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'OpenQMC.dll')); assert paths; ctypes.WinDLL(paths[0])"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: openqmc-dev
+    inherit: openqmc-build
+    build:
+      files:
+        - include/oqmc/**
+        - lib/cmake/OpenQMC/**
+        - Library/include/oqmc/**
+        - Library/lib/OpenQMC.lib
+        - Library/lib/cmake/OpenQMC/**
+    requirements:
+      run:
+        - ${{ pin_subpackage('openqmc-lib', exact=True) }}
+      run_constraints:
+        - openqmc-header-only <0a0
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openqmc-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - oqmc/oqmc.h
+            - oqmc/pmjbn.h
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/include/oqmc/data/lattice/keys.txt"
+              - test -f "$PREFIX/include/oqmc/data/lattice/ranks.txt"
+              - test -f "$PREFIX/include/oqmc/data/pmj/keys.txt"
+              - test -f "$PREFIX/include/oqmc/data/pmj/ranks.txt"
+              - test -f "$PREFIX/include/oqmc/data/sobol/keys.txt"
+              - test -f "$PREFIX/include/oqmc/data/sobol/ranks.txt"
+              - test -f "$PREFIX/lib/cmake/OpenQMC/OpenQMCConfig.cmake"
+              - test -f "$PREFIX/lib/cmake/OpenQMC/OpenQMCConfigVersion.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/openqmc_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_INC%\oqmc\data\lattice\keys.txt" exit /b 1
+              - if not exist "%LIBRARY_INC%\oqmc\data\lattice\ranks.txt" exit /b 1
+              - if not exist "%LIBRARY_INC%\oqmc\data\pmj\keys.txt" exit /b 1
+              - if not exist "%LIBRARY_INC%\oqmc\data\pmj\ranks.txt" exit /b 1
+              - if not exist "%LIBRARY_INC%\oqmc\data\sobol\keys.txt" exit /b 1
+              - if not exist "%LIBRARY_INC%\oqmc\data\sobol\ranks.txt" exit /b 1
+              - if not exist "%LIBRARY_LIB%\cmake\OpenQMC\OpenQMCConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\cmake\OpenQMC\OpenQMCConfigVersion.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\OpenQMC.lib" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\openqmc_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openqmc_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: openqmc-header-only
+    inherit: openqmc-header-only-build
+    build:
+      files:
+        - include/oqmc/**
+        - lib/cmake/OpenQMC/**
+        - Library/include/oqmc/**
+        - Library/lib/cmake/OpenQMC/**
+    requirements:
+      run_constraints:
+        - openqmc-dev <0a0
+    tests:
+      - package_contents:
+          include:
+            - oqmc/oqmc.h
+            - oqmc/pmjbn.h
+          files:
+            not_exists:
+              - lib/libOpenQMC.so
+              - lib/libOpenQMC.dylib
+              - Library/bin/OpenQMC.dll
+              - Library/lib/OpenQMC.lib
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/include/oqmc/data/lattice/keys.txt"
+              - test -f "$PREFIX/include/oqmc/data/lattice/ranks.txt"
+              - test -f "$PREFIX/include/oqmc/data/pmj/keys.txt"
+              - test -f "$PREFIX/include/oqmc/data/pmj/ranks.txt"
+              - test -f "$PREFIX/include/oqmc/data/sobol/keys.txt"
+              - test -f "$PREFIX/include/oqmc/data/sobol/ranks.txt"
+              - test -f "$PREFIX/lib/cmake/OpenQMC/OpenQMCConfig.cmake"
+              - test -f "$PREFIX/lib/cmake/OpenQMC/OpenQMCConfigVersion.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENQMC_CONSUMER_EXPECT_HEADER_ONLY=ON
+              - cmake --build build
+              - ./build/openqmc_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_INC%\oqmc\data\lattice\keys.txt" exit /b 1
+              - if not exist "%LIBRARY_INC%\oqmc\data\lattice\ranks.txt" exit /b 1
+              - if not exist "%LIBRARY_INC%\oqmc\data\pmj\keys.txt" exit /b 1
+              - if not exist "%LIBRARY_INC%\oqmc\data\pmj\ranks.txt" exit /b 1
+              - if not exist "%LIBRARY_INC%\oqmc\data\sobol\keys.txt" exit /b 1
+              - if not exist "%LIBRARY_INC%\oqmc\data\sobol\ranks.txt" exit /b 1
+              - if not exist "%LIBRARY_LIB%\cmake\OpenQMC\OpenQMCConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\cmake\OpenQMC\OpenQMCConfigVersion.cmake" exit /b 1
+              - if exist "%LIBRARY_BIN%\OpenQMC.dll" exit /b 1
+              - if exist "%LIBRARY_LIB%\OpenQMC.lib" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENQMC_CONSUMER_EXPECT_HEADER_ONLY=ON
+              - cmake --build build --config Release
+              - build\openqmc_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openqmc_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: openqmc
+    requirements:
+      run:
+        - ${{ pin_subpackage('openqmc-lib', exact=True) }}
+        - ${{ pin_subpackage('openqmc-dev', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openqmc-lib', upper_bound='x.x') }}
+    tests:
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenQMC/OpenQMCConfig.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/openqmc_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OpenQMC\OpenQMCConfig.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\openqmc_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openqmc_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+about:
+  homepage: https://github.com/AcademySoftwareFoundation/openqmc
+  repository: https://github.com/AcademySoftwareFoundation/openqmc
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Quasi-Monte Carlo sampling library for rendering and graphics applications
