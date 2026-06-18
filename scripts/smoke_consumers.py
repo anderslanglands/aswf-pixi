@@ -134,6 +134,7 @@ def run_cmake_consumer(manifest: Path, recipe: Path, root_package: str, package:
         str(build),
         "-G",
         "Ninja",
+        "-DCMAKE_BUILD_TYPE=Release",
         *cmake_consumer_args(root_package, package),
     )
     pixi("run", "--manifest-path", str(manifest), "cmake", "--build", str(build))
