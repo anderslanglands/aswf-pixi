@@ -114,12 +114,14 @@ outputs:
             EOF
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "LIBRARY_BIN_FWD=%LIBRARY_BIN:\=/%"
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
               -DCMAKE_BUILD_TYPE=Release ^
               -DCMAKE_CXX_STANDARD=17 ^
-              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
               -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
@@ -131,7 +133,7 @@ outputs:
               -DINSTALL_DOCS=OFF ^
               -DINSTALL_FONTS=OFF ^
               -DEMBEDPLUGINS=ON ^
-              -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN% ^
+              -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN_FWD% ^
               -DUSE_PYTHON=OFF ^
               -DUSE_QT=OFF ^
               -DUSE_Freetype=OFF ^
@@ -321,12 +323,14 @@ outputs:
             cmake --build $SRC_DIR/../build-tools --target install
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build-tools
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "LIBRARY_BIN_FWD=%LIBRARY_BIN:\=/%"
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
               -DCMAKE_BUILD_TYPE=Release ^
               -DCMAKE_CXX_STANDARD=17 ^
-              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
               -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
@@ -338,7 +342,7 @@ outputs:
               -DINSTALL_DOCS=OFF ^
               -DINSTALL_FONTS=OFF ^
               -DEMBEDPLUGINS=OFF ^
-              -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN% ^
+              -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN_FWD% ^
               -DUSE_PYTHON=OFF ^
               -DUSE_QT=OFF ^
               -DUSE_Freetype=OFF ^
@@ -490,12 +494,14 @@ outputs:
             cmake --build $SRC_DIR/../build-python --target install
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build-python
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "LIBRARY_BIN_FWD=%LIBRARY_BIN:\=/%"
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
               -DCMAKE_BUILD_TYPE=Release ^
               -DCMAKE_CXX_STANDARD=17 ^
-              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
               -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
@@ -507,7 +513,7 @@ outputs:
               -DINSTALL_DOCS=OFF ^
               -DINSTALL_FONTS=OFF ^
               -DEMBEDPLUGINS=OFF ^
-              -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN% ^
+              -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN_FWD% ^
               -DUSE_PYTHON=ON ^
               -DPYTHON_VERSION="${{ python }}" ^
               -DPython3_EXECUTABLE=%PYTHON% ^
@@ -661,12 +667,14 @@ outputs:
             cmake --build $SRC_DIR/../build-plugins --target install
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build-plugins
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "LIBRARY_BIN_FWD=%LIBRARY_BIN:\=/%"
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
               -DCMAKE_BUILD_TYPE=Release ^
               -DCMAKE_CXX_STANDARD=17 ^
-              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
               -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
@@ -678,7 +686,7 @@ outputs:
               -DINSTALL_DOCS=OFF ^
               -DINSTALL_FONTS=OFF ^
               -DEMBEDPLUGINS=OFF ^
-              -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN% ^
+              -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN_FWD% ^
               -DUSE_PYTHON=OFF ^
               -DUSE_QT=OFF ^
               -DUSE_Freetype=OFF ^
