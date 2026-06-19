@@ -114,6 +114,15 @@ libuhdr packaging decisions:
 - Use external `libjpeg-turbo` rather than the upstream vendored dependency path.
 - Prefer recipe-side manual install logic for Windows before carrying upstream CMake install patches; if that becomes brittle, discuss patching options with Anders.
 
+Ptex packaging decisions:
+
+- Package Ptex 2.5.1 as `ptex-lib`, `ptex-dev`, `ptex-tools`, and a compatibility/default `ptex` metapackage.
+- The `ptex` metapackage should depend on the C++ runtime, development surface, and `ptxinfo` tool.
+- Build shared libraries only; keep static libraries, docs, and PRMan 15 compatibility disabled unless Anders explicitly asks for them.
+- Set `PTEX_VER` explicitly when building from release tarballs so installed headers and tools report 2.5 rather than upstream's tarball fallback version.
+- Use external `libdeflate`. Keep `zlib` as a `ptex-dev` runtime dependency because upstream 2.5.1's installed CMake config still calls `find_package(ZLIB)` even though the library links against libdeflate.
+- Do not enable Ptex support in OpenImageIO, OpenSubdiv, or OpenUSD as part of the standalone Ptex package; wire those consumers separately if Anders asks.
+
 OpenQMC packaging decisions:
 
 - Package OpenQMC 0.7.1 as `openqmc-lib`, `openqmc-dev`, `openqmc-header-only`, and a compatibility/default `openqmc` metapackage.
@@ -147,4 +156,4 @@ OpenImageIO packaging decisions:
 - Package optional plugins as `openimageio-format-gif`, `openimageio-format-webp`, `openimageio-format-jpeg2000`, `openimageio-format-jpegxl`, `openimageio-format-heif`, `openimageio-format-raw`, `openimageio-format-dicom`, `openimageio-format-ffmpeg`, and `openimageio-format-openvdb`, but omit `openimageio-format-jpegxl` from 2.5.19.1 because upstream does not provide it there.
 - `openimageio-format-openvdb` should depend on `openvdb-lib`, not `openvdb-python` or the OpenVDB compatibility metapackage.
 - Build `openimageio-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14; it depends on `openimageio-lib`, which carries the common read/write formats by default.
-- Keep Qt viewer (`iv`), OpenCV, Freetype text rendering support, Ptex, R3DSDK, Nuke, docs, tests, and fonts disabled unless Anders explicitly asks for them.
+- Keep Qt viewer (`iv`), OpenCV, Freetype text rendering support, Ptex integration, R3DSDK, Nuke, docs, tests, and fonts disabled unless Anders explicitly asks for them.

@@ -1,0 +1,255 @@
+context:
+  version: "2.5.1"
+  build_number: 0
+
+recipe:
+  name: ptex
+  version: ${{ version }}
+
+source:
+  url: https://github.com/wdas/ptex/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 6b4b55f562a0f9492655fcb7686ecc335a2a4dacc1de9f9a057a32f3867a9d9e
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: ptex-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DPTEX_VER=v${{ version }} \
+              -DPTEX_SHA=archive \
+              -DPTEX_BUILD_STATIC_LIBS=OFF \
+              -DPTEX_BUILD_SHARED_LIBS=ON \
+              -DPTEX_BUILD_DOCS=OFF \
+              -DPRMAN_15_COMPATIBLE_PTEX=OFF \
+              -B $SRC_DIR/../build \
+              -S .
+
+            cmake --build $SRC_DIR/../build --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DPTEX_VER=v${{ version }} ^
+              -DPTEX_SHA=archive ^
+              -DPTEX_BUILD_STATIC_LIBS=OFF ^
+              -DPTEX_BUILD_SHARED_LIBS=ON ^
+              -DPTEX_BUILD_DOCS=OFF ^
+              -DPRMAN_15_COMPATIBLE_PTEX=OFF ^
+              -B %SRC_DIR%\..\build ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build --target install --config Release
+
+            if not exist "%LIBRARY_BIN%" mkdir "%LIBRARY_BIN%"
+            if exist "%LIBRARY_LIB%\Ptex.dll" move /Y "%LIBRARY_LIB%\Ptex.dll" "%LIBRARY_BIN%\Ptex.dll"
+            if exist "%LIBRARY_LIB%\cmake\Ptex\ptex-exports-release.cmake" powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content '%LIBRARY_LIB%\cmake\Ptex\ptex-exports-release.cmake') -replace '/lib/Ptex.dll', '/bin/Ptex.dll' | Set-Content '%LIBRARY_LIB%\cmake\Ptex\ptex-exports-release.cmake'"
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+      host:
+        - libdeflate
+
+  - package:
+      name: ptex-lib
+    inherit: ptex-build
+    build:
+      files:
+        - lib/libPtex.so*
+        - lib/libPtex*.dylib*
+        - Library/bin/Ptex.dll
+    requirements:
+      run:
+        - libdeflate
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('ptex-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - bin/ptxinfo
+              - include/Ptexture.h
+              - lib/cmake/Ptex/ptex-config.cmake
+              - share/pkgconfig/ptex.pc
+              - Library/bin/ptxinfo.exe
+              - Library/include/Ptexture.h
+              - Library/lib/cmake/Ptex/ptex-config.cmake
+              - Library/share/pkgconfig/ptex.pc
+      - script:
+          - if: linux
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libPtex.so*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: osx
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libPtex*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: win
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'Ptex.dll')); assert paths; ctypes.WinDLL(paths[0])"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: ptex-dev
+    inherit: ptex-build
+    build:
+      files:
+        - include/PtexExports.h
+        - include/PtexHalf.h
+        - include/PtexInt.h
+        - include/PtexPlatform.h
+        - include/PtexUtils.h
+        - include/PtexVersion.h
+        - include/Ptexture.h
+        - lib/cmake/Ptex/**
+        - share/pkgconfig/ptex.pc
+        - Library/include/PtexExports.h
+        - Library/include/PtexHalf.h
+        - Library/include/PtexInt.h
+        - Library/include/PtexPlatform.h
+        - Library/include/PtexUtils.h
+        - Library/include/PtexVersion.h
+        - Library/include/Ptexture.h
+        - Library/lib/Ptex.lib
+        - Library/lib/cmake/Ptex/**
+        - Library/share/pkgconfig/ptex.pc
+    requirements:
+      run:
+        - ${{ pin_subpackage('ptex-lib', exact=True) }}
+        - zlib
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('ptex-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - Ptexture.h
+            - PtexVersion.h
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/Ptex/ptex-config.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/ptex_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\Ptex\ptex-config.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\Ptex.lib" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\ptex_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/ptex_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: ptex-tools
+    inherit: ptex-build
+    build:
+      files:
+        - bin/ptxinfo
+        - Library/bin/ptxinfo.exe
+    requirements:
+      run:
+        - ${{ pin_subpackage('ptex-lib', exact=True) }}
+    tests:
+      - script:
+          - ptxinfo -v
+      - script:
+          - if: unix
+            then:
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/ptex_consumer
+              - ptxinfo ptex_consumer.ptx
+          - if: win
+            then:
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\ptex_consumer.exe
+              - ptxinfo ptex_consumer.ptx
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/ptex_consumer.cpp
+        requirements:
+          run:
+            - ${{ pin_subpackage('ptex-dev', exact=True) }}
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: ptex
+    requirements:
+      run:
+        - ${{ pin_subpackage('ptex-lib', exact=True) }}
+        - ${{ pin_subpackage('ptex-dev', exact=True) }}
+        - ${{ pin_subpackage('ptex-tools', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('ptex-lib', upper_bound='x.x') }}
+    tests:
+      - script:
+          - if: unix
+            then:
+              - ptxinfo -v
+              - test -f "$PREFIX/lib/cmake/Ptex/ptex-config.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/ptex_consumer
+              - ptxinfo ptex_consumer.ptx
+          - if: win
+            then:
+              - ptxinfo -v
+              - if not exist "%LIBRARY_LIB%\cmake\Ptex\ptex-config.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\Ptex.lib" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\ptex_consumer.exe
+              - ptxinfo ptex_consumer.ptx
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/ptex_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+about:
+  homepage: https://github.com/wdas/ptex
+  repository: https://github.com/wdas/ptex
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Per-face texture mapping system for production rendering

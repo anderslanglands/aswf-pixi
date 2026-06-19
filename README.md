@@ -105,6 +105,17 @@ libuhdr is Google's reference codec for the JPEG/R gain map based Ultra HDR imag
 - `libuhdr-dev`: Public `ultrahdr_api.h` header, pkg-config metadata, and Windows import library. Depends on the matching `libuhdr-lib`.
 - `libuhdr`: Default metapackage for C++ consumers. Depends on the matching `libuhdr-lib` and `libuhdr-dev`.
 
+## Ptex
+
+Recipe versions: `2.5.1`
+
+Ptex is Walt Disney Animation Studios' per-face texture mapping system for production rendering.
+
+- `ptex-lib`: Shared Ptex runtime library. Depends on libdeflate.
+- `ptex-dev`: Public headers, CMake package files, pkg-config metadata, and Windows import library. Depends on the matching `ptex-lib`; also carries zlib as a development dependency because upstream's installed CMake config still calls `find_package(ZLIB)`.
+- `ptex-tools`: Command-line utility package, currently `ptxinfo`. Depends on the matching `ptex-lib`.
+- `ptex`: Default metapackage for C++ and tool consumers. Depends on the matching `ptex-lib`, `ptex-dev`, and `ptex-tools`.
+
 ## OpenQMC
 
 Recipe versions: `0.7.1`

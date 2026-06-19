@@ -37,6 +37,10 @@ build-libuhdr-1-4-0 = "rattler-build build --recipe libuhdr/1.4.0/recipe.yaml --
 build-libuhdr = { depends-on = ["build-libuhdr-1-4-0"] }
 upload-libuhdr-1-4-0-test = "anaconda upload --user anderslanglands --label test output/*/libuhdr-lib-1.4.0-*.conda output/*/libuhdr-dev-1.4.0-*.conda output/*/libuhdr-1.4.0-*.conda"
 upload-libuhdr-1-4-0 = "anaconda upload --user anderslanglands output/*/libuhdr-lib-1.4.0-*.conda output/*/libuhdr-dev-1.4.0-*.conda output/*/libuhdr-1.4.0-*.conda"
+build-ptex-2-5-1 = "rattler-build build --recipe ptex/2.5.1/recipe.yaml --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native"
+build-ptex = { depends-on = ["build-ptex-2-5-1"] }
+upload-ptex-2-5-1-test = "anaconda upload --user anderslanglands --label test output/*/ptex-lib-2.5.1-*.conda output/*/ptex-dev-2.5.1-*.conda output/*/ptex-tools-2.5.1-*.conda output/*/ptex-2.5.1-*.conda"
+upload-ptex-2-5-1 = "anaconda upload --user anderslanglands output/*/ptex-lib-2.5.1-*.conda output/*/ptex-dev-2.5.1-*.conda output/*/ptex-tools-2.5.1-*.conda output/*/ptex-2.5.1-*.conda"
 build-openqmc-0-7-1 = "rattler-build build --recipe openqmc/0.7.1/recipe.yaml --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native"
 build-openqmc = { depends-on = ["build-openqmc-0-7-1"] }
 upload-openqmc-0-7-1-test = "anaconda upload --user anderslanglands --label test output/*/openqmc-lib-0.7.1-*.conda output/*/openqmc-dev-0.7.1-*.conda output/*/openqmc-header-only-0.7.1-*.conda output/*/openqmc-0.7.1-*.conda"

@@ -1,0 +1,27 @@
+[workspace]
+name = "ptex-2.5.1-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.ptex-lib.dependencies]
+ptex-lib = "==2.5.1"
+
+[feature.ptex-dev.dependencies]
+ptex-dev = "==2.5.1"
+
+[feature.ptex-tools.dependencies]
+ptex-tools = "==2.5.1"
+
+[feature.ptex.dependencies]
+ptex = "==2.5.1"
+
+[environments]
+ptex-lib = ["ptex-lib"]
+ptex-dev = ["ptex-dev"]
+ptex-tools = ["ptex-tools"]
+ptex = ["ptex"]
