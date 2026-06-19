@@ -132,6 +132,7 @@ Partio packaging decisions:
 - Build `partio-tools` with only headless tools: `partattr`, `partconvert`, and `partinfo`.
 - Upstream 1.20.0 does not install CMake package metadata; install a small recipe-side `PartioConfig.cmake` exporting `Partio::partio` and validate consumers through CMake.
 - Use external zlib support for compressed particle formats.
+- Patch the upstream Python binding CMake during the recipe build so macOS extension modules use dynamic symbol lookup instead of linking directly to `libpython`; direct `libpython` linkage segfaulted during `import partio` on `osx-arm64`.
 
 OpenQMC packaging decisions:
 

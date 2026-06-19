@@ -121,6 +121,14 @@ outputs:
           then: |
             cmake -E rm -rf $SRC_DIR/../build-python
 
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake -DPARTIO_SOURCE_DIR="$SRC_DIR" \
+              -P "$recipe_dir/cmake/patch-python-macos-link.cmake"
+
             cmake $CMAKE_ARGS \
               -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
