@@ -125,6 +125,7 @@ outputs:
               -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DUSE_CCACHE=OFF ^
               -DBUILD_SHARED_LIBS=ON ^
               -DBUILD_TESTING=OFF ^
               -DOIIO_BUILD_TESTS=OFF ^
@@ -183,10 +184,10 @@ outputs:
               -DENABLE_zfile=ON ^
               -B %SRC_DIR%\..\build ^
               -S .
-            if errorlevel 1 exit /b 1
+            if %ERRORLEVEL% neq 0 exit /b 1
 
             cmake --build %SRC_DIR%\..\build --target install --config Release
-            if errorlevel 1 exit /b 1
+            if %ERRORLEVEL% neq 0 exit /b 1
 
             rem Normalize generated metadata so rattler-build does not see mixed slash forms of %%PREFIX%%.
             powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $prefixFwd = $env:PREFIX -replace '\\', '/'; $prefixPattern = (($env:PREFIX -split '\\') | ForEach-Object { [regex]::Escape($_) }) -join '[\\/]'; $files = @(); $cmakeDir = Join-Path $env:LIBRARY_LIB 'cmake/OpenImageIO'; if (Test-Path $cmakeDir) { $files += Get-ChildItem -Path $cmakeDir -Filter '*.cmake' -File }; $pc = Join-Path $env:LIBRARY_LIB 'pkgconfig/OpenImageIO.pc'; if (Test-Path $pc) { $files += Get-Item $pc }; foreach ($file in $files) { $text = [IO.File]::ReadAllText($file.FullName); $text = [regex]::Replace($text, $prefixPattern, $prefixFwd); $text = $text.Replace($prefixFwd + [char]92, $prefixFwd + '/'); [IO.File]::WriteAllText($file.FullName, $text) }"
@@ -339,6 +340,7 @@ outputs:
               -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DUSE_CCACHE=OFF ^
               -DBUILD_SHARED_LIBS=ON ^
               -DBUILD_TESTING=OFF ^
               -DOIIO_BUILD_TESTS=OFF ^
@@ -399,10 +401,10 @@ outputs:
               -DENABLE_zfile=OFF ^
               -B %SRC_DIR%\..\build-tools ^
               -S .
-            if errorlevel 1 exit /b 1
+            if %ERRORLEVEL% neq 0 exit /b 1
 
             cmake --build %SRC_DIR%\..\build-tools --target install --config Release
-            if errorlevel 1 exit /b 1
+            if %ERRORLEVEL% neq 0 exit /b 1
     requirements:
       build:
         - ${{ compiler('c') }}
@@ -512,6 +514,7 @@ outputs:
               -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DUSE_CCACHE=OFF ^
               -DBUILD_SHARED_LIBS=ON ^
               -DBUILD_TESTING=OFF ^
               -DOIIO_BUILD_TESTS=OFF ^
@@ -572,10 +575,10 @@ outputs:
               -DENABLE_zfile=OFF ^
               -B %SRC_DIR%\..\build-python ^
               -S .
-            if errorlevel 1 exit /b 1
+            if %ERRORLEVEL% neq 0 exit /b 1
 
             cmake --build %SRC_DIR%\..\build-python --target install --config Release
-            if errorlevel 1 exit /b 1
+            if %ERRORLEVEL% neq 0 exit /b 1
     requirements:
       build:
         - ${{ compiler('c') }}
@@ -687,6 +690,7 @@ outputs:
               -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DUSE_CCACHE=OFF ^
               -DBUILD_SHARED_LIBS=ON ^
               -DBUILD_TESTING=OFF ^
               -DOIIO_BUILD_TESTS=OFF ^
@@ -747,10 +751,10 @@ outputs:
               -DTBB_ROOT=%LIBRARY_PREFIX% ^
               -B %SRC_DIR%\..\build-plugins ^
               -S .
-            if errorlevel 1 exit /b 1
+            if %ERRORLEVEL% neq 0 exit /b 1
 
             cmake --build %SRC_DIR%\..\build-plugins --target install --config Release
-            if errorlevel 1 exit /b 1
+            if %ERRORLEVEL% neq 0 exit /b 1
     requirements:
       build:
         - ${{ compiler('c') }}
