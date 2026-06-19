@@ -32,7 +32,6 @@ outputs:
               -DCMAKE_INSTALL_PREFIX=$PREFIX \
               -DCMAKE_INSTALL_LIBDIR=lib \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
               -DBUILD_SHARED_LIBS=ON \
               -DBUILD_TESTING=OFF \
               -DOIIO_BUILD_TESTS=OFF \
@@ -126,7 +125,6 @@ outputs:
               -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
-              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
               -DBUILD_SHARED_LIBS=ON ^
               -DBUILD_TESTING=OFF ^
               -DOIIO_BUILD_TESTS=OFF ^
@@ -265,7 +263,6 @@ outputs:
               -DCMAKE_INSTALL_PREFIX=$PREFIX \
               -DCMAKE_INSTALL_LIBDIR=lib \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
               -DBUILD_SHARED_LIBS=ON \
               -DBUILD_TESTING=OFF \
               -DOIIO_BUILD_TESTS=OFF \
@@ -342,7 +339,6 @@ outputs:
               -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
-              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
               -DBUILD_SHARED_LIBS=ON ^
               -DBUILD_TESTING=OFF ^
               -DOIIO_BUILD_TESTS=OFF ^
@@ -440,7 +436,6 @@ outputs:
               -DCMAKE_INSTALL_PREFIX=$PREFIX \
               -DCMAKE_INSTALL_LIBDIR=lib \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
               -DBUILD_SHARED_LIBS=ON \
               -DBUILD_TESTING=OFF \
               -DOIIO_BUILD_TESTS=OFF \
@@ -517,7 +512,6 @@ outputs:
               -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
-              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
               -DBUILD_SHARED_LIBS=ON ^
               -DBUILD_TESTING=OFF ^
               -DOIIO_BUILD_TESTS=OFF ^
@@ -617,7 +611,6 @@ outputs:
               -DCMAKE_INSTALL_PREFIX=$PREFIX \
               -DCMAKE_INSTALL_LIBDIR=lib \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
               -DBUILD_SHARED_LIBS=ON \
               -DBUILD_TESTING=OFF \
               -DOIIO_BUILD_TESTS=OFF \
@@ -694,7 +687,6 @@ outputs:
               -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
-              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
               -DBUILD_SHARED_LIBS=ON ^
               -DBUILD_TESTING=OFF ^
               -DOIIO_BUILD_TESTS=OFF ^
