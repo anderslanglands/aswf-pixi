@@ -190,7 +190,7 @@ outputs:
             if %ERRORLEVEL% neq 0 exit /b 1
 
             rem Normalize generated metadata so rattler-build does not see mixed slash forms of %%PREFIX%%.
-            powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $prefixFwd = $env:PREFIX -replace '\\', '/'; $prefixPattern = (($env:PREFIX -split '\\') | ForEach-Object { [regex]::Escape($_) }) -join '[\\/]'; $files = @(); $cmakeDir = Join-Path $env:LIBRARY_LIB 'cmake/OpenImageIO'; if (Test-Path $cmakeDir) { $files += Get-ChildItem -Path $cmakeDir -Filter '*.cmake' -File }; $pc = Join-Path $env:LIBRARY_LIB 'pkgconfig/OpenImageIO.pc'; if (Test-Path $pc) { $files += Get-Item $pc }; foreach ($file in $files) { $text = [IO.File]::ReadAllText($file.FullName); $text = [regex]::Replace($text, $prefixPattern, $prefixFwd); $text = $text.Replace($prefixFwd + [char]92, $prefixFwd + '/'); [IO.File]::WriteAllText($file.FullName, $text) }"
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $prefixFwd = $env:PREFIX -replace '\\', '/'; $prefixPattern = (($env:PREFIX -split '\\') | ForEach-Object { [regex]::Escape($_) }) -join '[\\/]'; $files = @(); $cmakeDir = Join-Path $env:LIBRARY_LIB 'cmake/OpenImageIO'; if (Test-Path $cmakeDir) { $files += Get-ChildItem -Path $cmakeDir -Filter '*.cmake' -File }; $pc = Join-Path $env:LIBRARY_LIB 'pkgconfig/OpenImageIO.pc'; if (Test-Path $pc) { $files += Get-Item $pc }; foreach ($file in $files) { $text = [IO.File]::ReadAllText($file.FullName); $text = [regex]::Replace($text, $prefixPattern, $prefixFwd); $text = $text.Replace($prefixFwd + [char]92, $prefixFwd + '/'); $text = $text.Replace([char]92 + 'bin', '/bin'); [IO.File]::WriteAllText($file.FullName, $text) }"
 
             if not exist "%PREFIX%\etc\conda\activate.d" mkdir "%PREFIX%\etc\conda\activate.d"
             if not exist "%PREFIX%\etc\conda\deactivate.d" mkdir "%PREFIX%\etc\conda\deactivate.d"
@@ -579,6 +579,8 @@ outputs:
 
             cmake --build %SRC_DIR%\..\build-python --target install --config Release
             if %ERRORLEVEL% neq 0 exit /b 1
+
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $lib = Join-Path $env:LIBRARY_PREFIX 'lib'; $sources = Get-ChildItem -Path $lib -Directory -Filter 'python*' | ForEach-Object { Join-Path $_.FullName 'site-packages/OpenImageIO' } | Where-Object { Test-Path $_ }; foreach ($src in $sources) { New-Item -ItemType Directory -Force -Path $env:SP_DIR | Out-Null; $dest = Join-Path $env:SP_DIR 'OpenImageIO'; if (Test-Path $dest) { Remove-Item -LiteralPath $dest -Recurse -Force }; Move-Item -LiteralPath $src -Destination $dest }"
     requirements:
       build:
         - ${{ compiler('c') }}
@@ -755,6 +757,8 @@ outputs:
 
             cmake --build %SRC_DIR%\..\build-plugins --target install --config Release
             if %ERRORLEVEL% neq 0 exit /b 1
+
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; New-Item -ItemType Directory -Force -Path $env:LIBRARY_BIN | Out-Null; Get-ChildItem -Path $env:LIBRARY_LIB -Filter '*.imageio.dll' -File | ForEach-Object { Move-Item -LiteralPath $_.FullName -Destination (Join-Path $env:LIBRARY_BIN $_.Name) -Force }"
     requirements:
       build:
         - ${{ compiler('c') }}
@@ -932,6 +936,7 @@ outputs:
       string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
       files:
         - lib/python*/site-packages/OpenImageIO/**
+        - Library/lib/python*/site-packages/OpenImageIO/**
         - Lib/site-packages/OpenImageIO/**
     requirements:
       run:
