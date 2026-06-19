@@ -1,0 +1,378 @@
+context:
+  version: "1.20.0"
+  build_number: 0
+
+recipe:
+  name: partio
+  version: ${{ version }}
+
+source:
+  url: https://github.com/wdas/partio/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: e60a89364f2b5d9c9b1f143175fc1a5018027a59bb31af56e5df88806b506e49
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: partio-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DPARTIO_BUILD_SHARED_LIBS=ON \
+              -DPARTIO_BUILD_TOOLS=OFF \
+              -DPARTIO_BUILD_PYTHON=OFF \
+              -DPARTIO_BUILD_DOCS=OFF \
+              -DPARTIO_ENABLE_TESTING=OFF \
+              -B $SRC_DIR/../build \
+              -S .
+
+            cmake --build $SRC_DIR/../build --target install
+
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake -DPARTIO_CONFIG_PREFIX="$PREFIX" \
+              -DPARTIO_CONFIG_VERSION="${{ version }}" \
+              -P "$recipe_dir/cmake/install-partio-config.cmake"
+
+            cmake -E rm -rf $SRC_DIR/../build-tools
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DPARTIO_SOURCE_DIR=$SRC_DIR \
+              -DCMAKE_PREFIX_PATH=$PREFIX \
+              -B $SRC_DIR/../build-tools \
+              -S "$recipe_dir/cmake/headless-tools"
+
+            cmake --build $SRC_DIR/../build-tools --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DPARTIO_BUILD_SHARED_LIBS=ON ^
+              -DPARTIO_BUILD_TOOLS=OFF ^
+              -DPARTIO_BUILD_PYTHON=OFF ^
+              -DPARTIO_BUILD_DOCS=OFF ^
+              -DPARTIO_ENABLE_TESTING=OFF ^
+              -B %SRC_DIR%\..\build ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build --target install --config Release
+
+            if not exist "%LIBRARY_BIN%" mkdir "%LIBRARY_BIN%"
+            if exist "%LIBRARY_LIB%\partio.dll" move /Y "%LIBRARY_LIB%\partio.dll" "%LIBRARY_BIN%\partio.dll"
+
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake -DPARTIO_CONFIG_PREFIX="%LIBRARY_PREFIX%" ^
+              -DPARTIO_CONFIG_VERSION="${{ version }}" ^
+              -P "%RECIPE_DIR_VAR%\cmake\install-partio-config.cmake"
+
+            cmake -E rm -rf %SRC_DIR%\..\build-tools
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DPARTIO_SOURCE_DIR=%SRC_DIR% ^
+              -DCMAKE_PREFIX_PATH=%LIBRARY_PREFIX% ^
+              -B %SRC_DIR%\..\build-tools ^
+              -S "%RECIPE_DIR_VAR%\cmake\headless-tools"
+
+            cmake --build %SRC_DIR%\..\build-tools --target install --config Release
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+      host:
+        - zlib
+
+  - staging:
+      name: partio-python-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-python
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DPARTIO_BUILD_SHARED_LIBS=ON \
+              -DPARTIO_BUILD_TOOLS=OFF \
+              -DPARTIO_BUILD_PYTHON=ON \
+              -DPARTIO_BUILD_DOCS=OFF \
+              -DPARTIO_ENABLE_TESTING=OFF \
+              -DPython_EXECUTABLE=$PYTHON \
+              -B $SRC_DIR/../build-python \
+              -S .
+
+            cmake --build $SRC_DIR/../build-python --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-python
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DPARTIO_BUILD_SHARED_LIBS=ON ^
+              -DPARTIO_BUILD_TOOLS=OFF ^
+              -DPARTIO_BUILD_PYTHON=ON ^
+              -DPARTIO_BUILD_DOCS=OFF ^
+              -DPARTIO_ENABLE_TESTING=OFF ^
+              -DPython_EXECUTABLE=%PYTHON% ^
+              -B %SRC_DIR%\..\build-python ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-python --target install --config Release
+
+            if not exist "%LIBRARY_BIN%" mkdir "%LIBRARY_BIN%"
+            if exist "%LIBRARY_LIB%\partio.dll" move /Y "%LIBRARY_LIB%\partio.dll" "%LIBRARY_BIN%\partio.dll"
+            if not exist "%SP_DIR%" mkdir "%SP_DIR%"
+            if exist "%LIBRARY_PREFIX%\lib\python${{ python }}\site-packages\partio.py" move /Y "%LIBRARY_PREFIX%\lib\python${{ python }}\site-packages\partio.py" "%SP_DIR%\partio.py"
+            if exist "%LIBRARY_PREFIX%\lib\python${{ python }}\site-packages\_partio.pyd" move /Y "%LIBRARY_PREFIX%\lib\python${{ python }}\site-packages\_partio.pyd" "%SP_DIR%\_partio.pyd"
+            if exist "%LIBRARY_PREFIX%\lib\python${{ python }}\site-packages\_partio.dll" move /Y "%LIBRARY_PREFIX%\lib\python${{ python }}\site-packages\_partio.dll" "%SP_DIR%\_partio.dll"
+            if exist "%LIBRARY_PREFIX%\lib\python${{ python }}" rmdir /S /Q "%LIBRARY_PREFIX%\lib\python${{ python }}"
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - swig
+      host:
+        - python
+        - zlib
+
+  - package:
+      name: partio-lib
+    inherit: partio-build
+    build:
+      files:
+        - lib/libpartio.so.*
+        - lib/libpartio.*.dylib
+        - Library/bin/partio.dll
+    requirements:
+      run:
+        - zlib
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('partio-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - bin/partinfo
+              - include/Partio.h
+              - lib/cmake/Partio/PartioConfig.cmake
+              - lib/python*/site-packages/partio.py
+              - lib/python*/site-packages/_partio*
+              - share/swig/partio.i
+              - Library/bin/partinfo.exe
+              - Library/include/Partio.h
+              - Library/lib/cmake/Partio/PartioConfig.cmake
+              - Library/share/swig/partio.i
+      - script:
+          - if: linux
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libpartio.so.*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: osx
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libpartio.*.dylib')); assert paths; ctypes.CDLL(paths[0])"
+          - if: win
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'partio.dll')); assert paths; ctypes.WinDLL(paths[0])"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: partio-dev
+    inherit: partio-build
+    build:
+      files:
+        - include/*.h
+        - lib/libpartio.so
+        - lib/libpartio.dylib
+        - lib/cmake/Partio/**
+        - Library/include/*.h
+        - Library/lib/partio.lib
+        - Library/lib/cmake/Partio/**
+    requirements:
+      run:
+        - ${{ pin_subpackage('partio-lib', exact=True) }}
+        - zlib
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('partio-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - Partio.h
+            - PartioAttribute.h
+            - PartioIterator.h
+          files:
+            not_exists:
+              - bin/partinfo
+              - lib/python*/site-packages/partio.py
+              - lib/python*/site-packages/_partio*
+              - share/swig/partio.i
+              - Library/bin/partinfo.exe
+              - Library/share/swig/partio.i
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/Partio/PartioConfig.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/partio_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\Partio\PartioConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\partio.lib" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\partio_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/partio_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: partio-tools
+    inherit: partio-build
+    build:
+      files:
+        - bin/partattr
+        - bin/partconvert
+        - bin/partinfo
+        - Library/bin/partattr.exe
+        - Library/bin/partconvert.exe
+        - Library/bin/partinfo.exe
+    requirements:
+      run:
+        - ${{ pin_subpackage('partio-lib', exact=True) }}
+    tests:
+      - script:
+          - partinfo -h
+      - script:
+          - python tests/check_tools.py
+        files:
+          recipe:
+            - tests/check_tools.py
+            - tests/sample.pts
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: partio-python
+    inherit: partio-python-build
+    build:
+      string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+      files:
+        - lib/python*/site-packages/partio.py
+        - lib/python*/site-packages/_partio*
+        - Lib/site-packages/partio.py
+        - Lib/site-packages/_partio*
+        - share/swig/partio.i
+        - Library/share/swig/partio.i
+    requirements:
+      run:
+        - python
+        - ${{ pin_subpackage('partio-lib', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - partio
+      - script:
+          - python tests/check_python.py
+        files:
+          recipe:
+            - tests/check_python.py
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: partio
+    requirements:
+      run:
+        - ${{ pin_subpackage('partio-lib', exact=True) }}
+        - ${{ pin_subpackage('partio-dev', exact=True) }}
+        - ${{ pin_subpackage('partio-tools', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('partio-lib', upper_bound='x.x') }}
+    tests:
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/Partio/PartioConfig.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/partio_consumer
+              - python tests/check_tools.py
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\Partio\PartioConfig.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\partio_consumer.exe
+              - python tests/check_tools.py
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/check_tools.py
+            - tests/partio_consumer.cpp
+            - tests/sample.pts
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - python
+
+about:
+  homepage: https://wdas.github.io/partio
+  repository: https://github.com/wdas/partio
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Particle file I/O and manipulation library

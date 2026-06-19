@@ -123,6 +123,16 @@ Ptex packaging decisions:
 - Use external `libdeflate`. Keep `zlib` as a `ptex-dev` runtime dependency because upstream 2.5.1's installed CMake config still calls `find_package(ZLIB)` even though the library links against libdeflate.
 - Do not enable Ptex support in OpenImageIO, OpenSubdiv, or OpenUSD as part of the standalone Ptex package; wire those consumers separately if Anders asks.
 
+Partio packaging decisions:
+
+- Package Partio 1.20.0 as `partio-lib`, `partio-dev`, `partio-tools`, `partio-python`, and a compatibility/default `partio` metapackage.
+- The `partio` metapackage should depend on the C++ runtime, development surface, and headless command-line tools only; keep Python bindings opt-in as `partio-python`.
+- Build `partio-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
+- Keep GUI tools disabled or omitted for now. Upstream's `partview` requires OpenGL/GLUT, while `partedit` and `partinspect` require Qt Python bindings.
+- Build `partio-tools` with only headless tools: `partattr`, `partconvert`, and `partinfo`.
+- Upstream 1.20.0 does not install CMake package metadata; install a small recipe-side `PartioConfig.cmake` exporting `Partio::partio` and validate consumers through CMake.
+- Use external zlib support for compressed particle formats.
+
 OpenQMC packaging decisions:
 
 - Package OpenQMC 0.7.1 as `openqmc-lib`, `openqmc-dev`, `openqmc-header-only`, and a compatibility/default `openqmc` metapackage.

@@ -116,6 +116,18 @@ Ptex is Walt Disney Animation Studios' per-face texture mapping system for produ
 - `ptex-tools`: Command-line utility package, currently `ptxinfo`. Depends on the matching `ptex-lib`.
 - `ptex`: Default metapackage for C++ and tool consumers. Depends on the matching `ptex-lib`, `ptex-dev`, and `ptex-tools`.
 
+## Partio
+
+Recipe versions: `1.20.0`
+
+Partio is Walt Disney Animation Studios' particle file I/O and manipulation library.
+
+- `partio-lib`: Shared Partio runtime library with zlib support.
+- `partio-dev`: Public headers and recipe-side CMake package metadata exporting `Partio::partio`. Depends on the matching `partio-lib`.
+- `partio-tools`: Headless command-line tools, currently `partattr`, `partconvert`, and `partinfo`. Depends on the matching `partio-lib`.
+- `partio-python`: SWIG Python bindings for Partio, built for Python 3.10 through 3.14. Depends on the matching `partio-lib`.
+- `partio`: Default metapackage for C++ and headless tool consumers. Depends on the matching `partio-lib`, `partio-dev`, and `partio-tools`; Python bindings and GUI tools are opt-in or omitted for now.
+
 ## OpenQMC
 
 Recipe versions: `0.7.1`
