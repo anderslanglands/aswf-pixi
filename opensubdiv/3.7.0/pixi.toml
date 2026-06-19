@@ -1,0 +1,35 @@
+[workspace]
+name = "opensubdiv-3.7.0-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.opensubdiv-lib.dependencies]
+opensubdiv-lib = "==3.7.0"
+
+[feature.opensubdiv-dev.dependencies]
+opensubdiv-dev = "==3.7.0"
+
+[feature.opensubdiv.dependencies]
+opensubdiv = "==3.7.0"
+
+[feature.opensubdiv-gpu-lib.dependencies]
+opensubdiv-gpu-lib = "==3.7.0"
+
+[feature.opensubdiv-gpu-dev.dependencies]
+opensubdiv-gpu-dev = "==3.7.0"
+
+[feature.opensubdiv-gpu.dependencies]
+opensubdiv-gpu = "==3.7.0"
+
+[environments]
+opensubdiv-lib = ["opensubdiv-lib"]
+opensubdiv-dev = ["opensubdiv-dev"]
+opensubdiv = ["opensubdiv"]
+opensubdiv-gpu-lib = ["opensubdiv-gpu-lib"]
+opensubdiv-gpu-dev = ["opensubdiv-gpu-dev"]
+opensubdiv-gpu = ["opensubdiv-gpu"]

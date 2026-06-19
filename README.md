@@ -116,6 +116,19 @@ OpenQMC provides Quasi-Monte Carlo sampling APIs for rendering and graphics appl
 - `openqmc-header-only`: Header-only CMake package exporting `OpenQMC::OpenQMC` without `OQMC_ENABLE_BINARY` or a shared runtime library. Conflicts with `openqmc-dev`.
 - `openqmc`: Default metapackage matching the old pixi-recipes behavior. Depends on the matching `openqmc-lib` and `openqmc-dev`; use `openqmc-header-only` to opt into the interface-library flavor.
 
+## OpenSubdiv
+
+Recipe versions: `3.7.0`
+
+OpenSubdiv provides subdivision surface evaluation libraries for CPU and GPU workflows.
+
+- `opensubdiv-lib`: CPU-only implementation library. On Linux and macOS this carries the shared `osdCPU` runtime library; on Windows upstream 3.7.0 installs a static `osdCPU.lib` rather than a DLL.
+- `opensubdiv-dev`: CPU-only headers, CMake package files, and Unix static archives. Depends on the matching `opensubdiv-lib` and conflicts with `opensubdiv-gpu-dev`.
+- `opensubdiv`: Default CPU-only metapackage for C++ consumers. Depends on the matching `opensubdiv-lib` and `opensubdiv-dev`.
+- `opensubdiv-gpu-lib`: GPU-enabled implementation libraries, carrying both `osdCPU` and `osdGPU`. Linux builds enable OpenGL, GLEW, GLFW, and TBB with CUDA and Metal disabled; macOS builds enable Metal, OpenGL, GLEW, GLFW, and TBB with CUDA disabled. Windows GPU outputs are not built for now.
+- `opensubdiv-gpu-dev`: GPU-enabled headers, CMake package files, and Unix static archives. Depends on the matching `opensubdiv-gpu-lib` and conflicts with `opensubdiv-dev`; also carries the TBB and Linux OpenGL development dependencies required by the exported CMake targets.
+- `opensubdiv-gpu`: GPU-enabled compatibility/default metapackage. Depends on the matching `opensubdiv-gpu-lib` and `opensubdiv-gpu-dev`, and conflicts with `opensubdiv`.
+
 ## OpenImageIO
 
 Recipe versions: `2.5.19.1`, `3.0.19.1`, `3.1.14.0`

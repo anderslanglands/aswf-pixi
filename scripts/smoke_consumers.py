@@ -110,10 +110,32 @@ def package_needs_consumer_test(root_package: str, package: dict[str, object], r
     return name == root_package or name.endswith("-dev")
 
 
-def cmake_consumer_args(root_package: str, package: dict[str, object]) -> list[str]:
+def cmake_consumer_args(root_package: str, package: dict[str, object], platform: str) -> list[str]:
     name = str(package["name"])
     if root_package == "openexr" and name in {"openexr", "openexr-dev"}:
         return ["-DOPENEXR_CONSUMER_EXPECT_FULL=ON"]
+    if root_package == "opensubdiv":
+        if name in {"opensubdiv", "opensubdiv-dev"}:
+            return ["-DOPENSUBDIV_CONSUMER_EXPECT_CPU_ONLY=ON"]
+        if name in {"opensubdiv-gpu", "opensubdiv-gpu-dev"}:
+            args = ["-DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON"]
+            if platform.startswith("linux-"):
+                args.extend(
+                    [
+                        "-DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON",
+                        "-DOPENSUBDIV_CONSUMER_REQUIRE_TBB=ON",
+                        "-DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON",
+                        "-DOPENSUBDIV_CONSUMER_FORBID_METAL=ON",
+                    ]
+                )
+            elif platform.startswith("osx-"):
+                args.extend(
+                    [
+                        "-DOPENSUBDIV_CONSUMER_REQUIRE_METAL=ON",
+                        "-DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON",
+                    ]
+                )
+            return args
     if root_package == "openqmc" and name == "openqmc-header-only":
         return ["-DOPENQMC_CONSUMER_EXPECT_HEADER_ONLY=ON"]
     if root_package == "openvdb":
@@ -139,7 +161,7 @@ def run_cmake_consumer(manifest: Path, recipe: Path, root_package: str, package:
         "-G",
         "Ninja",
         "-DCMAKE_BUILD_TYPE=Release",
-        *cmake_consumer_args(root_package, package),
+        *cmake_consumer_args(root_package, package, str(package.get("subdir", ""))),
     )
     pixi("run", "--manifest-path", str(manifest), "cmake", "--build", str(build))
     pixi(

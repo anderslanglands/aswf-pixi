@@ -123,6 +123,18 @@ OpenQMC packaging decisions:
 - Carry the narrow project-version patch for 0.7.1 so installed CMake package version metadata reports 0.7.1 instead of upstream's `project(OpenQMC VERSION 0.1.0)`.
 - Carry the narrow Windows shared-library table export patch for 0.7.1 so MSVC consumers import the binary blue-noise table data from `OpenQMC.dll` correctly.
 
+OpenSubdiv packaging decisions:
+
+- Package OpenSubdiv 3.7.0 as `opensubdiv-lib`, `opensubdiv-dev`, `opensubdiv`, `opensubdiv-gpu-lib`, `opensubdiv-gpu-dev`, and `opensubdiv-gpu`.
+- The `opensubdiv` metapackage should depend on the CPU-only runtime and development surface.
+- The `opensubdiv-gpu` metapackage should depend on the GPU-enabled runtime and development surface, and remain mutually exclusive with `opensubdiv` because the builds install overlapping headers, CMake metadata, and `osdCPU` implementation libraries.
+- Keep OpenSubdiv examples, tutorials, regression tests, GL tests, PTex, docs, OpenMP, OpenCL, CLEW, DirectX, and macOS frameworks disabled unless Anders explicitly asks for them.
+- The CPU-only build should keep TBB, CUDA, OpenGL, Metal, GLEW, and GLFW disabled.
+- Linux GPU builds should enable OpenGL, GLEW, GLFW, and TBB, with CUDA and Metal disabled for now. Upstream 3.7.0 uses legacy `FindCUDA`, which does not detect the current conda CUDA/CMake stack without patching; revisit CUDA as a separate package decision if needed.
+- macOS GPU builds should enable Metal, OpenGL, GLEW, GLFW, and TBB, with CUDA disabled.
+- Keep the GPU CMake package self-contained for clean consumers: `OpenSubdivConfig.cmake` should load TBB and OpenGL dependency targets before upstream targets, and `opensubdiv-gpu-dev` should depend on `tbb-devel` plus Linux `libgl-devel`.
+- Do not build Windows GPU outputs for now. Upstream OpenSubdiv 3.7.0 also does not build shared libraries on Windows without CMake install/export changes; keep the CPU Windows package static-only unless Anders decides carrying a shared-library patch is worth it.
+
 OpenImageIO packaging decisions:
 
 - Package OpenImageIO 2.5.19.1, 3.0.19.1, and 3.1.14.0 as `openimageio-lib`, `openimageio-dev`, `openimageio-tools`, `openimageio-python`, individual optional format plugin packages, and a compatibility/default `openimageio` metapackage.

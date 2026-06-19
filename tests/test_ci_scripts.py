@@ -478,6 +478,43 @@ class SmokeConsumersTests(unittest.TestCase):
                 "--output-on-failure",
             ))
 
+    def test_run_cmake_consumer_passes_opensubdiv_platform_flags(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            recipe = tmp / "opensubdiv" / "3.7.0"
+            tests = recipe / "tests"
+            tests.mkdir(parents=True)
+            (tests / "CMakeLists.txt").write_text(
+                "cmake_minimum_required(VERSION 3.20)\n",
+                encoding="utf-8",
+            )
+            manifest = tmp / "pixi.toml"
+            manifest.write_text("", encoding="utf-8")
+
+            calls: list[tuple[str, ...]] = []
+            original_pixi = smoke_consumers.pixi
+
+            def fake_pixi(*args: str) -> None:
+                calls.append(args)
+
+            try:
+                smoke_consumers.pixi = fake_pixi
+                smoke_consumers.run_cmake_consumer(
+                    manifest,
+                    recipe,
+                    "opensubdiv",
+                    {"name": "opensubdiv-gpu-dev", "subdir": "osx-arm64"},
+                    tmp,
+                )
+            finally:
+                smoke_consumers.pixi = original_pixi
+
+            cmake_configure = calls[0]
+            self.assertIn("-DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON", cmake_configure)
+            self.assertIn("-DOPENSUBDIV_CONSUMER_REQUIRE_METAL=ON", cmake_configure)
+            self.assertIn("-DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON", cmake_configure)
+            self.assertNotIn("-DOPENSUBDIV_CONSUMER_FORBID_METAL=ON", cmake_configure)
+
     def test_openqmc_header_only_runs_cmake_consumer(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
             recipe = Path(tmp_raw) / "openqmc" / "0.7.1"
@@ -498,8 +535,32 @@ class SmokeConsumersTests(unittest.TestCase):
 
     def test_openqmc_header_only_passes_expected_cmake_flag(self) -> None:
         self.assertEqual(
-            smoke_consumers.cmake_consumer_args("openqmc", {"name": "openqmc-header-only"}),
+            smoke_consumers.cmake_consumer_args("openqmc", {"name": "openqmc-header-only"}, "linux-64"),
             ["-DOPENQMC_CONSUMER_EXPECT_HEADER_ONLY=ON"],
+        )
+
+    def test_opensubdiv_flavor_packages_pass_expected_cmake_flags(self) -> None:
+        self.assertEqual(
+            smoke_consumers.cmake_consumer_args("opensubdiv", {"name": "opensubdiv-dev"}, "linux-64"),
+            ["-DOPENSUBDIV_CONSUMER_EXPECT_CPU_ONLY=ON"],
+        )
+        self.assertEqual(
+            smoke_consumers.cmake_consumer_args("opensubdiv", {"name": "opensubdiv-gpu-dev"}, "linux-64"),
+            [
+                "-DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON",
+                "-DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON",
+                "-DOPENSUBDIV_CONSUMER_REQUIRE_TBB=ON",
+                "-DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON",
+                "-DOPENSUBDIV_CONSUMER_FORBID_METAL=ON",
+            ],
+        )
+        self.assertEqual(
+            smoke_consumers.cmake_consumer_args("opensubdiv", {"name": "opensubdiv-gpu-dev"}, "osx-arm64"),
+            [
+                "-DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON",
+                "-DOPENSUBDIV_CONSUMER_REQUIRE_METAL=ON",
+                "-DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON",
+            ],
         )
 
     def test_openqmc_flavor_packages_are_mutually_exclusive(self) -> None:
@@ -511,6 +572,25 @@ class SmokeConsumersTests(unittest.TestCase):
         self.assertRegex(
             recipe,
             r"(?ms)name: openqmc-header-only.*run_constraints:\n\s+- openqmc-dev <0a0",
+        )
+
+    def test_opensubdiv_flavor_packages_are_mutually_exclusive(self) -> None:
+        recipe = (ROOT / "opensubdiv" / "3.7.0" / "recipe.yaml").read_text(encoding="utf-8")
+        self.assertRegex(
+            recipe,
+            r"(?ms)name: opensubdiv-lib.*run_constraints:\n\s+- opensubdiv-gpu-lib <0a0",
+        )
+        self.assertRegex(
+            recipe,
+            r"(?ms)name: opensubdiv-gpu-lib.*run_constraints:\n\s+- opensubdiv-lib <0a0",
+        )
+        self.assertRegex(
+            recipe,
+            r"(?ms)name: opensubdiv-dev.*run_constraints:\n\s+- opensubdiv-gpu-dev <0a0",
+        )
+        self.assertRegex(
+            recipe,
+            r"(?ms)name: opensubdiv-gpu-dev.*run_constraints:\n\s+- opensubdiv-dev <0a0",
         )
 
 
