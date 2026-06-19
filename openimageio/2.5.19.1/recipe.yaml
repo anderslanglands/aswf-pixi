@@ -116,6 +116,8 @@ outputs:
             cmake -E rm -rf %SRC_DIR%\..\build
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
             set "LIBRARY_BIN_FWD=%LIBRARY_BIN:\=/%"
+            set "CL=/utf-8 %CL%"
+            set "CXXFLAGS=%CXXFLAGS% /utf-8"
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
@@ -183,8 +185,10 @@ outputs:
               -DENABLE_zfile=ON ^
               -B %SRC_DIR%\..\build ^
               -S .
+            if errorlevel 1 exit /b 1
 
             cmake --build %SRC_DIR%\..\build --target install --config Release
+            if errorlevel 1 exit /b 1
 
             rem Normalize generated metadata so rattler-build does not see mixed slash forms of %%PREFIX%%.
             powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $prefixFwd = $env:PREFIX -replace '\\', '/'; $prefixPattern = (($env:PREFIX -split '\\') | ForEach-Object { [regex]::Escape($_) }) -join '[\\/]'; $files = @(); $cmakeDir = Join-Path $env:LIBRARY_LIB 'cmake/OpenImageIO'; if (Test-Path $cmakeDir) { $files += Get-ChildItem -Path $cmakeDir -Filter '*.cmake' -File }; $pc = Join-Path $env:LIBRARY_LIB 'pkgconfig/OpenImageIO.pc'; if (Test-Path $pc) { $files += Get-Item $pc }; foreach ($file in $files) { $text = [IO.File]::ReadAllText($file.FullName); $text = [regex]::Replace($text, $prefixPattern, $prefixFwd); $text = $text.Replace($prefixFwd + [char]92, $prefixFwd + '/'); [IO.File]::WriteAllText($file.FullName, $text) }"
@@ -328,6 +332,8 @@ outputs:
             cmake -E rm -rf %SRC_DIR%\..\build-tools
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
             set "LIBRARY_BIN_FWD=%LIBRARY_BIN:\=/%"
+            set "CL=/utf-8 %CL%"
+            set "CXXFLAGS=%CXXFLAGS% /utf-8"
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
@@ -397,8 +403,10 @@ outputs:
               -DENABLE_zfile=OFF ^
               -B %SRC_DIR%\..\build-tools ^
               -S .
+            if errorlevel 1 exit /b 1
 
             cmake --build %SRC_DIR%\..\build-tools --target install --config Release
+            if errorlevel 1 exit /b 1
     requirements:
       build:
         - ${{ compiler('c') }}
@@ -499,6 +507,8 @@ outputs:
             cmake -E rm -rf %SRC_DIR%\..\build-python
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
             set "LIBRARY_BIN_FWD=%LIBRARY_BIN:\=/%"
+            set "CL=/utf-8 %CL%"
+            set "CXXFLAGS=%CXXFLAGS% /utf-8"
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
@@ -568,8 +578,10 @@ outputs:
               -DENABLE_zfile=OFF ^
               -B %SRC_DIR%\..\build-python ^
               -S .
+            if errorlevel 1 exit /b 1
 
             cmake --build %SRC_DIR%\..\build-python --target install --config Release
+            if errorlevel 1 exit /b 1
     requirements:
       build:
         - ${{ compiler('c') }}
@@ -672,6 +684,8 @@ outputs:
             cmake -E rm -rf %SRC_DIR%\..\build-plugins
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
             set "LIBRARY_BIN_FWD=%LIBRARY_BIN:\=/%"
+            set "CL=/utf-8 %CL%"
+            set "CXXFLAGS=%CXXFLAGS% /utf-8"
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
@@ -741,8 +755,10 @@ outputs:
               -DTBB_ROOT=%LIBRARY_PREFIX% ^
               -B %SRC_DIR%\..\build-plugins ^
               -S .
+            if errorlevel 1 exit /b 1
 
             cmake --build %SRC_DIR%\..\build-plugins --target install --config Release
+            if errorlevel 1 exit /b 1
     requirements:
       build:
         - ${{ compiler('c') }}
