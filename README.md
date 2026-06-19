@@ -140,6 +140,17 @@ OpenSubdiv provides subdivision surface evaluation libraries for CPU and GPU wor
 - `opensubdiv-gpu-dev`: GPU-enabled headers, CMake package files, and Unix static archives. Depends on the matching `opensubdiv-gpu-lib` and conflicts with `opensubdiv-dev`; also carries the TBB and Linux OpenGL development dependencies required by the exported CMake targets.
 - `opensubdiv-gpu`: GPU-enabled compatibility/default metapackage. Depends on the matching `opensubdiv-gpu-lib` and `opensubdiv-gpu-dev`, and conflicts with `opensubdiv`.
 
+## SeExpr
+
+Recipe versions: `3.0.1`
+
+SeExpr is an embeddable expression evaluation engine for graphics applications.
+
+- `seexpr-lib`: Core SeExpr2 runtime library. On Windows, upstream 3.0.1 builds a static library rather than a DLL.
+- `seexpr-dev`: C++ headers and CMake package files. Depends on the matching `seexpr-lib`.
+- `seexpr-tools`: Non-GUI command-line utilities, currently upstream's `eval` and `listVar` tools under `share/SeExpr2/utils`. Depends on the matching `seexpr-lib`.
+- `seexpr`: Default metapackage for C++ consumers. Depends on the matching `seexpr-lib` and `seexpr-dev`; tools, Python bindings, Qt editor/UI, LLVM backend, docs, and demos are not included by default.
+
 ## OpenImageIO
 
 Recipe versions: `2.5.19.1`, `3.0.19.1`, `3.1.14.0`

@@ -145,6 +145,15 @@ OpenSubdiv packaging decisions:
 - Keep the GPU CMake package self-contained for clean consumers: `OpenSubdivConfig.cmake` should load TBB and OpenGL dependency targets before upstream targets, and `opensubdiv-gpu-dev` should depend on `tbb-devel` plus Linux `libgl-devel`.
 - Do not build Windows GPU outputs for now. Upstream OpenSubdiv 3.7.0 also does not build shared libraries on Windows without CMake install/export changes; keep the CPU Windows package static-only unless Anders decides carrying a shared-library patch is worth it.
 
+SeExpr packaging decisions:
+
+- Package SeExpr 3.0.1 as `seexpr-lib`, `seexpr-dev`, `seexpr-tools`, and a compatibility/default `seexpr` metapackage.
+- The `seexpr` metapackage should depend on the C++ runtime and development surface only; keep tools opt-in as `seexpr-tools`.
+- Keep Qt editor/UI, Python bindings, LLVM backend, docs, tests, PNG/image demos, and demo editor components disabled unless Anders explicitly asks for them.
+- Keep `ENABLE_SSE4=OFF` for portability, especially on non-x86 platforms.
+- Upstream 3.0.1 installs legacy variable-based CMake metadata named `seexpr2-config.cmake`; validate development packages with that CMake package config and direct library discovery rather than pkg-config.
+- Upstream 3.0.1 builds a static `SeExpr2.lib` on Windows rather than a DLL; keep the Windows runtime package static-only unless Anders decides carrying a shared-library patch is worth it.
+
 OpenImageIO packaging decisions:
 
 - Package OpenImageIO 2.5.19.1, 3.0.19.1, and 3.1.14.0 as `openimageio-lib`, `openimageio-dev`, `openimageio-tools`, `openimageio-python`, individual optional format plugin packages, and a compatibility/default `openimageio` metapackage.

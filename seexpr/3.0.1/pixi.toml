@@ -1,0 +1,27 @@
+[workspace]
+name = "seexpr-3.0.1-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.seexpr-lib.dependencies]
+seexpr-lib = "==3.0.1"
+
+[feature.seexpr-dev.dependencies]
+seexpr-dev = "==3.0.1"
+
+[feature.seexpr-tools.dependencies]
+seexpr-tools = "==3.0.1"
+
+[feature.seexpr.dependencies]
+seexpr = "==3.0.1"
+
+[environments]
+seexpr-lib = ["seexpr-lib"]
+seexpr-dev = ["seexpr-dev"]
+seexpr-tools = ["seexpr-tools"]
+seexpr = ["seexpr"]
