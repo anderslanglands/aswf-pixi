@@ -1,0 +1,31 @@
+[workspace]
+name = "partio-1.20.0-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.partio-lib.dependencies]
+partio-lib = "==1.20.0"
+
+[feature.partio-dev.dependencies]
+partio-dev = "==1.20.0"
+
+[feature.partio-tools.dependencies]
+partio-tools = "==1.20.0"
+
+[feature.partio-python.dependencies]
+partio-python = "==1.20.0"
+
+[feature.partio.dependencies]
+partio = "==1.20.0"
+
+[environments]
+partio-lib = ["partio-lib"]
+partio-dev = ["partio-dev"]
+partio-tools = ["partio-tools"]
+partio-python = ["partio-python"]
+partio = ["partio"]
