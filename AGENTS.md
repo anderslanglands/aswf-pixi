@@ -49,6 +49,7 @@ Package conversion process:
 - CI builds should write an artifact `manifest.json` describing the exact package filename, build string, subdir, and version for every publishable output.
 - CI publish jobs should upload only packages listed in the artifact manifests, not arbitrary `.conda` files found under the artifact directory.
 - CI smoke tests should consume every manifest-listed package from the selected Anaconda label in clean pixi environments, verify `pixi list --json` resolves the exact uploaded build/source, and run recipe consumer tests for dev/top-level packages when present. They should not rely on package-local lockfiles.
+- Never write package tests, recipe tests, smoke tests, or consumer tests that depend on pkg-config/pkgconfig `.pc` files existing or working. Validate development packages with CMake package config/targets unless Anders explicitly asks for pkg-config coverage.
 - Keep the GitHub Actions platform-to-runner mapping in `scripts/ci_matrix.py`, and re-check GitHub's current hosted runner labels before changing macOS runners.
 - Keep GitHub workflow actions on Node 24-capable versions instead of relying on temporary Node runtime override environment variables.
 

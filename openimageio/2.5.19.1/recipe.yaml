@@ -803,10 +803,8 @@ outputs:
             not_exists:
               - include/OpenImageIO/imageio.h
               - lib/cmake/OpenImageIO/OpenImageIOConfig.cmake
-              - lib/pkgconfig/OpenImageIO.pc
               - Library/include/OpenImageIO/imageio.h
               - Library/lib/cmake/OpenImageIO/OpenImageIOConfig.cmake
-              - Library/lib/pkgconfig/OpenImageIO.pc
       - script:
           - if: linux
             then:
@@ -859,14 +857,12 @@ outputs:
           - if: unix
             then:
               - test -f "$PREFIX/lib/cmake/OpenImageIO/OpenImageIOConfig.cmake"
-              - test -f "$PREFIX/lib/pkgconfig/OpenImageIO.pc"
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/openimageio_consumer
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\cmake\OpenImageIO\OpenImageIOConfig.cmake" exit /b 1
-              - if not exist "%LIBRARY_LIB%\pkgconfig\OpenImageIO.pc" exit /b 1
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
               - cmake --build build --config Release
               - build\openimageio_consumer.exe
