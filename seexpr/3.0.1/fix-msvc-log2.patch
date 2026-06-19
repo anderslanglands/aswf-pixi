@@ -1,0 +1,14 @@
+diff --git a/src/SeExpr2/Platform.h b/src/SeExpr2/Platform.h
+index d04d33d..ebf4a3a 100644
+--- a/src/SeExpr2/Platform.h
++++ b/src/SeExpr2/Platform.h
+@@ -78,7 +78,9 @@ typedef __int64 FilePos;
+ #define fseeko _fseeki64
+ #define ftello _ftelli64
+ 
++#if !defined(_MSC_VER)
+ inline double log2(double x) { return log(x) * 1.4426950408889634; }
++#endif
+ 
+ typedef unsigned int uint32_t;
+ #define M_E (2.7182818284590452354)

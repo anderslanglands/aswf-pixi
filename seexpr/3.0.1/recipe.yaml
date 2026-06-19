@@ -9,6 +9,8 @@ recipe:
 source:
   url: https://github.com/wdas/SeExpr/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 1e4cd35e6d63bd3443e1bffe723dbae91334c2c94a84cc590ea8f1886f96f84e
+  patches:
+    - fix-msvc-log2.patch
 
 build:
   number: ${{ build_number }}
@@ -20,6 +22,8 @@ outputs:
       script:
         - if: unix
           then: |
+            set -euo pipefail
+
             cmake -E rm -rf $SRC_DIR/../build
 
             cmake $CMAKE_ARGS \
@@ -49,6 +53,21 @@ outputs:
               $PREFIX/lib/libSeExpr2Editor*
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build
+            if errorlevel 1 exit /b 1
+
+            if not exist "%SRC_DIR%\src\SeExpr2\generated" mkdir "%SRC_DIR%\src\SeExpr2\generated"
+            pushd "%SRC_DIR%\src\SeExpr2"
+            win_flex -oExprParserLexIn.cpp ExprParserLex.l
+            if errorlevel 1 exit /b 1
+            win_bison --defines --verbose --fixed-output-files -p SeExpr2 ExprParser.y
+            if errorlevel 1 exit /b 1
+            python -c "from pathlib import Path; generated = Path('generated'); text = Path('ExprParserLexIn.cpp').read_text(encoding='utf-8').replace('SeExprwrap(n)', 'SeExprwrap()').replace('yy', 'SeExpr2').replace('YY', 'SeExprYY'); (generated / 'ExprParserLex.cpp').write_text(text, encoding='utf-8'); text = Path('y.tab.h').read_text(encoding='utf-8').replace('yy', 'SeExpr2').replace('YY', 'SeExprYY'); (generated / 'ExprParser.tab.h').write_text(text, encoding='utf-8'); text = Path('y.tab.c').read_text(encoding='utf-8').replace('yy', 'SeExpr2').replace('YY', 'SeExprYY'); (generated / 'ExprParser.cpp').write_text(text, encoding='utf-8')"
+            if errorlevel 1 exit /b 1
+            if exist ExprParserLexIn.cpp del /Q ExprParserLexIn.cpp
+            if exist y.tab.c del /Q y.tab.c
+            if exist y.tab.h del /Q y.tab.h
+            if exist y.output del /Q y.output
+            popd
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
@@ -70,8 +89,10 @@ outputs:
               -DCMAKE_DISABLE_FIND_PACKAGE_PNG=ON ^
               -B %SRC_DIR%\..\build ^
               -S .
+            if errorlevel 1 exit /b 1
 
             cmake --build %SRC_DIR%\..\build --target install --config Release
+            if errorlevel 1 exit /b 1
             if exist "%LIBRARY_INC%\SeExpr2\UI" rmdir /S /Q "%LIBRARY_INC%\SeExpr2\UI"
             if exist "%LIBRARY_LIB%\SeExpr2Editor.lib" del /Q "%LIBRARY_LIB%\SeExpr2Editor.lib"
             if exist "%LIBRARY_BIN%\SeExpr2Editor.dll" del /Q "%LIBRARY_BIN%\SeExpr2Editor.dll"
@@ -80,6 +101,16 @@ outputs:
         - ${{ compiler('cxx') }}
         - cmake
         - ninja
+        - if: unix
+          then: bison
+        - if: unix
+          then: flex
+        - if: unix
+          then: sed
+        - if: win
+          then: python
+        - if: win
+          then: winflexbison
 
   - staging:
       name: seexpr-tools-build
@@ -87,6 +118,8 @@ outputs:
       script:
         - if: unix
           then: |
+            set -euo pipefail
+
             cmake -E rm -rf $SRC_DIR/../build-tools
 
             cmake $CMAKE_ARGS \
@@ -116,6 +149,21 @@ outputs:
               $PREFIX/lib/libSeExpr2Editor*
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build-tools
+            if errorlevel 1 exit /b 1
+
+            if not exist "%SRC_DIR%\src\SeExpr2\generated" mkdir "%SRC_DIR%\src\SeExpr2\generated"
+            pushd "%SRC_DIR%\src\SeExpr2"
+            win_flex -oExprParserLexIn.cpp ExprParserLex.l
+            if errorlevel 1 exit /b 1
+            win_bison --defines --verbose --fixed-output-files -p SeExpr2 ExprParser.y
+            if errorlevel 1 exit /b 1
+            python -c "from pathlib import Path; generated = Path('generated'); text = Path('ExprParserLexIn.cpp').read_text(encoding='utf-8').replace('SeExprwrap(n)', 'SeExprwrap()').replace('yy', 'SeExpr2').replace('YY', 'SeExprYY'); (generated / 'ExprParserLex.cpp').write_text(text, encoding='utf-8'); text = Path('y.tab.h').read_text(encoding='utf-8').replace('yy', 'SeExpr2').replace('YY', 'SeExprYY'); (generated / 'ExprParser.tab.h').write_text(text, encoding='utf-8'); text = Path('y.tab.c').read_text(encoding='utf-8').replace('yy', 'SeExpr2').replace('YY', 'SeExprYY'); (generated / 'ExprParser.cpp').write_text(text, encoding='utf-8')"
+            if errorlevel 1 exit /b 1
+            if exist ExprParserLexIn.cpp del /Q ExprParserLexIn.cpp
+            if exist y.tab.c del /Q y.tab.c
+            if exist y.tab.h del /Q y.tab.h
+            if exist y.output del /Q y.output
+            popd
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
@@ -137,8 +185,10 @@ outputs:
               -DCMAKE_DISABLE_FIND_PACKAGE_PNG=ON ^
               -B %SRC_DIR%\..\build-tools ^
               -S .
+            if errorlevel 1 exit /b 1
 
             cmake --build %SRC_DIR%\..\build-tools --target install --config Release
+            if errorlevel 1 exit /b 1
             if exist "%LIBRARY_INC%\SeExpr2\UI" rmdir /S /Q "%LIBRARY_INC%\SeExpr2\UI"
             if exist "%LIBRARY_LIB%\SeExpr2Editor.lib" del /Q "%LIBRARY_LIB%\SeExpr2Editor.lib"
             if exist "%LIBRARY_BIN%\SeExpr2Editor.dll" del /Q "%LIBRARY_BIN%\SeExpr2Editor.dll"
@@ -147,6 +197,16 @@ outputs:
         - ${{ compiler('cxx') }}
         - cmake
         - ninja
+        - if: unix
+          then: bison
+        - if: unix
+          then: flex
+        - if: unix
+          then: sed
+        - if: win
+          then: python
+        - if: win
+          then: winflexbison
 
   - package:
       name: seexpr-lib
@@ -235,10 +295,17 @@ outputs:
           - if: win
             then:
               - if not exist "%LIBRARY_PREFIX%\share\cmake\SeExpr2\seexpr2-config.cmake" exit /b 1
-              - cmake -E rm -rf build
-              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
-              - cmake --build build --config Release
-              - build\seexpr_consumer.exe
+              - set "SEEXPR_TEST_BUILD=%TEMP%\seexpr-consumer-%RANDOM%-%RANDOM%"
+              - if exist "%SEEXPR_TEST_BUILD%" rmdir /S /Q "%SEEXPR_TEST_BUILD%"
+              - if exist "%SEEXPR_TEST_BUILD%" exit /b 1
+              - cmake -S tests -B "%SEEXPR_TEST_BUILD%" -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - if errorlevel 1 exit /b 1
+              - cmake --build "%SEEXPR_TEST_BUILD%" --config Release
+              - if errorlevel 1 exit /b 1
+              - '"%SEEXPR_TEST_BUILD%\seexpr_consumer.exe"'
+              - if errorlevel 1 exit /b 1
+              - rmdir /S /Q "%SEEXPR_TEST_BUILD%"
+              - if exist "%SEEXPR_TEST_BUILD%" exit /b 1
         files:
           recipe:
             - tests/CMakeLists.txt
@@ -304,10 +371,17 @@ outputs:
           - if: win
             then:
               - if not exist "%LIBRARY_PREFIX%\share\cmake\SeExpr2\seexpr2-config.cmake" exit /b 1
-              - cmake -E rm -rf build
-              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
-              - cmake --build build --config Release
-              - build\seexpr_consumer.exe
+              - set "SEEXPR_TEST_BUILD=%TEMP%\seexpr-consumer-%RANDOM%-%RANDOM%"
+              - if exist "%SEEXPR_TEST_BUILD%" rmdir /S /Q "%SEEXPR_TEST_BUILD%"
+              - if exist "%SEEXPR_TEST_BUILD%" exit /b 1
+              - cmake -S tests -B "%SEEXPR_TEST_BUILD%" -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - if errorlevel 1 exit /b 1
+              - cmake --build "%SEEXPR_TEST_BUILD%" --config Release
+              - if errorlevel 1 exit /b 1
+              - '"%SEEXPR_TEST_BUILD%\seexpr_consumer.exe"'
+              - if errorlevel 1 exit /b 1
+              - rmdir /S /Q "%SEEXPR_TEST_BUILD%"
+              - if exist "%SEEXPR_TEST_BUILD%" exit /b 1
         files:
           recipe:
             - tests/CMakeLists.txt
