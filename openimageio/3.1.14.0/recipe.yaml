@@ -190,6 +190,9 @@ outputs:
 
             cmake --build %SRC_DIR%\..\build --target install --config Release
 
+            rem Normalize generated metadata so rattler-build does not see mixed slash forms of %%PREFIX%%.
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $prefixFwd = $env:PREFIX -replace '\\', '/'; $prefixPattern = (($env:PREFIX -split '\\') | ForEach-Object { [regex]::Escape($_) }) -join '[\\/]'; $files = @(); $cmakeDir = Join-Path $env:LIBRARY_LIB 'cmake/OpenImageIO'; if (Test-Path $cmakeDir) { $files += Get-ChildItem -Path $cmakeDir -Filter '*.cmake' -File }; $pc = Join-Path $env:LIBRARY_LIB 'pkgconfig/OpenImageIO.pc'; if (Test-Path $pc) { $files += Get-Item $pc }; foreach ($file in $files) { $text = [IO.File]::ReadAllText($file.FullName); $text = [regex]::Replace($text, $prefixPattern, $prefixFwd); $text = $text.Replace($prefixFwd + [char]92, $prefixFwd + '/'); [IO.File]::WriteAllText($file.FullName, $text) }"
+
             if not exist "%PREFIX%\etc\conda\activate.d" mkdir "%PREFIX%\etc\conda\activate.d"
             if not exist "%PREFIX%\etc\conda\deactivate.d" mkdir "%PREFIX%\etc\conda\deactivate.d"
             (
