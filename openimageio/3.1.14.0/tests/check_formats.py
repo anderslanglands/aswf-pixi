@@ -35,11 +35,11 @@ def normalized(path: str | Path) -> str:
 
 def require_packaged_plugin_path() -> None:
     expected = normalized(plugin_dir())
-    configured = os.environ.get("OPENIMAGEIO_PLUGIN_PATH", "")
+    configured = os.environ.get("OIIO_LIBRARY_PATH", "")
     paths = [normalized(path) for path in configured.split(os.pathsep) if path]
     if expected not in paths:
         raise SystemExit(
-            "OPENIMAGEIO_PLUGIN_PATH does not include the package plugin directory "
+            "OIIO_LIBRARY_PATH does not include the package plugin directory "
             f"{plugin_dir()}: {configured!r}"
         )
 

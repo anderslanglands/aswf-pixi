@@ -102,6 +102,13 @@ outputs:
                 unset CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH
                 export OPENIMAGEIO_PLUGIN_PATH="$CONDA_PREFIX/lib"
             fi
+            if [ -n "${OIIO_LIBRARY_PATH+x}" ]; then
+                export CONDA_BACKUP_OIIO_LIBRARY_PATH="$OIIO_LIBRARY_PATH"
+                export OIIO_LIBRARY_PATH="$CONDA_PREFIX/lib:$OIIO_LIBRARY_PATH"
+            else
+                unset CONDA_BACKUP_OIIO_LIBRARY_PATH
+                export OIIO_LIBRARY_PATH="$CONDA_PREFIX/lib"
+            fi
             EOF
             cat > "$PREFIX/etc/conda/deactivate.d/openimageio-plugin-path.sh" <<'EOF'
             if [ -n "${CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH+x}" ]; then
@@ -109,6 +116,12 @@ outputs:
                 unset CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH
             else
                 unset OPENIMAGEIO_PLUGIN_PATH
+            fi
+            if [ -n "${CONDA_BACKUP_OIIO_LIBRARY_PATH+x}" ]; then
+                export OIIO_LIBRARY_PATH="$CONDA_BACKUP_OIIO_LIBRARY_PATH"
+                unset CONDA_BACKUP_OIIO_LIBRARY_PATH
+            else
+                unset OIIO_LIBRARY_PATH
             fi
             EOF
           else: |
@@ -204,6 +217,13 @@ outputs:
               echo   set "CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH="
               echo   set "OPENIMAGEIO_PLUGIN_PATH=%%CONDA_PREFIX%%\Library\bin"
               echo ^)
+              echo if defined OIIO_LIBRARY_PATH ^(
+              echo   set "CONDA_BACKUP_OIIO_LIBRARY_PATH=%%OIIO_LIBRARY_PATH%%"
+              echo   set "OIIO_LIBRARY_PATH=%%CONDA_PREFIX%%\Library\bin;%%OIIO_LIBRARY_PATH%%"
+              echo ^) else ^(
+              echo   set "CONDA_BACKUP_OIIO_LIBRARY_PATH="
+              echo   set "OIIO_LIBRARY_PATH=%%CONDA_PREFIX%%\Library\bin"
+              echo ^)
             ) > "%PREFIX%\etc\conda\activate.d\openimageio-plugin-path.bat"
             (
               echo @echo off
@@ -212,6 +232,12 @@ outputs:
               echo   set "CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH="
               echo ^) else ^(
               echo   set "OPENIMAGEIO_PLUGIN_PATH="
+              echo ^)
+              echo if defined CONDA_BACKUP_OIIO_LIBRARY_PATH ^(
+              echo   set "OIIO_LIBRARY_PATH=%%CONDA_BACKUP_OIIO_LIBRARY_PATH%%"
+              echo   set "CONDA_BACKUP_OIIO_LIBRARY_PATH="
+              echo ^) else ^(
+              echo   set "OIIO_LIBRARY_PATH="
               echo ^)
             ) > "%PREFIX%\etc\conda\deactivate.d\openimageio-plugin-path.bat"
             (
@@ -222,6 +248,13 @@ outputs:
               echo   Remove-Item Env:CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH -ErrorAction SilentlyContinue
               echo   $env:OPENIMAGEIO_PLUGIN_PATH = "$env:CONDA_PREFIX\Library\bin"
               echo }
+              echo if ^(Test-Path Env:OIIO_LIBRARY_PATH^) {
+              echo   $env:CONDA_BACKUP_OIIO_LIBRARY_PATH = $env:OIIO_LIBRARY_PATH
+              echo   $env:OIIO_LIBRARY_PATH = "$env:CONDA_PREFIX\Library\bin;$env:OIIO_LIBRARY_PATH"
+              echo } else {
+              echo   Remove-Item Env:CONDA_BACKUP_OIIO_LIBRARY_PATH -ErrorAction SilentlyContinue
+              echo   $env:OIIO_LIBRARY_PATH = "$env:CONDA_PREFIX\Library\bin"
+              echo }
             ) > "%PREFIX%\etc\conda\activate.d\openimageio-plugin-path.ps1"
             (
               echo if ^(Test-Path Env:CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH^) {
@@ -229,6 +262,12 @@ outputs:
               echo   Remove-Item Env:CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH -ErrorAction SilentlyContinue
               echo } else {
               echo   Remove-Item Env:OPENIMAGEIO_PLUGIN_PATH -ErrorAction SilentlyContinue
+              echo }
+              echo if ^(Test-Path Env:CONDA_BACKUP_OIIO_LIBRARY_PATH^) {
+              echo   $env:OIIO_LIBRARY_PATH = $env:CONDA_BACKUP_OIIO_LIBRARY_PATH
+              echo   Remove-Item Env:CONDA_BACKUP_OIIO_LIBRARY_PATH -ErrorAction SilentlyContinue
+              echo } else {
+              echo   Remove-Item Env:OIIO_LIBRARY_PATH -ErrorAction SilentlyContinue
               echo }
             ) > "%PREFIX%\etc\conda\deactivate.d\openimageio-plugin-path.ps1"
     requirements:
@@ -832,7 +871,7 @@ outputs:
           - if: win
             then:
               - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'OpenImageIO.dll')); assert paths; ctypes.WinDLL(paths[0])"
-          - python -c "import os; from pathlib import Path; expected = os.path.normcase(os.path.normpath(str(os.environ.get('LIBRARY_BIN', Path(os.environ['PREFIX']) / 'lib')))); configured = [os.path.normcase(os.path.normpath(p)) for p in os.environ.get('OPENIMAGEIO_PLUGIN_PATH', '').split(os.pathsep) if p]; assert expected in configured, (expected, configured)"
+          - python -c "import os; from pathlib import Path; expected = os.path.normcase(os.path.normpath(str(os.environ.get('LIBRARY_BIN', Path(os.environ['PREFIX']) / 'lib')))); configured = [os.path.normcase(os.path.normpath(p)) for p in os.environ.get('OIIO_LIBRARY_PATH', '').split(os.pathsep) if p]; assert expected in configured, (expected, configured)"
         requirements:
           run:
             - python
