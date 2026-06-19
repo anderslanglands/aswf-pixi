@@ -1,0 +1,67 @@
+[workspace]
+name = "openshadinglanguage-1.15.5.0-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.openshadinglanguage-lib.dependencies]
+openshadinglanguage-lib = "==1.15.5.0"
+
+[feature.openshadinglanguage-dev.dependencies]
+openshadinglanguage-dev = "==1.15.5.0"
+
+[feature.openshadinglanguage-tools.dependencies]
+openshadinglanguage-tools = "==1.15.5.0"
+
+[feature.openshadinglanguage-guitools.dependencies]
+openshadinglanguage-guitools = "==1.15.5.0"
+
+[feature.openshadinglanguage-python.dependencies]
+openshadinglanguage-python = "==1.15.5.0"
+
+[feature.openimageio-format-osl.dependencies]
+openimageio-format-osl = "==1.15.5.0"
+
+[feature.openshadinglanguage.dependencies]
+openshadinglanguage = "==1.15.5.0"
+
+[feature.openshadinglanguage-cuda-lib.dependencies]
+openshadinglanguage-cuda-lib = "==1.15.5.0"
+
+[feature.openshadinglanguage-cuda-dev.dependencies]
+openshadinglanguage-cuda-dev = "==1.15.5.0"
+
+[feature.openshadinglanguage-cuda-tools.dependencies]
+openshadinglanguage-cuda-tools = "==1.15.5.0"
+
+[feature.openshadinglanguage-cuda-guitools.dependencies]
+openshadinglanguage-cuda-guitools = "==1.15.5.0"
+
+[feature.openshadinglanguage-cuda-python.dependencies]
+openshadinglanguage-cuda-python = "==1.15.5.0"
+
+[feature.openimageio-format-osl-cuda.dependencies]
+openimageio-format-osl-cuda = "==1.15.5.0"
+
+[feature.openshadinglanguage-cuda.dependencies]
+openshadinglanguage-cuda = "==1.15.5.0"
+
+[environments]
+openshadinglanguage-lib = ["openshadinglanguage-lib"]
+openshadinglanguage-dev = ["openshadinglanguage-dev"]
+openshadinglanguage-tools = ["openshadinglanguage-tools"]
+openshadinglanguage-guitools = ["openshadinglanguage-guitools"]
+openshadinglanguage-python = ["openshadinglanguage-python"]
+openimageio-format-osl = ["openimageio-format-osl"]
+openshadinglanguage = ["openshadinglanguage"]
+openshadinglanguage-cuda-lib = ["openshadinglanguage-cuda-lib"]
+openshadinglanguage-cuda-dev = ["openshadinglanguage-cuda-dev"]
+openshadinglanguage-cuda-tools = ["openshadinglanguage-cuda-tools"]
+openshadinglanguage-cuda-guitools = ["openshadinglanguage-cuda-guitools"]
+openshadinglanguage-cuda-python = ["openshadinglanguage-cuda-python"]
+openimageio-format-osl-cuda = ["openimageio-format-osl-cuda"]
+openshadinglanguage-cuda = ["openshadinglanguage-cuda"]

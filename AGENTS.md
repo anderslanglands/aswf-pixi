@@ -177,3 +177,17 @@ OpenImageIO packaging decisions:
 - `openimageio-format-openvdb` should depend on `openvdb-lib`, not `openvdb-python` or the OpenVDB compatibility metapackage.
 - Build `openimageio-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14; it depends on `openimageio-lib`, which carries the common read/write formats by default.
 - Keep Qt viewer (`iv`), OpenCV, Freetype text rendering support, Ptex integration, R3DSDK, Nuke, docs, tests, and fonts disabled unless Anders explicitly asks for them.
+
+
+OpenShadingLanguage packaging decisions:
+
+- Package OpenShadingLanguage 1.15.5.0 as `openshadinglanguage-lib`, `openshadinglanguage-dev`, `openshadinglanguage-tools`, `openshadinglanguage-guitools`, `openshadinglanguage-python`, `openimageio-format-osl`, and a compatibility/default `openshadinglanguage` metapackage.
+- The `openshadinglanguage` metapackage should depend on the C++ runtime, development surface, and headless tools only; keep Python bindings, Qt GUI tools, and the OIIO OSL plugin opt-in.
+- Package Qt-dependent tools separately as `openshadinglanguage-guitools`; upstream 1.15.5.0 only installs `osltoy` in this category, and the recipe uses Qt 6.
+- Package the OpenImageIO OSL procedural input plugin as `openimageio-format-osl`; it depends on `openshadinglanguage-lib` and `openimageio-lib`, not the OSL compatibility metapackage.
+- Build `openshadinglanguage-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14. The Python module imports `OpenImageIO`, so it must depend on `openimageio-python` as well as the matching OSL runtime.
+- Keep upstream tests, `testshade`, and `testrender` disabled in package builds unless Anders explicitly asks to package or run them.
+- Provide a Linux-only CUDA-enabled flavor named with `-cuda` package suffixes (`openshadinglanguage-cuda-lib`, `openshadinglanguage-cuda-dev`, `openshadinglanguage-cuda-tools`, `openshadinglanguage-cuda-guitools`, `openshadinglanguage-cuda-python`, `openimageio-format-osl-cuda`, and `openshadinglanguage-cuda`). Do not call these packages `-optix`.
+- Keep `osl_gpu=cpu` as the only default recipe variant. Build CUDA packages explicitly with `--variant osl_gpu=cuda` and an optional `--variant cuda_target_arch=sm_XX`; the root task uses `sm_60` as a conservative default.
+- Do not create or publish an OptiX SDK/header package. OSL 1.15.5.0 only requires OptiX headers when `OSL_USE_OPTIX=ON` and `OSL_BUILD_TESTS=ON`; package builds keep tests off, so the CUDA flavor builds the embedded CUDA/PTX path with conda CUDA packages and no redistributed OptiX payload.
+- The CPU and CUDA OSL flavors install overlapping headers, libraries, tools, and CMake metadata; keep them mutually exclusive through run constraints.

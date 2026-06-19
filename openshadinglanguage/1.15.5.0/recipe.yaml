@@ -1,0 +1,1210 @@
+context:
+  version: "1.15.5.0"
+  build_number: 0
+  llvm_major: "22"
+
+recipe:
+  name: openshadinglanguage
+  version: ${{ version }}
+
+source:
+  url: https://github.com/AcademySoftwareFoundation/OpenShadingLanguage/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: a83fb396ca5b6724dbaae534840cf07ee6c593f0dbd877a8fa5ed2c32099c934
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: openshadinglanguage-build
+    build:
+      script:
+        - if: unix and osl_gpu == "cpu"
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DOSL_BUILD_TESTS=OFF \
+              -DOSL_BUILD_PLUGINS=OFF \
+              -DOSL_BUILD_SHADERS=ON \
+              -DOSL_USE_OPTIX=OFF \
+              -DUSE_PYTHON=OFF \
+              -DUSE_QT=OFF \
+              -DINSTALL_DOCS=OFF \
+              -DUSE_BATCHED=0 \
+              -DUSE_CCACHE=OFF \
+              -DBUILD_MISSING_DEPS=OFF \
+              -DBUILD_MISSING_ROBINMAP=OFF \
+              -DROBINMAP_INCLUDE_DIR=$PREFIX/include \
+              -DOpenImageIO_ROOT=$PREFIX \
+              -DImath_ROOT=$PREFIX \
+              -Dpartio_ROOT=$PREFIX \
+              -Dllvm_ROOT=$PREFIX \
+              -DLLVM_ROOT=$PREFIX \
+              -DLLVM_DIRECTORY=$PREFIX \
+              -B $SRC_DIR/../build \
+              -S .
+
+            cmake --build $SRC_DIR/../build --target install
+        - if: win and osl_gpu == "cpu"
+          then: |
+            cmake -E rm -rf %SRC_DIR%\..\build
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "CL=/utf-8 %CL%"
+            set "CXXFLAGS=%CXXFLAGS% /utf-8"
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DBUILD_TESTING=OFF ^
+              -DOSL_BUILD_TESTS=OFF ^
+              -DOSL_BUILD_PLUGINS=OFF ^
+              -DOSL_BUILD_SHADERS=ON ^
+              -DOSL_USE_OPTIX=OFF ^
+              -DUSE_LLVM_BITCODE=OFF ^
+              -DUSE_PYTHON=OFF ^
+              -DUSE_QT=OFF ^
+              -DINSTALL_DOCS=OFF ^
+              -DUSE_BATCHED=0 ^
+              -DUSE_CCACHE=OFF ^
+              -DBUILD_MISSING_DEPS=OFF ^
+              -DBUILD_MISSING_ROBINMAP=OFF ^
+              -DROBINMAP_INCLUDE_DIR=%LIBRARY_PREFIX_FWD%/include ^
+              -DOpenImageIO_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DImath_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -Dpartio_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -Dllvm_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DLLVM_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DLLVM_DIRECTORY=%LIBRARY_PREFIX_FWD% ^
+              -B %SRC_DIR%\..\build ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build --target install --config Release
+    requirements:
+      build:
+        - if: osl_gpu == "cpu"
+          then:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - bison
+            - cmake
+            - flex
+            - ninja
+            - pkg-config
+      host:
+        - if: osl_gpu == "cpu"
+          then:
+            - clangdev ${{ llvm_major }}.*
+            - imath-dev 3.2.*
+            - llvmdev ${{ llvm_major }}.*
+            - openimageio-dev 3.1.*
+            - partio-dev 1.20.*
+            - pugixml
+            - python
+            - tsl_robin_map 1.4.*
+            - zlib
+
+  - staging:
+      name: openshadinglanguage-plugin-build
+    build:
+      script:
+        - if: unix and osl_gpu == "cpu"
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-plugin
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DOSL_BUILD_TESTS=OFF \
+              -DOSL_BUILD_PLUGINS=ON \
+              -DOSL_BUILD_SHADERS=OFF \
+              -DOSL_USE_OPTIX=OFF \
+              -DUSE_PYTHON=OFF \
+              -DUSE_QT=OFF \
+              -DINSTALL_DOCS=OFF \
+              -DUSE_BATCHED=0 \
+              -DUSE_CCACHE=OFF \
+              -DBUILD_MISSING_DEPS=OFF \
+              -DBUILD_MISSING_ROBINMAP=OFF \
+              -DROBINMAP_INCLUDE_DIR=$PREFIX/include \
+              -DOpenImageIO_ROOT=$PREFIX \
+              -DImath_ROOT=$PREFIX \
+              -Dpartio_ROOT=$PREFIX \
+              -DLLVM_ROOT=$PREFIX \
+              -DLLVM_DIRECTORY=$PREFIX \
+              -B $SRC_DIR/../build-plugin \
+              -S .
+
+            cmake --build $SRC_DIR/../build-plugin --target install
+        - if: win and osl_gpu == "cpu"
+          then: |
+            cmake -E rm -rf %SRC_DIR%\..\build-plugin
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "CL=/utf-8 %CL%"
+            set "CXXFLAGS=%CXXFLAGS% /utf-8"
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DBUILD_TESTING=OFF ^
+              -DOSL_BUILD_TESTS=OFF ^
+              -DOSL_BUILD_PLUGINS=ON ^
+              -DOSL_BUILD_SHADERS=OFF ^
+              -DOSL_USE_OPTIX=OFF ^
+              -DUSE_LLVM_BITCODE=OFF ^
+              -DUSE_PYTHON=OFF ^
+              -DUSE_QT=OFF ^
+              -DINSTALL_DOCS=OFF ^
+              -DUSE_BATCHED=0 ^
+              -DUSE_CCACHE=OFF ^
+              -DBUILD_MISSING_DEPS=OFF ^
+              -DBUILD_MISSING_ROBINMAP=OFF ^
+              -DROBINMAP_INCLUDE_DIR=%LIBRARY_PREFIX_FWD%/include ^
+              -DOpenImageIO_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DImath_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -Dpartio_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DLLVM_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DLLVM_DIRECTORY=%LIBRARY_PREFIX_FWD% ^
+              -B %SRC_DIR%\..\build-plugin ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-plugin --target install --config Release
+    requirements:
+      build:
+        - if: osl_gpu == "cpu"
+          then:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - bison
+            - cmake
+            - flex
+            - ninja
+      host:
+        - if: osl_gpu == "cpu"
+          then:
+            - clangdev ${{ llvm_major }}.*
+            - imath-dev 3.2.*
+            - llvmdev ${{ llvm_major }}.*
+            - openimageio-dev 3.1.*
+            - partio-dev 1.20.*
+            - pugixml
+            - python
+            - tsl_robin_map 1.4.*
+            - zlib
+
+  - staging:
+      name: openshadinglanguage-guitools-build
+    build:
+      script:
+        - if: unix and osl_gpu == "cpu"
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-guitools
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DOSL_BUILD_TESTS=OFF \
+              -DOSL_BUILD_PLUGINS=OFF \
+              -DOSL_BUILD_SHADERS=OFF \
+              -DOSL_USE_OPTIX=OFF \
+              -DUSE_PYTHON=OFF \
+              -DUSE_QT=ON \
+              -DINSTALL_DOCS=OFF \
+              -DUSE_BATCHED=0 \
+              -DUSE_CCACHE=OFF \
+              -DBUILD_MISSING_DEPS=OFF \
+              -DBUILD_MISSING_ROBINMAP=OFF \
+              -DROBINMAP_INCLUDE_DIR=$PREFIX/include \
+              -DOpenImageIO_ROOT=$PREFIX \
+              -DImath_ROOT=$PREFIX \
+              -Dpartio_ROOT=$PREFIX \
+              -DLLVM_ROOT=$PREFIX \
+              -DLLVM_DIRECTORY=$PREFIX \
+              -B $SRC_DIR/../build-guitools \
+              -S .
+
+            cmake --build $SRC_DIR/../build-guitools --target install
+        - if: win and osl_gpu == "cpu"
+          then: |
+            cmake -E rm -rf %SRC_DIR%\..\build-guitools
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "CL=/utf-8 %CL%"
+            set "CXXFLAGS=%CXXFLAGS% /utf-8"
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DBUILD_TESTING=OFF ^
+              -DOSL_BUILD_TESTS=OFF ^
+              -DOSL_BUILD_PLUGINS=OFF ^
+              -DOSL_BUILD_SHADERS=OFF ^
+              -DOSL_USE_OPTIX=OFF ^
+              -DUSE_LLVM_BITCODE=OFF ^
+              -DUSE_PYTHON=OFF ^
+              -DUSE_QT=ON ^
+              -DINSTALL_DOCS=OFF ^
+              -DUSE_BATCHED=0 ^
+              -DUSE_CCACHE=OFF ^
+              -DBUILD_MISSING_DEPS=OFF ^
+              -DBUILD_MISSING_ROBINMAP=OFF ^
+              -DROBINMAP_INCLUDE_DIR=%LIBRARY_PREFIX_FWD%/include ^
+              -DOpenImageIO_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DImath_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -Dpartio_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DLLVM_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DLLVM_DIRECTORY=%LIBRARY_PREFIX_FWD% ^
+              -B %SRC_DIR%\..\build-guitools ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-guitools --target install --config Release
+    requirements:
+      build:
+        - if: osl_gpu == "cpu"
+          then:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - bison
+            - cmake
+            - flex
+            - ninja
+      host:
+        - if: osl_gpu == "cpu"
+          then:
+            - clangdev ${{ llvm_major }}.*
+            - imath-dev 3.2.*
+            - llvmdev ${{ llvm_major }}.*
+            - openimageio-dev 3.1.*
+            - partio-dev 1.20.*
+            - pugixml
+            - python
+            - qt6-main
+            - tsl_robin_map 1.4.*
+            - zlib
+
+  - staging:
+      name: openshadinglanguage-python-build
+    build:
+      script:
+        - if: unix and osl_gpu == "cpu"
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-python
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DOSL_BUILD_TESTS=OFF \
+              -DOSL_BUILD_PLUGINS=OFF \
+              -DOSL_BUILD_SHADERS=OFF \
+              -DOSL_USE_OPTIX=OFF \
+              -DUSE_PYTHON=ON \
+              -DPYTHON_VERSION="${{ python }}" \
+              -DPython3_EXECUTABLE=$PYTHON \
+              -DUSE_QT=OFF \
+              -DINSTALL_DOCS=OFF \
+              -DUSE_BATCHED=0 \
+              -DUSE_CCACHE=OFF \
+              -DBUILD_MISSING_DEPS=OFF \
+              -DBUILD_MISSING_ROBINMAP=OFF \
+              -DROBINMAP_INCLUDE_DIR=$PREFIX/include \
+              -DOpenImageIO_ROOT=$PREFIX \
+              -DImath_ROOT=$PREFIX \
+              -Dpartio_ROOT=$PREFIX \
+              -DLLVM_ROOT=$PREFIX \
+              -DLLVM_DIRECTORY=$PREFIX \
+              -B $SRC_DIR/../build-python \
+              -S .
+
+            cmake --build $SRC_DIR/../build-python --target install
+        - if: win and osl_gpu == "cpu"
+          then: |
+            cmake -E rm -rf %SRC_DIR%\..\build-python
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "CL=/utf-8 %CL%"
+            set "CXXFLAGS=%CXXFLAGS% /utf-8"
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DBUILD_TESTING=OFF ^
+              -DOSL_BUILD_TESTS=OFF ^
+              -DOSL_BUILD_PLUGINS=OFF ^
+              -DOSL_BUILD_SHADERS=OFF ^
+              -DOSL_USE_OPTIX=OFF ^
+              -DUSE_LLVM_BITCODE=OFF ^
+              -DUSE_PYTHON=ON ^
+              -DPYTHON_VERSION="${{ python }}" ^
+              -DPython3_EXECUTABLE=%PYTHON% ^
+              -DUSE_QT=OFF ^
+              -DINSTALL_DOCS=OFF ^
+              -DUSE_BATCHED=0 ^
+              -DUSE_CCACHE=OFF ^
+              -DBUILD_MISSING_DEPS=OFF ^
+              -DBUILD_MISSING_ROBINMAP=OFF ^
+              -DROBINMAP_INCLUDE_DIR=%LIBRARY_PREFIX_FWD%/include ^
+              -DOpenImageIO_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DImath_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -Dpartio_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DLLVM_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DLLVM_DIRECTORY=%LIBRARY_PREFIX_FWD% ^
+              -B %SRC_DIR%\..\build-python ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-python --target install --config Release
+    requirements:
+      build:
+        - if: osl_gpu == "cpu"
+          then:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - bison
+            - cmake
+            - flex
+            - ninja
+      host:
+        - if: osl_gpu == "cpu"
+          then:
+            - clangdev ${{ llvm_major }}.*
+            - imath-dev 3.2.*
+            - llvmdev ${{ llvm_major }}.*
+            - openimageio-dev 3.1.*
+            - partio-dev 1.20.*
+            - pugixml
+            - numpy
+            - pybind11
+            - python
+            - tsl_robin_map 1.4.*
+            - zlib
+
+  - staging:
+      name: openshadinglanguage-cuda-build
+    build:
+      script:
+        - if: linux and osl_gpu == "cuda" and target_platform == "linux-64"
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-cuda
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DOSL_BUILD_TESTS=OFF \
+              -DOSL_BUILD_PLUGINS=OFF \
+              -DOSL_BUILD_SHADERS=ON \
+              -DOSL_USE_OPTIX=ON \
+              -DUSE_LLVM_BITCODE=ON \
+              -DUSE_FAST_MATH=ON \
+              -DCUDA_TARGET_ARCH=${{ cuda_target_arch }} \
+              -DCUDA_TOOLKIT_ROOT_DIR=$PREFIX \
+              -DOPTIX_INCLUDES=$PREFIX/include \
+              -DUSE_PYTHON=OFF \
+              -DUSE_QT=OFF \
+              -DINSTALL_DOCS=OFF \
+              -DUSE_BATCHED=0 \
+              -DUSE_CCACHE=OFF \
+              -DBUILD_MISSING_DEPS=OFF \
+              -DBUILD_MISSING_ROBINMAP=OFF \
+              -DROBINMAP_INCLUDE_DIR=$PREFIX/include \
+              -DOpenImageIO_ROOT=$PREFIX \
+              -DImath_ROOT=$PREFIX \
+              -Dpartio_ROOT=$PREFIX \
+              -DLLVM_ROOT=$PREFIX \
+              -DLLVM_DIRECTORY=$PREFIX \
+              -B $SRC_DIR/../build-cuda \
+              -S .
+
+            cmake --build $SRC_DIR/../build-cuda --target install
+    requirements:
+      build:
+        - if: osl_gpu == "cuda" and target_platform == "linux-64"
+          then:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - bison
+            - cmake
+            - flex
+            - ninja
+            - pkg-config
+      host:
+        - if: osl_gpu == "cuda" and target_platform == "linux-64"
+          then:
+            - clangdev ${{ llvm_major }}.*
+            - cuda-cudart-dev
+            - cuda-nvcc
+            - imath-dev 3.2.*
+            - llvmdev ${{ llvm_major }}.*
+            - openimageio-dev 3.1.*
+            - partio-dev 1.20.*
+            - pugixml
+            - python
+            - tsl_robin_map 1.4.*
+            - zlib
+
+  - staging:
+      name: openshadinglanguage-cuda-plugin-build
+    build:
+      script:
+        - if: linux and osl_gpu == "cuda" and target_platform == "linux-64"
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-cuda-plugin
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DOSL_BUILD_TESTS=OFF \
+              -DOSL_BUILD_PLUGINS=ON \
+              -DOSL_BUILD_SHADERS=OFF \
+              -DOSL_USE_OPTIX=ON \
+              -DUSE_LLVM_BITCODE=ON \
+              -DUSE_FAST_MATH=ON \
+              -DCUDA_TARGET_ARCH=${{ cuda_target_arch }} \
+              -DCUDA_TOOLKIT_ROOT_DIR=$PREFIX \
+              -DOPTIX_INCLUDES=$PREFIX/include \
+              -DUSE_PYTHON=OFF \
+              -DUSE_QT=OFF \
+              -DINSTALL_DOCS=OFF \
+              -DUSE_BATCHED=0 \
+              -DUSE_CCACHE=OFF \
+              -DBUILD_MISSING_DEPS=OFF \
+              -DBUILD_MISSING_ROBINMAP=OFF \
+              -DROBINMAP_INCLUDE_DIR=$PREFIX/include \
+              -DOpenImageIO_ROOT=$PREFIX \
+              -DImath_ROOT=$PREFIX \
+              -Dpartio_ROOT=$PREFIX \
+              -DLLVM_ROOT=$PREFIX \
+              -DLLVM_DIRECTORY=$PREFIX \
+              -B $SRC_DIR/../build-cuda-plugin \
+              -S .
+
+            cmake --build $SRC_DIR/../build-cuda-plugin --target install
+    requirements:
+      build:
+        - if: osl_gpu == "cuda" and target_platform == "linux-64"
+          then:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - bison
+            - cmake
+            - flex
+            - ninja
+      host:
+        - if: osl_gpu == "cuda" and target_platform == "linux-64"
+          then:
+            - clangdev ${{ llvm_major }}.*
+            - cuda-cudart-dev
+            - cuda-nvcc
+            - imath-dev 3.2.*
+            - llvmdev ${{ llvm_major }}.*
+            - openimageio-dev 3.1.*
+            - partio-dev 1.20.*
+            - pugixml
+            - python
+            - tsl_robin_map 1.4.*
+            - zlib
+
+  - staging:
+      name: openshadinglanguage-cuda-guitools-build
+    build:
+      script:
+        - if: linux and osl_gpu == "cuda" and target_platform == "linux-64"
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-cuda-guitools
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DOSL_BUILD_TESTS=OFF \
+              -DOSL_BUILD_PLUGINS=OFF \
+              -DOSL_BUILD_SHADERS=OFF \
+              -DOSL_USE_OPTIX=ON \
+              -DUSE_LLVM_BITCODE=ON \
+              -DUSE_FAST_MATH=ON \
+              -DCUDA_TARGET_ARCH=${{ cuda_target_arch }} \
+              -DCUDA_TOOLKIT_ROOT_DIR=$PREFIX \
+              -DOPTIX_INCLUDES=$PREFIX/include \
+              -DUSE_PYTHON=OFF \
+              -DUSE_QT=ON \
+              -DINSTALL_DOCS=OFF \
+              -DUSE_BATCHED=0 \
+              -DUSE_CCACHE=OFF \
+              -DBUILD_MISSING_DEPS=OFF \
+              -DBUILD_MISSING_ROBINMAP=OFF \
+              -DROBINMAP_INCLUDE_DIR=$PREFIX/include \
+              -DOpenImageIO_ROOT=$PREFIX \
+              -DImath_ROOT=$PREFIX \
+              -Dpartio_ROOT=$PREFIX \
+              -DLLVM_ROOT=$PREFIX \
+              -DLLVM_DIRECTORY=$PREFIX \
+              -B $SRC_DIR/../build-cuda-guitools \
+              -S .
+
+            cmake --build $SRC_DIR/../build-cuda-guitools --target install
+    requirements:
+      build:
+        - if: osl_gpu == "cuda" and target_platform == "linux-64"
+          then:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - bison
+            - cmake
+            - flex
+            - ninja
+      host:
+        - if: osl_gpu == "cuda" and target_platform == "linux-64"
+          then:
+            - clangdev ${{ llvm_major }}.*
+            - cuda-cudart-dev
+            - cuda-nvcc
+            - imath-dev 3.2.*
+            - llvmdev ${{ llvm_major }}.*
+            - openimageio-dev 3.1.*
+            - partio-dev 1.20.*
+            - pugixml
+            - python
+            - qt6-main
+            - tsl_robin_map 1.4.*
+            - zlib
+
+  - staging:
+      name: openshadinglanguage-cuda-python-build
+    build:
+      script:
+        - if: linux and osl_gpu == "cuda" and target_platform == "linux-64"
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-cuda-python
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DOSL_BUILD_TESTS=OFF \
+              -DOSL_BUILD_PLUGINS=OFF \
+              -DOSL_BUILD_SHADERS=OFF \
+              -DOSL_USE_OPTIX=ON \
+              -DUSE_LLVM_BITCODE=ON \
+              -DUSE_FAST_MATH=ON \
+              -DCUDA_TARGET_ARCH=${{ cuda_target_arch }} \
+              -DCUDA_TOOLKIT_ROOT_DIR=$PREFIX \
+              -DOPTIX_INCLUDES=$PREFIX/include \
+              -DUSE_PYTHON=ON \
+              -DPYTHON_VERSION="${{ python }}" \
+              -DPython3_EXECUTABLE=$PYTHON \
+              -DUSE_QT=OFF \
+              -DINSTALL_DOCS=OFF \
+              -DUSE_BATCHED=0 \
+              -DUSE_CCACHE=OFF \
+              -DBUILD_MISSING_DEPS=OFF \
+              -DBUILD_MISSING_ROBINMAP=OFF \
+              -DROBINMAP_INCLUDE_DIR=$PREFIX/include \
+              -DOpenImageIO_ROOT=$PREFIX \
+              -DImath_ROOT=$PREFIX \
+              -Dpartio_ROOT=$PREFIX \
+              -DLLVM_ROOT=$PREFIX \
+              -DLLVM_DIRECTORY=$PREFIX \
+              -B $SRC_DIR/../build-cuda-python \
+              -S .
+
+            cmake --build $SRC_DIR/../build-cuda-python --target install
+    requirements:
+      build:
+        - if: osl_gpu == "cuda" and target_platform == "linux-64"
+          then:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - bison
+            - cmake
+            - flex
+            - ninja
+      host:
+        - if: osl_gpu == "cuda" and target_platform == "linux-64"
+          then:
+            - clangdev ${{ llvm_major }}.*
+            - cuda-cudart-dev
+            - cuda-nvcc
+            - imath-dev 3.2.*
+            - llvmdev ${{ llvm_major }}.*
+            - openimageio-dev 3.1.*
+            - partio-dev 1.20.*
+            - pugixml
+            - numpy
+            - pybind11
+            - python
+            - tsl_robin_map 1.4.*
+            - zlib
+
+  - package:
+      name: openshadinglanguage-lib
+    inherit: openshadinglanguage-build
+    build:
+      skip:
+        - if: osl_gpu != "cpu"
+          then: true
+      files:
+        - lib/libosl*.so.*
+        - lib/libosl*.*.dylib
+        - Library/bin/osl*.dll
+    requirements:
+      run:
+        - imath-lib 3.2.*
+        - libclang-cpp >=${{ llvm_major }},<23
+        - libllvm${{ llvm_major }}
+        - libzlib
+        - openimageio-lib 3.1.*
+        - partio-lib 1.20.*
+        - pugixml
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openshadinglanguage-lib', upper_bound='x.x') }}
+      run_constraints:
+        - openshadinglanguage-cuda-lib <0a0
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/OSL/oslversion.h
+              - lib/cmake/OSL/OSLConfig.cmake
+              - Library/include/OSL/oslversion.h
+              - Library/lib/cmake/OSL/OSLConfig.cmake
+      - script:
+          - if: linux
+            then:
+              - python -c "import ctypes, glob, os; libs = ['oslnoise', 'oslquery', 'oslcomp', 'oslexec']; [ctypes.CDLL(glob.glob(os.path.join(os.environ['PREFIX'], 'lib', f'lib{name}.so.*'))[0]) for name in libs]"
+          - if: osx
+            then:
+              - python -c "import ctypes, glob, os; libs = ['oslnoise', 'oslquery', 'oslcomp', 'oslexec']; [ctypes.CDLL(glob.glob(os.path.join(os.environ['PREFIX'], 'lib', f'lib{name}.*.dylib'))[0]) for name in libs]"
+          - if: win
+            then:
+              - python -c "import ctypes, glob, os; libs = ['oslnoise', 'oslquery', 'oslcomp', 'oslexec']; [ctypes.WinDLL(glob.glob(os.path.join(os.environ['LIBRARY_BIN'], f'{name}.dll'))[0]) for name in libs]"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: openshadinglanguage-dev
+    inherit: openshadinglanguage-build
+    build:
+      skip:
+        - if: osl_gpu != "cpu"
+          then: true
+      files:
+        - include/OSL/**
+        - lib/libosl*.so
+        - lib/libosl*.dylib
+        - lib/cmake/OSL/**
+        - lib/pkgconfig/osl*.pc
+        - cmake/llvm_macros.cmake
+        - build-scripts/serialize-bc.py
+        - Library/include/OSL/**
+        - Library/lib/osl*.lib
+        - Library/lib/cmake/OSL/**
+        - Library/lib/pkgconfig/osl*.pc
+        - Library/cmake/llvm_macros.cmake
+        - Library/build-scripts/serialize-bc.py
+    requirements:
+      run:
+        - ${{ pin_subpackage('openshadinglanguage-lib', exact=True) }}
+        - ${{ pin_subpackage('openshadinglanguage-tools', exact=True) }}
+        - imath-dev 3.2.*
+        - openimageio-dev 3.1.*
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openshadinglanguage-lib', upper_bound='x.x') }}
+      run_constraints:
+        - openshadinglanguage-cuda-dev <0a0
+    tests:
+      - package_contents:
+          include:
+            - OSL/oslversion.h
+            - OSL/oslexec.h
+            - OSL/oslquery.h
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/OSL/OSLConfig.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/openshadinglanguage_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OSL\OSLConfig.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\openshadinglanguage_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openshadinglanguage_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: openshadinglanguage-tools
+    inherit: openshadinglanguage-build
+    build:
+      skip:
+        - if: osl_gpu != "cpu"
+          then: true
+      files:
+        - bin/oslc
+        - bin/oslinfo
+        - share/OSL/shaders/**
+        - Library/bin/oslc.exe
+        - Library/bin/oslinfo.exe
+        - Library/share/OSL/shaders/**
+    requirements:
+      run:
+        - ${{ pin_subpackage('openshadinglanguage-lib', exact=True) }}
+      run_constraints:
+        - openshadinglanguage-cuda-tools <0a0
+    tests:
+      - script:
+          - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = color(1, 0, 0)) {}\\n', encoding='utf-8')"
+          - oslc recipe_test.osl
+          - oslinfo recipe_test.oso
+          - if: unix
+            then:
+              - test -s recipe_test.oso
+              - test -f "$PREFIX/share/OSL/shaders/stdosl.h"
+          - if: win
+            then:
+              - if not exist recipe_test.oso exit /b 1
+              - if not exist "%LIBRARY_PREFIX%\share\OSL\shaders\stdosl.h" exit /b 1
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: openshadinglanguage-guitools
+    inherit: openshadinglanguage-guitools-build
+    build:
+      skip:
+        - if: osl_gpu != "cpu"
+          then: true
+      files:
+        - bin/osltoy
+        - Library/bin/osltoy.exe
+    requirements:
+      run:
+        - ${{ pin_subpackage('openshadinglanguage-lib', exact=True) }}
+        - qt6-main
+      run_constraints:
+        - openshadinglanguage-cuda-guitools <0a0
+    tests:
+      - script:
+          - if: unix
+            then:
+              - test -x "$PREFIX/bin/osltoy"
+          - if: win
+            then:
+              - if not exist "%LIBRARY_BIN%\osltoy.exe" exit /b 1
+
+  - package:
+      name: openshadinglanguage-python
+    inherit: openshadinglanguage-python-build
+    build:
+      skip:
+        - if: osl_gpu != "cpu"
+          then: true
+      string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+      files:
+        - lib/python*/site-packages/oslquery/**
+        - Lib/site-packages/oslquery/**
+    requirements:
+      run:
+        - python
+        - numpy
+        - openimageio-python 3.1.*
+        - ${{ pin_subpackage('openshadinglanguage-lib', exact=True) }}
+      run_constraints:
+        - openshadinglanguage-cuda-python <0a0
+    tests:
+      - python:
+          imports:
+            - oslquery
+      - script:
+          - python tests/query_shader.py
+        files:
+          recipe:
+            - tests/query_shader.py
+        requirements:
+          run:
+            - python
+            - ${{ pin_subpackage('openshadinglanguage-tools', exact=True) }}
+
+  - package:
+      name: openimageio-format-osl
+    inherit:
+      from: openshadinglanguage-plugin-build
+      run_exports: false
+    build:
+      skip:
+        - if: osl_gpu != "cpu"
+          then: true
+      files:
+        - lib/osl.imageio.so
+        - lib/osl.imageio.dylib
+        - Library/bin/osl.imageio.dll
+    requirements:
+      run:
+        - ${{ pin_subpackage('openshadinglanguage-lib', exact=True) }}
+        - openimageio-lib 3.1.*
+      run_constraints:
+        - openimageio-format-osl-cuda <0a0
+    tests:
+      - script:
+          - if: linux
+            then:
+              - test -f "$PREFIX/lib/osl.imageio.so"
+          - if: osx
+            then:
+              - test -f "$PREFIX/lib/osl.imageio.dylib"
+          - if: win
+            then:
+              - if not exist "%LIBRARY_BIN%\osl.imageio.dll" exit /b 1
+          - iinfo "result = color(s, t, 0); alpha = 1.0.oslbody?RES=1x1"
+        requirements:
+          run:
+            - openimageio-tools 3.1.*
+            - python
+
+  - package:
+      name: openshadinglanguage
+    build:
+      skip:
+        - if: osl_gpu != "cpu"
+          then: true
+    requirements:
+      run:
+        - ${{ pin_subpackage('openshadinglanguage-lib', exact=True) }}
+        - ${{ pin_subpackage('openshadinglanguage-dev', exact=True) }}
+        - ${{ pin_subpackage('openshadinglanguage-tools', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openshadinglanguage-lib', upper_bound='x.x') }}
+      run_constraints:
+        - openshadinglanguage-cuda <0a0
+    tests:
+      - script:
+          - if: unix
+            then:
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/openshadinglanguage_consumer
+              - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = color(1, 0, 0)) {}\n', encoding='utf-8')"
+              - oslc recipe_test.osl
+              - oslinfo recipe_test.oso
+              - test -s recipe_test.oso
+              - test -f "$PREFIX/share/OSL/shaders/stdosl.h"
+          - if: win
+            then:
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\openshadinglanguage_consumer.exe
+              - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = color(1, 0, 0)) {}\n', encoding='utf-8')"
+              - oslc recipe_test.osl
+              - oslinfo recipe_test.oso
+              - if not exist recipe_test.oso exit /b 1
+              - if not exist "%LIBRARY_PREFIX%\share\OSL\shaders\stdosl.h" exit /b 1
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openshadinglanguage_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - python
+
+  - package:
+      name: openshadinglanguage-cuda-lib
+    inherit: openshadinglanguage-cuda-build
+    build:
+      skip:
+        - if: osl_gpu != "cuda" or target_platform != "linux-64"
+          then: true
+      files:
+        - lib/libosl*.so.*
+        - share/OSL/ptx/**
+    requirements:
+      run:
+        - imath-lib 3.2.*
+        - libclang-cpp >=${{ llvm_major }},<23
+        - libllvm${{ llvm_major }}
+        - libzlib
+        - openimageio-lib 3.1.*
+        - partio-lib 1.20.*
+        - pugixml
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openshadinglanguage-cuda-lib', upper_bound='x.x') }}
+      run_constraints:
+        - openshadinglanguage-lib <0a0
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/OSL/oslversion.h
+              - lib/cmake/OSL/OSLConfig.cmake
+      - script:
+          - python -c "import ctypes, glob, os; libs = ['oslnoise', 'oslquery', 'oslcomp', 'oslexec']; [ctypes.CDLL(glob.glob(os.path.join(os.environ['PREFIX'], 'lib', f'lib{name}.so.*'))[0]) for name in libs]"
+          - python -c "from pathlib import Path; import os; p = Path(os.environ['PREFIX']) / 'share/OSL/ptx'; files = list(p.glob('*.ptx')); assert files and all(f.stat().st_size > 0 for f in files)"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: openshadinglanguage-cuda-dev
+    inherit: openshadinglanguage-cuda-build
+    build:
+      skip:
+        - if: osl_gpu != "cuda" or target_platform != "linux-64"
+          then: true
+      files:
+        - include/OSL/**
+        - lib/libosl*.so
+        - lib/cmake/OSL/**
+        - lib/pkgconfig/osl*.pc
+        - cmake/llvm_macros.cmake
+        - build-scripts/serialize-bc.py
+    requirements:
+      run:
+        - ${{ pin_subpackage('openshadinglanguage-cuda-lib', exact=True) }}
+        - ${{ pin_subpackage('openshadinglanguage-cuda-tools', exact=True) }}
+        - imath-dev 3.2.*
+        - openimageio-dev 3.1.*
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openshadinglanguage-cuda-lib', upper_bound='x.x') }}
+      run_constraints:
+        - openshadinglanguage-dev <0a0
+    tests:
+      - package_contents:
+          include:
+            - OSL/oslversion.h
+            - OSL/oslexec.h
+            - OSL/oslquery.h
+      - script:
+          - test -f "$PREFIX/lib/cmake/OSL/OSLConfig.cmake"
+          - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+          - cmake --build build
+          - ./build/openshadinglanguage_consumer
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openshadinglanguage_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: openshadinglanguage-cuda-tools
+    inherit: openshadinglanguage-cuda-build
+    build:
+      skip:
+        - if: osl_gpu != "cuda" or target_platform != "linux-64"
+          then: true
+      files:
+        - bin/oslc
+        - bin/oslinfo
+        - share/OSL/shaders/**
+    requirements:
+      run:
+        - ${{ pin_subpackage('openshadinglanguage-cuda-lib', exact=True) }}
+      run_constraints:
+        - openshadinglanguage-tools <0a0
+    tests:
+      - script:
+          - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = color(1, 0, 0)) {}\\n', encoding='utf-8')"
+          - oslc recipe_test.osl
+          - oslinfo recipe_test.oso
+          - test -s recipe_test.oso
+          - test -f "$PREFIX/share/OSL/shaders/stdosl.h"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: openshadinglanguage-cuda-guitools
+    inherit: openshadinglanguage-cuda-guitools-build
+    build:
+      skip:
+        - if: osl_gpu != "cuda" or target_platform != "linux-64"
+          then: true
+      files:
+        - bin/osltoy
+    requirements:
+      run:
+        - ${{ pin_subpackage('openshadinglanguage-cuda-lib', exact=True) }}
+        - qt6-main
+      run_constraints:
+        - openshadinglanguage-guitools <0a0
+    tests:
+      - script:
+          - test -x "$PREFIX/bin/osltoy"
+
+  - package:
+      name: openshadinglanguage-cuda-python
+    inherit: openshadinglanguage-cuda-python-build
+    build:
+      skip:
+        - if: osl_gpu != "cuda" or target_platform != "linux-64"
+          then: true
+      string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+      files:
+        - lib/python*/site-packages/oslquery/**
+    requirements:
+      run:
+        - python
+        - numpy
+        - openimageio-python 3.1.*
+        - ${{ pin_subpackage('openshadinglanguage-cuda-lib', exact=True) }}
+      run_constraints:
+        - openshadinglanguage-python <0a0
+    tests:
+      - python:
+          imports:
+            - oslquery
+      - script:
+          - python tests/query_shader.py
+        files:
+          recipe:
+            - tests/query_shader.py
+        requirements:
+          run:
+            - python
+            - ${{ pin_subpackage('openshadinglanguage-cuda-tools', exact=True) }}
+
+  - package:
+      name: openimageio-format-osl-cuda
+    inherit:
+      from: openshadinglanguage-cuda-plugin-build
+      run_exports: false
+    build:
+      skip:
+        - if: osl_gpu != "cuda" or target_platform != "linux-64"
+          then: true
+      files:
+        - lib/osl.imageio.so
+    requirements:
+      run:
+        - ${{ pin_subpackage('openshadinglanguage-cuda-lib', exact=True) }}
+        - openimageio-lib 3.1.*
+      run_constraints:
+        - openimageio-format-osl <0a0
+    tests:
+      - script:
+          - test -f "$PREFIX/lib/osl.imageio.so"
+          - iinfo "result = color(s, t, 0); alpha = 1.0.oslbody?RES=1x1"
+        requirements:
+          run:
+            - openimageio-tools 3.1.*
+            - python
+
+  - package:
+      name: openshadinglanguage-cuda
+    build:
+      skip:
+        - if: osl_gpu != "cuda" or target_platform != "linux-64"
+          then: true
+    requirements:
+      run:
+        - ${{ pin_subpackage('openshadinglanguage-cuda-lib', exact=True) }}
+        - ${{ pin_subpackage('openshadinglanguage-cuda-dev', exact=True) }}
+        - ${{ pin_subpackage('openshadinglanguage-cuda-tools', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openshadinglanguage-cuda-lib', upper_bound='x.x') }}
+      run_constraints:
+        - openshadinglanguage <0a0
+    tests:
+      - script:
+          - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+          - cmake --build build
+          - ./build/openshadinglanguage_consumer
+          - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = color(1, 0, 0)) {}\n', encoding='utf-8')"
+          - oslc recipe_test.osl
+          - oslinfo recipe_test.oso
+          - test -s recipe_test.oso
+          - test -f "$PREFIX/share/OSL/shaders/stdosl.h"
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openshadinglanguage_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - python
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  summary: Advanced shading language for production GI renderers
+  homepage: https://github.com/AcademySoftwareFoundation/OpenShadingLanguage
+  repository: https://github.com/AcademySoftwareFoundation/OpenShadingLanguage

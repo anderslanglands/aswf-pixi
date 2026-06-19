@@ -183,3 +183,18 @@ OpenImageIO provides image file I/O libraries, command-line tools, texture utili
 - `openimageio-format-ffmpeg`: FFmpeg movie input plugin.
 - `openimageio-format-openvdb`: OpenVDB input plugin. Depends on the matching OpenVDB runtime package.
 - `openimageio`: Default metapackage for C++ and tool consumers. Depends on the matching `openimageio-lib`, `openimageio-dev`, and `openimageio-tools`; Python bindings and extra format plugins are opt-in.
+
+## OpenShadingLanguage
+
+Recipe versions: `1.15.5.0`
+
+OpenShadingLanguage provides a production shading language, compiler, runtime libraries, and OpenImageIO integration.
+
+- `openshadinglanguage-lib`: Shared OSL runtime libraries for CPU rendering. Depends on OpenImageIO, Imath, Partio, pugixml, zlib, and LLVM/Clang runtime libraries.
+- `openshadinglanguage-dev`: C++ headers, CMake package files, pkg-config metadata, and Windows import libraries. Depends on the matching `openshadinglanguage-lib` and `openshadinglanguage-tools` because upstream exports `oslc` and `oslinfo` in its CMake target set.
+- `openshadinglanguage-tools`: Headless command-line tools, currently `oslc` and `oslinfo`, plus installed standard shader headers.
+- `openshadinglanguage-guitools`: Qt-dependent GUI tools, currently `osltoy`. Depends on the matching `openshadinglanguage-lib` and Qt 6.
+- `openshadinglanguage-python`: Python `oslquery` bindings, built for Python 3.10 through 3.14. Depends on the matching `openshadinglanguage-lib` and `openimageio-python`.
+- `openimageio-format-osl`: OpenImageIO input plugin for procedural OSL images (`.osl`, `.oso`, `.oslgroup`, and `.oslbody`). Depends on the matching OSL runtime and OpenImageIO runtime.
+- `openshadinglanguage`: Default metapackage for C++ and headless tool consumers. Depends on the matching `openshadinglanguage-lib`, `openshadinglanguage-dev`, and `openshadinglanguage-tools`; Python bindings, GUI tools, and OIIO plugin are opt-in.
+- `openshadinglanguage-cuda-*` and `openimageio-format-osl-cuda`: Linux-only CUDA-enabled flavor built with `osl_gpu=cuda`. These packages install the same upstream CMake target names as the CPU flavor and are mutually exclusive with the CPU packages. They are intended for explicit local/private builds rather than the default publish path.
