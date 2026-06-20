@@ -445,6 +445,9 @@ outputs:
           then: |
             cmake -E rm -rf %SRC_DIR%\..\build-python
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "SP_DIR_VAR=%SP_DIR%"
+            if "%SP_DIR_VAR%"=="" set "SP_DIR_VAR=%PREFIX%\Lib\site-packages"
+            set "SP_DIR_FWD=%SP_DIR_VAR:\=/%"
             set "RECIPE_DIR_VAR=%RECIPE_DIR%"
             if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
             if "%RECIPE_DIR_VAR%"=="" (
@@ -469,7 +472,7 @@ outputs:
               -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
               -DCMAKE_INSTALL_LIBDIR=lib ^
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
-              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=OFF ^
               -DBUILD_SHARED_LIBS=ON ^
               -DBUILD_TESTING=OFF ^
               -DOSL_BUILD_TESTS=OFF ^
@@ -480,6 +483,7 @@ outputs:
               -DUSE_PYTHON=ON ^
               -DPYTHON_VERSION="${{ python }}" ^
               -DPython3_EXECUTABLE=%PYTHON% ^
+              "-DPYTHON_SITE_DIR=%SP_DIR_FWD%" ^
               -DUSE_QT=OFF ^
               -DINSTALL_DOCS=OFF ^
               -DUSE_BATCHED=0 ^
@@ -962,7 +966,7 @@ outputs:
         - openshadinglanguage-cuda-tools <0a0
     tests:
       - script:
-          - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = color(1, 0, 0)) {}\\n', encoding='utf-8')"
+          - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = 0) {}' + chr(10), encoding='utf-8')"
           - oslc recipe_test.osl
           - oslinfo recipe_test.oso
           - if: unix
@@ -1094,7 +1098,7 @@ outputs:
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/openshadinglanguage_consumer
-              - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = color(1, 0, 0)) {}\n', encoding='utf-8')"
+              - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = 0) {}' + chr(10), encoding='utf-8')"
               - oslc recipe_test.osl
               - oslinfo recipe_test.oso
               - test -s recipe_test.oso
@@ -1104,7 +1108,7 @@ outputs:
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
               - cmake --build build --config Release
               - build\openshadinglanguage_consumer.exe
-              - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = color(1, 0, 0)) {}\n', encoding='utf-8')"
+              - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = 0) {}' + chr(10), encoding='utf-8')"
               - oslc recipe_test.osl
               - oslinfo recipe_test.oso
               - if not exist recipe_test.oso exit /b 1
@@ -1221,7 +1225,7 @@ outputs:
         - openshadinglanguage-tools <0a0
     tests:
       - script:
-          - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = color(1, 0, 0)) {}\\n', encoding='utf-8')"
+          - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = 0) {}' + chr(10), encoding='utf-8')"
           - oslc recipe_test.osl
           - oslinfo recipe_test.oso
           - test -s recipe_test.oso
@@ -1328,7 +1332,7 @@ outputs:
           - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
           - cmake --build build
           - ./build/openshadinglanguage_consumer
-          - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = color(1, 0, 0)) {}\n', encoding='utf-8')"
+          - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = 0) {}' + chr(10), encoding='utf-8')"
           - oslc recipe_test.osl
           - oslinfo recipe_test.oso
           - test -s recipe_test.oso

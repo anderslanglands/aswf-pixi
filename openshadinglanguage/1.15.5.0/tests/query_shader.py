@@ -4,7 +4,7 @@ import subprocess
 import oslquery
 
 Path("recipe_query.osl").write_text(
-    "shader recipe_query(float scale = 2.0, output color result = color(0, 0, 0)) {}\n",
+    "shader recipe_query(float scale = 2.0, output color result = 0) {}\n",
     encoding="utf-8",
 )
 subprocess.run(["oslc", "recipe_query.osl"], check=True)
