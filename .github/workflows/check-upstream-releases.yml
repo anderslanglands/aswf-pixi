@@ -140,6 +140,11 @@ jobs:
           publish_target="${PUBLISH_TARGET:-test-label}"
           run_smoke_tests="${RUN_SMOKE_TESTS:-true}"
 
+          if [[ "$publish_target" == "default-label" ]]; then
+            echo "Nightly upstream release checks may not dispatch default-label publishes." >&2
+            exit 1
+          fi
+
           gh workflow run build-packages.yml \
             --ref "$AUTOMATION_BRANCH" \
             -f recipes="$RECIPES" \

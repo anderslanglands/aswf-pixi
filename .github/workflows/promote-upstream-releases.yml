@@ -1,0 +1,75 @@
+name: Promote upstream releases
+
+on:
+  pull_request:
+    types:
+      - closed
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: upstream-release-promote-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Dispatch default-label publish
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'automation/upstream-releases' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out merged repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Collect changed recipe selectors
+        id: recipes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          files="$RUNNER_TEMP/pr-files.txt"
+          gh api --paginate "repos/$REPOSITORY/pulls/$PR_NUMBER/files" --jq '.[].filename' > "$files"
+          recipes="$(python scripts/changed_recipes.py --root . < "$files")"
+          echo "recipes=$recipes" >> "$GITHUB_OUTPUT"
+
+          if [[ -n "$recipes" ]]; then
+            echo "Changed recipes: $recipes" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No changed package recipes were found in the merged upstream release PR." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Create exact promotion branch
+        if: ${{ steps.recipes.outputs.recipes != '' }}
+        shell: bash
+        env:
+          PROMOTION_REF: automation/promote-upstream-releases/pr-${{ github.event.pull_request.number }}
+        run: |
+          git push --force-with-lease origin "HEAD:refs/heads/$PROMOTION_REF"
+          echo "ref=$PROMOTION_REF" >> "$GITHUB_OUTPUT"
+        id: promotion-ref
+
+      - name: Dispatch default-label package build
+        if: ${{ steps.recipes.outputs.recipes != '' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RECIPES: ${{ steps.recipes.outputs.recipes }}
+          PROMOTION_REF: ${{ steps.promotion-ref.outputs.ref }}
+        run: |
+          gh workflow run build-packages.yml \
+            --ref "$PROMOTION_REF" \
+            -f recipes="$RECIPES" \
+            -f platforms="default" \
+            -f publish_target="default-label" \
+            -f build_number="" \
+            -f run_smoke_tests="true"

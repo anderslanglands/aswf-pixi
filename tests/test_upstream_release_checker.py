@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 import sys
 import tempfile
 import unittest
@@ -214,12 +215,20 @@ about:
 
     def test_workflow_dispatches_existing_build_workflow_on_test_label_by_default(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "check-upstream-releases.yml").read_text(encoding="utf-8")
+        match = re.search(r"(?ms)^      publish_target:\n(?P<body>(?:        .*\n)+)", workflow)
+        self.assertIsNotNone(match)
+        assert match is not None
+        publish_target_input = match.group("body")
 
         self.assertIn("gh workflow run build-packages.yml", workflow)
         self.assertIn('--ref "$AUTOMATION_BRANCH"', workflow)
         self.assertIn('publish_target="${PUBLISH_TARGET:-test-label}"', workflow)
-        self.assertIn("- test-label", workflow)
-        self.assertNotIn("- default-label", workflow)
+        self.assertIn("- artifact-only", publish_target_input)
+        self.assertIn("- test-label", publish_target_input)
+        self.assertIn("default: test-label", publish_target_input)
+        self.assertNotIn("- default-label", publish_target_input)
+        self.assertIn('if [[ "$publish_target" == "default-label" ]]; then', workflow)
+        self.assertIn("Nightly upstream release checks may not dispatch default-label publishes.", workflow)
 
 
 if __name__ == "__main__":
