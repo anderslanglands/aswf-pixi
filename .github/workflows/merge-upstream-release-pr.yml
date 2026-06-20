@@ -1,0 +1,42 @@
+name: Merge upstream release PR
+
+on:
+  workflow_run:
+    workflows:
+      - Build packages
+    types:
+      - completed
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: upstream-release-merge-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    name: Merge successful test-label PR
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'workflow_dispatch' &&
+      startsWith(github.event.workflow_run.head_branch, 'automation/upstream-release-prs/')
+    runs-on: ubuntu-latest
+    env:
+      AUTOMATION_BRANCH: ${{ github.event.workflow_run.head_branch }}
+      AUTOMATION_BRANCH_PREFIX: automation/upstream-release-prs
+      BASE_BRANCH: ${{ github.event.repository.default_branch }}
+      RUN_DISPLAY_TITLE: ${{ github.event.workflow_run.display_title }}
+      RUN_HTML_URL: ${{ github.event.workflow_run.html_url }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Merge upstream release PR
+        shell: bash
+        run: bash scripts/merge_upstream_release_pr.sh

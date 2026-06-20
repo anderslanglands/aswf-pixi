@@ -20,7 +20,7 @@ jobs:
     if: >-
       github.event.pull_request.merged == true &&
       github.event.pull_request.base.ref == 'main' &&
-      github.event.pull_request.head.ref == 'automation/upstream-releases' &&
+      startsWith(github.event.pull_request.head.ref, 'automation/upstream-release-prs/') &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:

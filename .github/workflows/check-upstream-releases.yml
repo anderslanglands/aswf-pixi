@@ -46,20 +46,13 @@ jobs:
     name: Check upstream releases
     runs-on: ubuntu-latest
     env:
-      AUTOMATION_BRANCH: automation/upstream-releases
+      AUTOMATION_BRANCH_PREFIX: automation/upstream-release-prs
+      BASE_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Prepare automation branch
-        id: branch
-        shell: bash
-        run: |
-          git fetch origin "$AUTOMATION_BRANCH" || true
-          git checkout -B "$AUTOMATION_BRANCH"
-          echo "branch=$AUTOMATION_BRANCH" >> "$GITHUB_OUTPUT"
 
       - name: Check upstream releases
         id: detect
@@ -82,55 +75,18 @@ jobs:
           fi
           python "${args[@]}"
 
-      - name: Commit and push generated recipes
+      - name: Create per-recipe pull requests and dispatch builds
         if: ${{ steps.detect.outputs.created == 'true' }}
         shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .
-          if git diff --cached --quiet; then
-            echo "Detector reported new recipes, but no file changes were staged." >&2
-            exit 1
-          fi
-          git commit -m "Add upstream release recipe updates"
-          git push --force-with-lease origin "$AUTOMATION_BRANCH"
-
-      - name: Open or update pull request
-        if: ${{ steps.detect.outputs.created == 'true' }}
-        id: pr
-        shell: bash
         env:
-          GH_TOKEN: ${{ secrets.UPSTREAM_RELEASE_PR_TOKEN || github.token }}
-          REPORT: ${{ runner.temp }}/upstream-release-report.md
-        run: scripts/open_upstream_release_pr.sh
-
-      - name: Dispatch package build workflow
-        if: ${{ steps.detect.outputs.created == 'true' && (github.event_name == 'schedule' || inputs.dispatch_build) }}
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RECIPES: ${{ steps.detect.outputs.recipes }}
+          RESULT_JSON: ${{ runner.temp }}/upstream-releases.json
+          PR_GH_TOKEN: ${{ secrets.UPSTREAM_RELEASE_PR_TOKEN || github.token }}
+          ACTIONS_GH_TOKEN: ${{ github.token }}
           PLATFORMS: ${{ inputs.platforms }}
           PUBLISH_TARGET: ${{ inputs.publish_target }}
           RUN_SMOKE_TESTS: ${{ inputs.run_smoke_tests }}
-        run: |
-          platforms="${PLATFORMS:-default}"
-          publish_target="${PUBLISH_TARGET:-test-label}"
-          run_smoke_tests="${RUN_SMOKE_TESTS:-true}"
-
-          if [[ "$publish_target" == "default-label" ]]; then
-            echo "Nightly upstream release checks may not dispatch default-label publishes." >&2
-            exit 1
-          fi
-
-          gh workflow run build-packages.yml \
-            --ref "$AUTOMATION_BRANCH" \
-            -f recipes="$RECIPES" \
-            -f platforms="$platforms" \
-            -f publish_target="$publish_target" \
-            -f build_number="" \
-            -f run_smoke_tests="$run_smoke_tests"
+          DISPATCH_BUILD: ${{ github.event_name == 'schedule' || inputs.dispatch_build }}
+        run: scripts/create_upstream_release_prs.sh
 
       - name: Summarize result
         shell: bash

@@ -1,5 +1,5 @@
 name: Build packages
-run-name: Build ${{ inputs.recipes }} (${{ inputs.platforms }}, ${{ inputs.publish_target }})
+run-name: Build ${{ inputs.recipes }} (${{ inputs.platforms }}, ${{ inputs.publish_target }}, smoke=${{ inputs.run_smoke_tests }})
 
 on:
   workflow_dispatch:

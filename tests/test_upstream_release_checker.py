@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -215,41 +216,320 @@ about:
                 "# Packages\n\n## Bar\n\nRecipe versions: `1.2.3`\n\n## Foo\n\nRecipe versions: `1.2.3`, `1.2.4`\n",
             )
 
-    def test_workflow_dispatches_existing_build_workflow_on_test_label_by_default(self) -> None:
+    def test_workflow_creates_per_recipe_prs_and_dispatches_test_label_builds_by_default(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "check-upstream-releases.yml").read_text(encoding="utf-8")
+        fanout_step = re.search(
+            r"(?ms)^      - name: Create per-recipe pull requests and dispatch builds\n(?P<body>.*?)(?=^      - name: |\Z)",
+            workflow,
+        )
+        self.assertIsNotNone(fanout_step)
+        assert fanout_step is not None
         match = re.search(r"(?ms)^      publish_target:\n(?P<body>(?:        .*\n)+)", workflow)
         self.assertIsNotNone(match)
         assert match is not None
         publish_target_input = match.group("body")
-        pr_step = re.search(
-            r"(?ms)^      - name: Open or update pull request\n(?P<body>.*?)(?=^      - name: )",
-            workflow,
-        )
-        self.assertIsNotNone(pr_step)
-        assert pr_step is not None
-        dispatch_step = re.search(
-            r"(?ms)^      - name: Dispatch package build workflow\n(?P<body>.*?)(?=^      - name: |\Z)",
-            workflow,
-        )
-        self.assertIsNotNone(dispatch_step)
-        assert dispatch_step is not None
+        fanout = fanout_step.group("body")
+        script = (ROOT / "scripts" / "create_upstream_release_prs.sh").read_text(encoding="utf-8")
 
-        self.assertIn("GH_TOKEN: ${{ secrets.UPSTREAM_RELEASE_PR_TOKEN || github.token }}", pr_step.group("body"))
-        self.assertIn("run: scripts/open_upstream_release_pr.sh", pr_step.group("body"))
-        self.assertIn(
-            "if: ${{ steps.detect.outputs.created == 'true' && (github.event_name == 'schedule' || inputs.dispatch_build) }}",
-            dispatch_step.group("body"),
-        )
-        self.assertNotIn("steps.pr.outputs.number", dispatch_step.group("body"))
-        self.assertIn("gh workflow run build-packages.yml", dispatch_step.group("body"))
-        self.assertIn('--ref "$AUTOMATION_BRANCH"', dispatch_step.group("body"))
-        self.assertIn('publish_target="${PUBLISH_TARGET:-test-label}"', dispatch_step.group("body"))
+        self.assertIn("AUTOMATION_BRANCH_PREFIX: automation/upstream-release-prs", workflow)
+        self.assertIn("BASE_BRANCH: ${{ github.event.repository.default_branch }}", workflow)
+        self.assertIn("RESULT_JSON: ${{ runner.temp }}/upstream-releases.json", fanout)
+        self.assertIn("PR_GH_TOKEN: ${{ secrets.UPSTREAM_RELEASE_PR_TOKEN || github.token }}", fanout)
+        self.assertIn("ACTIONS_GH_TOKEN: ${{ github.token }}", fanout)
+        self.assertIn("DISPATCH_BUILD: ${{ github.event_name == 'schedule' || inputs.dispatch_build }}", fanout)
+        self.assertIn("run: scripts/create_upstream_release_prs.sh", fanout)
+        self.assertNotIn("steps.pr.outputs.number", workflow)
+        self.assertNotIn("RECIPES: ${{ steps.detect.outputs.recipes }}", workflow)
+
+        self.assertIn('branch="$branch_prefix/$recipe"', script)
+        self.assertIn('git commit -m "Add $recipe upstream release recipe"', script)
+        self.assertIn('AUTOMATION_BRANCH="$branch"', script)
+        self.assertIn('RECIPE="$recipe"', script)
+        self.assertIn('gh workflow run build-packages.yml', script)
+        self.assertIn('--ref "$branch"', script)
+        self.assertIn('-f recipes="$recipe"', script)
+        self.assertIn('if [[ "$publish_target" == "default-label" ]]; then', script)
+        self.assertIn("Nightly upstream release checks may not dispatch default-label publishes.", script)
+
         self.assertIn("- artifact-only", publish_target_input)
         self.assertIn("- test-label", publish_target_input)
         self.assertIn("default: test-label", publish_target_input)
         self.assertNotIn("- default-label", publish_target_input)
-        self.assertIn('if [[ "$publish_target" == "default-label" ]]; then', workflow)
-        self.assertIn("Nightly upstream release checks may not dispatch default-label publishes.", workflow)
+
+    def test_create_upstream_release_prs_script_fans_out_one_branch_pr_and_build_per_recipe(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            work = tmp / "work"
+            work.mkdir()
+            scripts = work / "scripts"
+            scripts.mkdir()
+            for name in ["check_upstream_releases.py", "open_upstream_release_pr.sh", "create_upstream_release_prs.sh"]:
+                shutil.copy2(ROOT / "scripts" / name, scripts / name)
+                (scripts / name).chmod(0o755)
+
+            (work / "foo" / "1.2.3").mkdir(parents=True)
+            (work / "foo" / "1.2.3" / "recipe.yaml").write_text(
+                "context:\n  version: \"1.2.3\"\n\nrecipe:\n  name: foo\n  version: ${{ version }}\n\nabout:\n  repository: https://github.com/example/foo\n",
+                encoding="utf-8",
+            )
+            (work / "foo" / "1.2.4").mkdir(parents=True)
+            (work / "foo" / "1.2.4" / "recipe.yaml").write_text(
+                "context:\n  version: \"1.2.4\"\n\nrecipe:\n  name: foo\n  version: ${{ version }}\n\nabout:\n  repository: https://github.com/example/foo\n",
+                encoding="utf-8",
+            )
+            (work / "README.md").write_text("# Packages\n\n## Foo\n\nRecipe versions: `1.2.3`\n", encoding="utf-8")
+            result_json = tmp / "upstream-releases.json"
+            result_json.write_text(
+                '{"created":[{"package":"foo","version":"1.2.4","recipe":"foo/1.2.4","copied_from":"foo/1.2.3","upstream_tag":"v1.2.4","source_sha256":"abc"}]}\n',
+                encoding="utf-8",
+            )
+
+            bin_dir = tmp / "bin"
+            bin_dir.mkdir()
+            git_log = tmp / "git.log"
+            gh_log = tmp / "gh.log"
+            gh_state = tmp / "gh-created"
+            fake_git = bin_dir / "git"
+            fake_git.write_text(
+                '#!/usr/bin/env bash\n'
+                'set -euo pipefail\n'
+                'printf "%s\\n" "$*" >> "$GIT_LOG"\n'
+                'if [[ "$1" == "ls-remote" ]]; then exit 2; fi\n'
+                'if [[ "$1" == "clean" ]]; then rm -rf foo/1.2.4; exit 0; fi\n'
+                'if [[ "$1 $2" == "diff --cached" ]]; then exit 1; fi\n'
+                'exit 0\n',
+                encoding="utf-8",
+            )
+            fake_git.chmod(0o755)
+            fake_gh = bin_dir / "gh"
+            fake_gh.write_text(
+                '#!/usr/bin/env bash\n'
+                'set -euo pipefail\n'
+                'printf "%s\\n" "$*" >> "$GH_LOG"\n'
+                'if [[ "$1 $2" == "pr list" ]]; then [[ -f "$GH_STATE" ]] && echo 7; exit 0; fi\n'
+                'if [[ "$1 $2" == "pr create" ]]; then touch "$GH_STATE"; exit 0; fi\n'
+                'if [[ "$1 $2" == "workflow run" ]]; then exit 0; fi\n'
+                'echo unexpected gh command: $* >&2\n'
+                'exit 2\n',
+                encoding="utf-8",
+            )
+            fake_gh.chmod(0o755)
+            summary = tmp / "summary.md"
+            output = tmp / "output.txt"
+            env = {
+                **os.environ,
+                "PATH": f"{bin_dir}:{os.environ['PATH']}",
+                "RESULT_JSON": str(result_json),
+                "RUNNER_TEMP": str(tmp),
+                "GITHUB_STEP_SUMMARY": str(summary),
+                "GITHUB_OUTPUT": str(output),
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "anders/aswf-pixi",
+                "GIT_LOG": str(git_log),
+                "GH_LOG": str(gh_log),
+                "GH_STATE": str(gh_state),
+                "PR_GH_TOKEN": "pr-token",
+                "ACTIONS_GH_TOKEN": "actions-token",
+                "BASE_BRANCH": "main",
+                "AUTOMATION_BRANCH_PREFIX": "automation/upstream-release-prs",
+                "PLATFORMS": "default",
+                "PUBLISH_TARGET": "test-label",
+                "RUN_SMOKE_TESTS": "true",
+                "DISPATCH_BUILD": "true",
+            }
+
+            subprocess.run(
+                [str(scripts / "create_upstream_release_prs.sh")],
+                cwd=work,
+                env=env,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            self.assertIn("Recipe versions: `1.2.3`, `1.2.4`", (work / "README.md").read_text(encoding="utf-8"))
+            git_text = git_log.read_text(encoding="utf-8")
+            self.assertIn("checkout -B automation/upstream-release-prs/foo/1.2.4 origin/main", git_text)
+            self.assertIn("commit -m Add foo/1.2.4 upstream release recipe", git_text)
+            self.assertIn("push --force-with-lease origin automation/upstream-release-prs/foo/1.2.4", git_text)
+            gh_text = gh_log.read_text(encoding="utf-8")
+            self.assertIn("pr create --head automation/upstream-release-prs/foo/1.2.4 --base main --title Add foo/1.2.4 upstream release recipe", gh_text)
+            self.assertIn("workflow run build-packages.yml --ref automation/upstream-release-prs/foo/1.2.4 -f recipes=foo/1.2.4", gh_text)
+            self.assertIn("-f publish_target=test-label", gh_text)
+            self.assertIn("-f run_smoke_tests=true", gh_text)
+
+    def test_create_upstream_release_prs_script_preserves_existing_pr_branch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            work = tmp / "work"
+            work.mkdir()
+            scripts = work / "scripts"
+            scripts.mkdir()
+            for name in ["check_upstream_releases.py", "open_upstream_release_pr.sh", "create_upstream_release_prs.sh"]:
+                shutil.copy2(ROOT / "scripts" / name, scripts / name)
+                (scripts / name).chmod(0o755)
+
+            (work / "foo" / "1.2.4").mkdir(parents=True)
+            (work / "foo" / "1.2.4" / "recipe.yaml").write_text("recipe:\n  name: foo\n", encoding="utf-8")
+            (work / "README.md").write_text("# Packages\n", encoding="utf-8")
+            result_json = tmp / "upstream-releases.json"
+            result_json.write_text(
+                '{"created":[{"package":"foo","version":"1.2.4","recipe":"foo/1.2.4","copied_from":"foo/1.2.3","upstream_tag":"v1.2.4","source_sha256":"abc"}]}\n',
+                encoding="utf-8",
+            )
+
+            bin_dir = tmp / "bin"
+            bin_dir.mkdir()
+            git_log = tmp / "git.log"
+            gh_log = tmp / "gh.log"
+            fake_git = bin_dir / "git"
+            fake_git.write_text(
+                '#!/usr/bin/env bash\n'
+                'set -euo pipefail\n'
+                'printf "%s\\n" "$*" >> "$GIT_LOG"\n'
+                'if [[ "$1" == "checkout" || "$1" == "commit" || "$1" == "push" ]]; then echo branch should not be overwritten >&2; exit 2; fi\n'
+                'exit 0\n',
+                encoding="utf-8",
+            )
+            fake_git.chmod(0o755)
+            fake_gh = bin_dir / "gh"
+            fake_gh.write_text(
+                '#!/usr/bin/env bash\n'
+                'set -euo pipefail\n'
+                'printf "%s\\n" "$*" >> "$GH_LOG"\n'
+                'if [[ "$1 $2" == "pr list" ]]; then echo 7; exit 0; fi\n'
+                'if [[ "$1 $2" == "pr edit" ]]; then exit 0; fi\n'
+                'if [[ "$1 $2" == "workflow run" ]]; then exit 0; fi\n'
+                'echo unexpected gh command: $* >&2\n'
+                'exit 2\n',
+                encoding="utf-8",
+            )
+            fake_gh.chmod(0o755)
+            summary = tmp / "summary.md"
+            output = tmp / "output.txt"
+            env = {
+                **os.environ,
+                "PATH": f"{bin_dir}:{os.environ['PATH']}",
+                "RESULT_JSON": str(result_json),
+                "RUNNER_TEMP": str(tmp),
+                "GITHUB_STEP_SUMMARY": str(summary),
+                "GITHUB_OUTPUT": str(output),
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "anders/aswf-pixi",
+                "GIT_LOG": str(git_log),
+                "GH_LOG": str(gh_log),
+                "BASE_BRANCH": "main",
+                "AUTOMATION_BRANCH_PREFIX": "automation/upstream-release-prs",
+                "PLATFORMS": "default",
+                "PUBLISH_TARGET": "test-label",
+                "RUN_SMOKE_TESTS": "true",
+                "DISPATCH_BUILD": "true",
+            }
+
+            subprocess.run(
+                [str(scripts / "create_upstream_release_prs.sh")],
+                cwd=work,
+                env=env,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            self.assertNotIn("checkout -B automation/upstream-release-prs/foo/1.2.4", git_log.read_text(encoding="utf-8"))
+            gh_text = gh_log.read_text(encoding="utf-8")
+            self.assertIn("pr edit 7 --title Add foo/1.2.4 upstream release recipe", gh_text)
+            self.assertIn("workflow run build-packages.yml --ref automation/upstream-release-prs/foo/1.2.4 -f recipes=foo/1.2.4", gh_text)
+            self.assertIn("not overwriting branch contents", summary.read_text(encoding="utf-8"))
+
+    def test_create_upstream_release_prs_script_preserves_existing_remote_branch_without_pr(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            work = tmp / "work"
+            work.mkdir()
+            scripts = work / "scripts"
+            scripts.mkdir()
+            for name in ["check_upstream_releases.py", "open_upstream_release_pr.sh", "create_upstream_release_prs.sh"]:
+                shutil.copy2(ROOT / "scripts" / name, scripts / name)
+                (scripts / name).chmod(0o755)
+
+            (work / "foo" / "1.2.4").mkdir(parents=True)
+            (work / "foo" / "1.2.4" / "recipe.yaml").write_text("recipe:\n  name: foo\n", encoding="utf-8")
+            (work / "README.md").write_text("# Packages\n", encoding="utf-8")
+            result_json = tmp / "upstream-releases.json"
+            result_json.write_text(
+                '{"created":[{"package":"foo","version":"1.2.4","recipe":"foo/1.2.4","copied_from":"foo/1.2.3","upstream_tag":"v1.2.4","source_sha256":"abc"}]}\n',
+                encoding="utf-8",
+            )
+
+            bin_dir = tmp / "bin"
+            bin_dir.mkdir()
+            git_log = tmp / "git.log"
+            gh_log = tmp / "gh.log"
+            gh_created = tmp / "gh-created"
+            fake_git = bin_dir / "git"
+            fake_git.write_text(
+                '#!/usr/bin/env bash\n'
+                'set -euo pipefail\n'
+                'printf "%s\\n" "$*" >> "$GIT_LOG"\n'
+                'if [[ "$1" == "checkout" || "$1" == "commit" || "$1" == "push" ]]; then echo branch should not be overwritten >&2; exit 2; fi\n'
+                'exit 0\n',
+                encoding="utf-8",
+            )
+            fake_git.chmod(0o755)
+            fake_gh = bin_dir / "gh"
+            fake_gh.write_text(
+                '#!/usr/bin/env bash\n'
+                'set -euo pipefail\n'
+                'printf "%s\\n" "$*" >> "$GH_LOG"\n'
+                'if [[ "$1 $2" == "pr list" ]]; then [[ -f "$GH_CREATED" ]] && echo 9; exit 0; fi\n'
+                'if [[ "$1 $2" == "pr create" ]]; then touch "$GH_CREATED"; exit 0; fi\n'
+                'if [[ "$1 $2" == "workflow run" ]]; then exit 0; fi\n'
+                'echo unexpected gh command: $* >&2\n'
+                'exit 2\n',
+                encoding="utf-8",
+            )
+            fake_gh.chmod(0o755)
+            summary = tmp / "summary.md"
+            output = tmp / "output.txt"
+            env = {
+                **os.environ,
+                "PATH": f"{bin_dir}:{os.environ['PATH']}",
+                "RESULT_JSON": str(result_json),
+                "RUNNER_TEMP": str(tmp),
+                "GITHUB_STEP_SUMMARY": str(summary),
+                "GITHUB_OUTPUT": str(output),
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "anders/aswf-pixi",
+                "GIT_LOG": str(git_log),
+                "GH_LOG": str(gh_log),
+                "GH_CREATED": str(gh_created),
+                "BASE_BRANCH": "main",
+                "AUTOMATION_BRANCH_PREFIX": "automation/upstream-release-prs",
+                "PLATFORMS": "default",
+                "PUBLISH_TARGET": "test-label",
+                "RUN_SMOKE_TESTS": "true",
+                "DISPATCH_BUILD": "true",
+            }
+
+            subprocess.run(
+                [str(scripts / "create_upstream_release_prs.sh")],
+                cwd=work,
+                env=env,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            git_text = git_log.read_text(encoding="utf-8")
+            self.assertIn("ls-remote --exit-code --heads origin automation/upstream-release-prs/foo/1.2.4", git_text)
+            self.assertNotIn("checkout -B automation/upstream-release-prs/foo/1.2.4", git_text)
+            gh_text = gh_log.read_text(encoding="utf-8")
+            self.assertIn("pr create --head automation/upstream-release-prs/foo/1.2.4 --base main --title Add foo/1.2.4 upstream release recipe", gh_text)
+            self.assertIn("workflow run build-packages.yml --ref automation/upstream-release-prs/foo/1.2.4 -f recipes=foo/1.2.4", gh_text)
+            self.assertIn("without an open PR; not overwriting branch contents", summary.read_text(encoding="utf-8"))
 
     def test_open_upstream_release_pr_script_tolerates_pr_creation_failure(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
@@ -277,7 +557,9 @@ about:
                 "PATH": f"{bin_dir}:{os.environ['PATH']}",
                 "RUNNER_TEMP": str(tmp),
                 "REPORT": str(report),
-                "AUTOMATION_BRANCH": "automation/upstream-releases",
+                "AUTOMATION_BRANCH": "automation/upstream-release-prs/foo/1.2.4",
+                "BASE_BRANCH": "main",
+                "RECIPE": "foo/1.2.4",
                 "GITHUB_REF_NAME": "main",
                 "GITHUB_SERVER_URL": "https://github.com",
                 "GITHUB_REPOSITORY": "anders/aswf-pixi",
@@ -297,7 +579,7 @@ about:
             self.assertIn("Could not create upstream release PR", completed.stdout)
             self.assertEqual(output.read_text(encoding="utf-8"), "number=\n")
             self.assertIn(
-                "Manual PR URL: https://github.com/anders/aswf-pixi/compare/main...automation/upstream-releases?expand=1",
+                "Manual PR URL: https://github.com/anders/aswf-pixi/compare/main...automation/upstream-release-prs/foo/1.2.4?expand=1",
                 summary.read_text(encoding="utf-8"),
             )
 
