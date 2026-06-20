@@ -171,7 +171,7 @@ SeExpr is an embeddable expression evaluation engine for graphics applications.
 
 ## OpenImageIO
 
-Recipe versions: `2.5.19.1`, `3.0.19.1`, `3.1.14.0`
+Recipe versions: `2.5.19.1`, `3.0.19.1`, `3.1.14.0`, `3.1.14.1`
 
 OpenImageIO provides image file I/O libraries, command-line tools, texture utilities, and optional format plugins.
 
