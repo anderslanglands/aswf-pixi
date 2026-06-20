@@ -47,6 +47,15 @@ outputs:
               -S .
 
             cmake --build $SRC_DIR/../build --target install
+
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake \
+              -DMATERIALX_CONFIG_FILE="$PREFIX/lib/cmake/MaterialX/MaterialXConfig.cmake" \
+              -P "$recipe_dir/cmake/remove-unused-x11-dependency.cmake"
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build
 
@@ -75,6 +84,16 @@ outputs:
               -S .
 
             cmake --build %SRC_DIR%\..\build --target install --config Release
+
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake ^
+              -DMATERIALX_CONFIG_FILE="%LIBRARY_LIB%\cmake\MaterialX\MaterialXConfig.cmake" ^
+              -P "%RECIPE_DIR_VAR%\cmake\remove-unused-x11-dependency.cmake"
     requirements:
       build:
         - ${{ compiler('cxx') }}
@@ -262,18 +281,21 @@ outputs:
           - if: unix
             then:
               - test -f "$PREFIX/lib/cmake/MaterialX/MaterialXConfig.cmake"
+              - cmake -DMATERIALX_CONFIG_FILE="$PREFIX/lib/cmake/MaterialX/MaterialXConfig.cmake" -P tests/check-no-x11-dependency.cmake
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/materialx_consumer
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\cmake\MaterialX\MaterialXConfig.cmake" exit /b 1
+              - cmake -DMATERIALX_CONFIG_FILE="%LIBRARY_LIB%\cmake\MaterialX\MaterialXConfig.cmake" -P tests\check-no-x11-dependency.cmake
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
               - cmake --build build --config Release
               - build\materialx_consumer.exe
         files:
           recipe:
             - tests/CMakeLists.txt
+            - tests/check-no-x11-dependency.cmake
             - tests/materialx_consumer.cpp
         requirements:
           run:
@@ -330,18 +352,21 @@ outputs:
           - if: unix
             then:
               - test -f "$PREFIX/lib/cmake/MaterialX/MaterialXConfig.cmake"
+              - cmake -DMATERIALX_CONFIG_FILE="$PREFIX/lib/cmake/MaterialX/MaterialXConfig.cmake" -P tests/check-no-x11-dependency.cmake
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/materialx_consumer
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\cmake\MaterialX\MaterialXConfig.cmake" exit /b 1
+              - cmake -DMATERIALX_CONFIG_FILE="%LIBRARY_LIB%\cmake\MaterialX\MaterialXConfig.cmake" -P tests\check-no-x11-dependency.cmake
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
               - cmake --build build --config Release
               - build\materialx_consumer.exe
         files:
           recipe:
             - tests/CMakeLists.txt
+            - tests/check-no-x11-dependency.cmake
             - tests/materialx_consumer.cpp
         requirements:
           run:
