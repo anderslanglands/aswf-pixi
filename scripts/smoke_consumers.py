@@ -112,8 +112,11 @@ def package_needs_consumer_test(root_package: str, package: dict[str, object], r
 
 def cmake_consumer_args(root_package: str, package: dict[str, object], platform: str) -> list[str]:
     name = str(package["name"])
-    if root_package == "openexr" and name in {"openexr", "openexr-dev"}:
-        return ["-DOPENEXR_CONSUMER_EXPECT_FULL=ON"]
+    if root_package == "openexr":
+        args = [f"-DOPENEXR_CONSUMER_EXPECT_VERSION={package['version']}"]
+        if name in {"openexr", "openexr-dev"}:
+            args.append("-DOPENEXR_CONSUMER_EXPECT_FULL=ON")
+        return args
     if root_package == "opensubdiv":
         if name in {"opensubdiv", "opensubdiv-dev"}:
             return ["-DOPENSUBDIV_CONSUMER_EXPECT_CPU_ONLY=ON"]

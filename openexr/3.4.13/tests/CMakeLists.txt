@@ -13,7 +13,7 @@ set(_openexr_expected_major "${CMAKE_MATCH_1}")
 set(_openexr_expected_minor "${CMAKE_MATCH_2}")
 set(_openexr_expected_patch "${CMAKE_MATCH_3}")
 
-find_package(OpenEXRCore ${OPENEXR_CONSUMER_EXPECT_VERSION} CONFIG REQUIRED)
+find_package(OpenEXRCore ${OPENEXR_CONSUMER_EXPECT_VERSION} EXACT CONFIG REQUIRED)
 
 add_executable(openexr_core_consumer openexr_core_consumer.c)
 target_compile_definitions(openexr_core_consumer PRIVATE
@@ -27,7 +27,7 @@ add_custom_target(run_openexr_core_consumer ALL
   DEPENDS openexr_core_consumer
 )
 
-find_package(OpenEXR ${OPENEXR_CONSUMER_EXPECT_VERSION} CONFIG QUIET)
+find_package(OpenEXR ${OPENEXR_CONSUMER_EXPECT_VERSION} EXACT CONFIG QUIET)
 
 if(TARGET OpenEXR::OpenEXR)
   add_executable(openexr_cpp_consumer openexr_cpp_consumer.cpp)
