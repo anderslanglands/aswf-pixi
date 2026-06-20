@@ -37,6 +37,8 @@ By default, each generated recipe PR dispatches the existing package build workf
 
 The `UPSTREAM_RELEASE_PR_TOKEN` secret should be a fine-grained token limited to this repository with Contents read/write, Pull requests read/write, and Actions read/write permissions.
 
+Generated upstream-release PRs update package version lists as one README bullet per recipe version. `README.md` uses Git's union merge driver so concurrent generated PRs that add different version bullets are unlikely to conflict; the updater rewrites the targeted package block from the actual recipe directories, which keeps repeated runs idempotent and normalizes duplicate or out-of-order bullets.
+
 If a generated upstream release PR fails, commit the fix to that PR branch and rerun the test-label workflow against the same branch and recipe selector:
 
 ```bash
@@ -53,7 +55,8 @@ gh workflow run build-packages.yml \
 
 ## Imath
 
-Recipe versions: `3.2.2`
+Recipe versions:
+- `3.2.2`
 
 Imath is a C++ math library for 2D and 3D graphics.
 
@@ -63,7 +66,9 @@ Imath is a C++ math library for 2D and 3D graphics.
 
 ## OpenEXR
 
-Recipe versions: `3.4.12`, `3.4.13`
+Recipe versions:
+- `3.4.12`
+- `3.4.13`
 
 OpenEXR provides high dynamic-range image file format libraries and tools.
 
@@ -77,7 +82,9 @@ OpenEXR provides high dynamic-range image file format libraries and tools.
 
 ## OpenColorIO
 
-Recipe versions: `2.5.1`, `2.5.2`
+Recipe versions:
+- `2.5.1`
+- `2.5.2`
 
 OpenColorIO is a color management solution for motion picture production.
 
@@ -89,7 +96,8 @@ OpenColorIO is a color management solution for motion picture production.
 
 ## OpenVDB and NanoVDB
 
-Recipe versions: `13.0.0`
+Recipe versions:
+- `13.0.0`
 
 OpenVDB provides sparse volumetric data structures, file I/O, and tools. NanoVDB provides compact mostly read-only VDB grids for GPU-friendly and header-only workflows.
 
@@ -106,7 +114,9 @@ OpenVDB provides sparse volumetric data structures, file I/O, and tools. NanoVDB
 
 ## MaterialX
 
-Recipe versions: `1.39.4`, `1.39.5`
+Recipe versions:
+- `1.39.4`
+- `1.39.5`
 
 MaterialX is an open standard for transferring rich material and look-development content.
 
@@ -117,7 +127,8 @@ MaterialX is an open standard for transferring rich material and look-developmen
 
 ## libuhdr
 
-Recipe versions: `1.4.0`
+Recipe versions:
+- `1.4.0`
 
 libuhdr is Google's reference codec for the JPEG/R gain map based Ultra HDR image format.
 
@@ -127,7 +138,9 @@ libuhdr is Google's reference codec for the JPEG/R gain map based Ultra HDR imag
 
 ## Ptex
 
-Recipe versions: `2.5.1`, `2.5.2`
+Recipe versions:
+- `2.5.1`
+- `2.5.2`
 
 Ptex is Walt Disney Animation Studios' per-face texture mapping system for production rendering.
 
@@ -138,7 +151,8 @@ Ptex is Walt Disney Animation Studios' per-face texture mapping system for produ
 
 ## Partio
 
-Recipe versions: `1.20.0`
+Recipe versions:
+- `1.20.0`
 
 Partio is Walt Disney Animation Studios' particle file I/O and manipulation library.
 
@@ -150,7 +164,8 @@ Partio is Walt Disney Animation Studios' particle file I/O and manipulation libr
 
 ## OpenQMC
 
-Recipe versions: `0.7.1`
+Recipe versions:
+- `0.7.1`
 
 OpenQMC provides Quasi-Monte Carlo sampling APIs for rendering and graphics applications.
 
@@ -161,7 +176,8 @@ OpenQMC provides Quasi-Monte Carlo sampling APIs for rendering and graphics appl
 
 ## OpenSubdiv
 
-Recipe versions: `3.7.0`
+Recipe versions:
+- `3.7.0`
 
 OpenSubdiv provides subdivision surface evaluation libraries for CPU and GPU workflows.
 
@@ -174,7 +190,8 @@ OpenSubdiv provides subdivision surface evaluation libraries for CPU and GPU wor
 
 ## SeExpr
 
-Recipe versions: `3.0.1`
+Recipe versions:
+- `3.0.1`
 
 SeExpr is an embeddable expression evaluation engine for graphics applications.
 
@@ -185,7 +202,11 @@ SeExpr is an embeddable expression evaluation engine for graphics applications.
 
 ## OpenImageIO
 
-Recipe versions: `2.5.19.1`, `3.0.19.1`, `3.1.14.0`, `3.1.14.1`
+Recipe versions:
+- `2.5.19.1`
+- `3.0.19.1`
+- `3.1.14.0`
+- `3.1.14.1`
 
 OpenImageIO provides image file I/O libraries, command-line tools, texture utilities, and optional format plugins.
 
@@ -206,7 +227,8 @@ OpenImageIO provides image file I/O libraries, command-line tools, texture utili
 
 ## OpenShadingLanguage
 
-Recipe versions: `1.15.5.0`
+Recipe versions:
+- `1.15.5.0`
 
 OpenShadingLanguage provides a production shading language, compiler, runtime libraries, and OpenImageIO integration.
 

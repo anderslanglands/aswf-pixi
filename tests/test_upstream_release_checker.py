@@ -174,7 +174,7 @@ about:
             self.assertNotIn("1.2.3", pixi)
 
             readme = (root / "README.md").read_text(encoding="utf-8")
-            self.assertIn("Recipe versions: `1.2.3`, `1.2.4`", readme)
+            self.assertIn("Recipe versions:\n- `1.2.3`\n- `1.2.4`", readme)
 
     def test_readme_update_targets_package_heading_when_versions_are_not_unique(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
@@ -213,7 +213,91 @@ about:
 
             self.assertEqual(
                 (root / "README.md").read_text(encoding="utf-8"),
-                "# Packages\n\n## Bar\n\nRecipe versions: `1.2.3`\n\n## Foo\n\nRecipe versions: `1.2.3`, `1.2.4`\n",
+                "# Packages\n\n## Bar\n\nRecipe versions: `1.2.3`\n\n## Foo\n\nRecipe versions:\n- `1.2.3`\n- `1.2.4`\n",
+            )
+
+    def test_readme_update_normalizes_union_merged_version_bullets(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            root = Path(tmp_raw)
+            for version in ["1.2.3", "1.2.4", "1.2.5"]:
+                recipe_dir = root / "foo" / version
+                recipe_dir.mkdir(parents=True)
+                (recipe_dir / "recipe.yaml").write_text(
+                    f"context:\n  version: \"{version}\"\n\nrecipe:\n  name: foo\n  version: ${{{{ version }}}}\n\nabout:\n  repository: https://github.com/example/foo\n",
+                    encoding="utf-8",
+                )
+            (root / "README.md").write_text(
+                "# Packages\n\n## Foo\n\nRecipe versions:\n- `1.2.3`\n- `9.9.9`\n- `1.2.5`\n- `1.2.4`\n- `1.2.4`\n\nFoo package.\n",
+                encoding="utf-8",
+            )
+
+            upstream.update_readme_versions(root, "foo", {"1.2.3"})
+
+            self.assertEqual(
+                (root / "README.md").read_text(encoding="utf-8"),
+                "# Packages\n\n## Foo\n\nRecipe versions:\n- `1.2.3`\n- `1.2.4`\n- `1.2.5`\n\nFoo package.\n",
+            )
+
+    def test_readme_union_merge_preserves_concurrent_version_bullets(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            root = Path(tmp_raw)
+
+            def run_git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+                return subprocess.run(
+                    ["git", *args],
+                    cwd=root,
+                    check=check,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+
+            def write_recipe(value: str) -> None:
+                recipe_dir = root / "foo" / value
+                recipe_dir.mkdir(parents=True)
+                (recipe_dir / "recipe.yaml").write_text(
+                    f"context:\n  version: \"{value}\"\n\nrecipe:\n  name: foo\n  version: ${{{{ version }}}}\n\nabout:\n  repository: https://github.com/example/foo\n",
+                    encoding="utf-8",
+                )
+
+            run_git("init")
+            run_git("checkout", "-b", "main")
+            run_git("config", "user.name", "Test User")
+            run_git("config", "user.email", "test@example.invalid")
+            (root / ".gitattributes").write_text("README.md merge=union\n", encoding="utf-8")
+            write_recipe("1.2.3")
+            (root / "README.md").write_text(
+                "# Packages\n\n## Foo\n\nRecipe versions:\n- `1.2.3`\n\nFoo package.\n",
+                encoding="utf-8",
+            )
+            run_git("add", ".")
+            run_git("commit", "-m", "base")
+            self.assertEqual(run_git("check-attr", "merge", "--", "README.md").stdout.strip(), "README.md: merge: union")
+
+            run_git("checkout", "-b", "version-1.2.4")
+            write_recipe("1.2.4")
+            upstream.update_readme_versions(root, "foo", {"1.2.3"})
+            run_git("add", ".")
+            run_git("commit", "-m", "add 1.2.4")
+
+            run_git("checkout", "main")
+            run_git("checkout", "-b", "version-1.2.5")
+            write_recipe("1.2.5")
+            upstream.update_readme_versions(root, "foo", {"1.2.3"})
+            run_git("add", ".")
+            run_git("commit", "-m", "add 1.2.5")
+
+            merge = run_git("merge", "version-1.2.4", check=False)
+            self.assertEqual(merge.returncode, 0, merge.stderr)
+            readme = (root / "README.md").read_text(encoding="utf-8")
+            self.assertNotIn("<<<<<<<", readme)
+            self.assertIn("- `1.2.4`", readme)
+            self.assertIn("- `1.2.5`", readme)
+
+            upstream.update_readme_versions(root, "foo", {"1.2.3"})
+            self.assertEqual(
+                (root / "README.md").read_text(encoding="utf-8"),
+                "# Packages\n\n## Foo\n\nRecipe versions:\n- `1.2.3`\n- `1.2.4`\n- `1.2.5`\n\nFoo package.\n",
             )
 
     def test_workflow_creates_per_recipe_prs_and_dispatches_test_label_builds_by_default(self) -> None:
@@ -231,6 +315,8 @@ about:
         fanout = fanout_step.group("body")
         script = (ROOT / "scripts" / "create_upstream_release_prs.sh").read_text(encoding="utf-8")
 
+        gitattributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
+        self.assertRegex(gitattributes, r"(?m)^README\.md\s+merge=union$")
         self.assertIn("AUTOMATION_BRANCH_PREFIX: automation/upstream-release-prs", workflow)
         self.assertIn("BASE_BRANCH: ${{ github.event.repository.default_branch }}", workflow)
         self.assertIn("RESULT_JSON: ${{ runner.temp }}/upstream-releases.json", fanout)
@@ -348,7 +434,7 @@ about:
                 text=True,
             )
 
-            self.assertIn("Recipe versions: `1.2.3`, `1.2.4`", (work / "README.md").read_text(encoding="utf-8"))
+            self.assertIn("Recipe versions:\n- `1.2.3`\n- `1.2.4`", (work / "README.md").read_text(encoding="utf-8"))
             git_text = git_log.read_text(encoding="utf-8")
             self.assertIn("checkout -B automation/upstream-release-prs/foo/1.2.4 origin/main", git_text)
             self.assertIn("commit -m Add foo/1.2.4 upstream release recipe", git_text)

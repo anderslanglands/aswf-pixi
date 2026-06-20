@@ -24,7 +24,8 @@ CONTEXT_VALUE_RE = re.compile(r"^  (?P<key>[A-Za-z_][A-Za-z0-9_]*):\s*(?P<value>
 SOURCE_URL_RE = re.compile(r"(?m)^(\s*url:\s*)(?P<value>.+?)\s*$")
 SHA256_RE = re.compile(r"(?m)^(\s*sha256:\s*)([0-9a-fA-F]+)(\s*(?:#.*)?)$")
 BUILD_NUMBER_RE = re.compile(r"(?m)^(\s*build_number:\s*)[0-9]+(\s*(?:#.*)?)$")
-RECIPE_VERSIONS_RE = re.compile(r"(?m)^(Recipe versions:\s*)(?P<versions>.+)$")
+RECIPE_VERSIONS_RE = re.compile(r"(?m)^Recipe versions:(?P<inline>.*)$")
+RECIPE_VERSION_ITEM_RE = re.compile(r"^- `(?P<version>[0-9]+(?:[._][0-9]+)+)`\s*$")
 TEMPLATE_EXPR_RE = re.compile(r"\$\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}")
 README_HEADING_RE = re.compile(r"^##\s+(?P<title>.+?)\s*$")
 
@@ -417,15 +418,30 @@ def readme_section_heading(section: str) -> str:
     return match.group("title") if match else ""
 
 
-def replace_readme_recipe_versions(readme_text: str, start: int, end: int, replacement: str) -> str | None:
+def format_readme_recipe_versions(versions: list[str]) -> str:
+    lines = ["Recipe versions:"]
+    lines.extend(f"- `{version}`" for version in versions)
+    return "\n".join(lines)
+
+
+def replace_readme_recipe_versions(readme_text: str, start: int, end: int, versions: list[str]) -> str | None:
     section = readme_text[start:end]
-    updated_section, count = RECIPE_VERSIONS_RE.subn(
-        lambda match: f"{match.group(1)}{replacement.removeprefix('Recipe versions: ')}",
-        section,
-        count=1,
-    )
-    if count != 1:
+    match = RECIPE_VERSIONS_RE.search(section)
+    if match is None:
         return None
+
+    remove_end = match.end()
+    if section[remove_end : remove_end + 1] == "\n":
+        remove_end += 1
+    for item_match in re.finditer(r"(?m)^.*(?:\n|\Z)", section[remove_end:]):
+        line = item_match.group(0)
+        if not line.strip() or not RECIPE_VERSION_ITEM_RE.match(line.strip()):
+            break
+        remove_end += len(line)
+
+    tail = section[remove_end:].lstrip("\n")
+    separator = "\n\n" if tail else "\n"
+    updated_section = section[: match.start()] + format_readme_recipe_versions(versions) + separator + tail
     return readme_text[:start] + updated_section + readme_text[end:]
 
 
@@ -442,8 +458,6 @@ def update_readme_versions(root: Path, package: str, anchor_versions: set[str]) 
         ),
         key=lambda value: Version.parse(value) or Version((0,)),
     )
-    replacement = "Recipe versions: " + ", ".join(f"`{version}`" for version in current_versions)
-
     text = readme.read_text(encoding="utf-8")
     ranges = section_ranges(text)
     package_key = normalized_heading_key(package)
@@ -451,7 +465,7 @@ def update_readme_versions(root: Path, package: str, anchor_versions: set[str]) 
         section = text[start:end]
         heading_key = normalized_heading_key(readme_section_heading(section))
         if package_key and package_key in heading_key:
-            updated = replace_readme_recipe_versions(text, start, end, replacement)
+            updated = replace_readme_recipe_versions(text, start, end, current_versions)
             if updated is not None:
                 readme.write_text(updated, encoding="utf-8")
                 return
@@ -460,7 +474,7 @@ def update_readme_versions(root: Path, package: str, anchor_versions: set[str]) 
         section = text[start:end]
         if not any(f"`{version}`" in section for version in anchor_versions):
             continue
-        updated = replace_readme_recipe_versions(text, start, end, replacement)
+        updated = replace_readme_recipe_versions(text, start, end, current_versions)
         if updated is not None:
             readme.write_text(updated, encoding="utf-8")
             return
