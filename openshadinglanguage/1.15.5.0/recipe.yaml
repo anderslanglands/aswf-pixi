@@ -10,6 +10,8 @@ recipe:
 source:
   url: https://github.com/AcademySoftwareFoundation/OpenShadingLanguage/archive/refs/tags/v${{ version }}.tar.gz
   sha256: a83fb396ca5b6724dbaae534840cf07ee6c593f0dbd877a8fa5ed2c32099c934
+  patches:
+    - fix-llvm-22-clang-components.patch
 
 build:
   number: ${{ build_number }}
@@ -72,6 +74,14 @@ outputs:
             cmake -DOSL_PARTIO_PREFIX="%LIBRARY_PREFIX_FWD%" -P "%RECIPE_DIR_VAR%\cmake\patch-partio-target.cmake"
             set "CL=/utf-8 %CL%"
             set "CXXFLAGS=%CXXFLAGS% /utf-8"
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake -DPARTIO_CONFIG_PREFIX="%LIBRARY_PREFIX%" -P "%RECIPE_DIR_VAR%\cmake\patch-partio-config-alias.cmake"
+            cmake -DZSTD_LIB_DIR="%LIBRARY_LIB%" -P "%RECIPE_DIR_VAR%\cmake\patch-zstd-import-lib-alias.cmake"
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
@@ -111,16 +121,21 @@ outputs:
           then:
             - ${{ compiler('c') }}
             - ${{ compiler('cxx') }}
-            - bison
             - cmake
-            - flex
             - ninja
             - pkg-config
+            - if: unix
+              then: bison
+            - if: unix
+              then: flex
+            - if: win
+              then: winflexbison
       host:
         - if: osl_gpu == "cpu"
           then:
             - clangdev ${{ llvm_major }}.*
             - imath-dev 3.2.*
+            - libxml2-devel
             - llvmdev ${{ llvm_major }}.*
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
@@ -128,6 +143,7 @@ outputs:
             - python
             - tsl_robin_map 1.4.*
             - zlib
+            - zstd
 
   - staging:
       name: openshadinglanguage-plugin-build
@@ -185,6 +201,14 @@ outputs:
             cmake -DOSL_PARTIO_PREFIX="%LIBRARY_PREFIX_FWD%" -P "%RECIPE_DIR_VAR%\cmake\patch-partio-target.cmake"
             set "CL=/utf-8 %CL%"
             set "CXXFLAGS=%CXXFLAGS% /utf-8"
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake -DPARTIO_CONFIG_PREFIX="%LIBRARY_PREFIX%" -P "%RECIPE_DIR_VAR%\cmake\patch-partio-config-alias.cmake"
+            cmake -DZSTD_LIB_DIR="%LIBRARY_LIB%" -P "%RECIPE_DIR_VAR%\cmake\patch-zstd-import-lib-alias.cmake"
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
@@ -223,15 +247,20 @@ outputs:
           then:
             - ${{ compiler('c') }}
             - ${{ compiler('cxx') }}
-            - bison
             - cmake
-            - flex
             - ninja
+            - if: unix
+              then: bison
+            - if: unix
+              then: flex
+            - if: win
+              then: winflexbison
       host:
         - if: osl_gpu == "cpu"
           then:
             - clangdev ${{ llvm_major }}.*
             - imath-dev 3.2.*
+            - libxml2-devel
             - llvmdev ${{ llvm_major }}.*
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
@@ -239,6 +268,7 @@ outputs:
             - python
             - tsl_robin_map 1.4.*
             - zlib
+            - zstd
 
   - staging:
       name: openshadinglanguage-guitools-build
@@ -296,6 +326,14 @@ outputs:
             cmake -DOSL_PARTIO_PREFIX="%LIBRARY_PREFIX_FWD%" -P "%RECIPE_DIR_VAR%\cmake\patch-partio-target.cmake"
             set "CL=/utf-8 %CL%"
             set "CXXFLAGS=%CXXFLAGS% /utf-8"
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake -DPARTIO_CONFIG_PREFIX="%LIBRARY_PREFIX%" -P "%RECIPE_DIR_VAR%\cmake\patch-partio-config-alias.cmake"
+            cmake -DZSTD_LIB_DIR="%LIBRARY_LIB%" -P "%RECIPE_DIR_VAR%\cmake\patch-zstd-import-lib-alias.cmake"
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
@@ -334,15 +372,20 @@ outputs:
           then:
             - ${{ compiler('c') }}
             - ${{ compiler('cxx') }}
-            - bison
             - cmake
-            - flex
             - ninja
+            - if: unix
+              then: bison
+            - if: unix
+              then: flex
+            - if: win
+              then: winflexbison
       host:
         - if: osl_gpu == "cpu"
           then:
             - clangdev ${{ llvm_major }}.*
             - imath-dev 3.2.*
+            - libxml2-devel
             - llvmdev ${{ llvm_major }}.*
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
@@ -351,6 +394,7 @@ outputs:
             - qt6-main
             - tsl_robin_map 1.4.*
             - zlib
+            - zstd
 
   - staging:
       name: openshadinglanguage-python-build
@@ -410,6 +454,14 @@ outputs:
             cmake -DOSL_PARTIO_PREFIX="%LIBRARY_PREFIX_FWD%" -P "%RECIPE_DIR_VAR%\cmake\patch-partio-target.cmake"
             set "CL=/utf-8 %CL%"
             set "CXXFLAGS=%CXXFLAGS% /utf-8"
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake -DPARTIO_CONFIG_PREFIX="%LIBRARY_PREFIX%" -P "%RECIPE_DIR_VAR%\cmake\patch-partio-config-alias.cmake"
+            cmake -DZSTD_LIB_DIR="%LIBRARY_LIB%" -P "%RECIPE_DIR_VAR%\cmake\patch-zstd-import-lib-alias.cmake"
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
@@ -450,15 +502,20 @@ outputs:
           then:
             - ${{ compiler('c') }}
             - ${{ compiler('cxx') }}
-            - bison
             - cmake
-            - flex
             - ninja
+            - if: unix
+              then: bison
+            - if: unix
+              then: flex
+            - if: win
+              then: winflexbison
       host:
         - if: osl_gpu == "cpu"
           then:
             - clangdev ${{ llvm_major }}.*
             - imath-dev 3.2.*
+            - libxml2-devel
             - llvmdev ${{ llvm_major }}.*
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
@@ -468,6 +525,7 @@ outputs:
             - python
             - tsl_robin_map 1.4.*
             - zlib
+            - zstd
 
   - staging:
       name: openshadinglanguage-cuda-build
@@ -535,6 +593,7 @@ outputs:
             - cuda-cudart-dev
             - cuda-nvcc
             - imath-dev 3.2.*
+            - libxml2-devel
             - llvmdev ${{ llvm_major }}.*
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
@@ -542,6 +601,7 @@ outputs:
             - python
             - tsl_robin_map 1.4.*
             - zlib
+            - zstd
 
   - staging:
       name: openshadinglanguage-cuda-plugin-build
@@ -608,6 +668,7 @@ outputs:
             - cuda-cudart-dev
             - cuda-nvcc
             - imath-dev 3.2.*
+            - libxml2-devel
             - llvmdev ${{ llvm_major }}.*
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
@@ -615,6 +676,7 @@ outputs:
             - python
             - tsl_robin_map 1.4.*
             - zlib
+            - zstd
 
   - staging:
       name: openshadinglanguage-cuda-guitools-build
@@ -681,6 +743,7 @@ outputs:
             - cuda-cudart-dev
             - cuda-nvcc
             - imath-dev 3.2.*
+            - libxml2-devel
             - llvmdev ${{ llvm_major }}.*
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
@@ -689,6 +752,7 @@ outputs:
             - qt6-main
             - tsl_robin_map 1.4.*
             - zlib
+            - zstd
 
   - staging:
       name: openshadinglanguage-cuda-python-build
@@ -757,6 +821,7 @@ outputs:
             - cuda-cudart-dev
             - cuda-nvcc
             - imath-dev 3.2.*
+            - libxml2-devel
             - llvmdev ${{ llvm_major }}.*
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
@@ -766,6 +831,7 @@ outputs:
             - python
             - tsl_robin_map 1.4.*
             - zlib
+            - zstd
 
   - package:
       name: openshadinglanguage-lib

@@ -235,6 +235,7 @@ outputs:
         - lib/libpartio.so
         - lib/libpartio.dylib
         - lib/cmake/Partio/**
+        - lib/cmake/partio/**
         - Library/include/*.h
         - Library/lib/partio.lib
         - Library/lib/cmake/Partio/**
@@ -263,12 +264,16 @@ outputs:
           - if: unix
             then:
               - test -f "$PREFIX/lib/cmake/Partio/PartioConfig.cmake"
+              - test -f "$PREFIX/lib/cmake/partio/partio-config.cmake"
+              - test -f "$PREFIX/lib/cmake/partio/partio-config-version.cmake"
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/partio_consumer
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\cmake\Partio\PartioConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\cmake\partio\partio-config.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\cmake\partio\partio-config-version.cmake" exit /b 1
               - if not exist "%LIBRARY_LIB%\partio.lib" exit /b 1
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
               - cmake --build build --config Release
@@ -354,6 +359,8 @@ outputs:
           - if: unix
             then:
               - test -f "$PREFIX/lib/cmake/Partio/PartioConfig.cmake"
+              - test -f "$PREFIX/lib/cmake/partio/partio-config.cmake"
+              - test -f "$PREFIX/lib/cmake/partio/partio-config-version.cmake"
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/partio_consumer
@@ -361,6 +368,8 @@ outputs:
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\cmake\Partio\PartioConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\cmake\partio\partio-config.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\cmake\partio\partio-config-version.cmake" exit /b 1
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
               - cmake --build build --config Release
               - build\partio_consumer.exe

@@ -7,7 +7,8 @@ if(NOT DEFINED PARTIO_CONFIG_VERSION)
 endif()
 
 set(_config_dir "${PARTIO_CONFIG_PREFIX}/lib/cmake/Partio")
-file(MAKE_DIRECTORY "${_config_dir}")
+set(_lower_config_dir "${PARTIO_CONFIG_PREFIX}/lib/cmake/partio")
+file(MAKE_DIRECTORY "${_config_dir}" "${_lower_config_dir}")
 
 file(WRITE "${_config_dir}/PartioConfig.cmake" [=[
 include(CMakeFindDependencyMacro)
@@ -39,7 +40,13 @@ if(NOT TARGET Partio::partio)
   endif()
 endif()
 
+if(TARGET Partio::partio AND NOT TARGET partio::partio)
+  add_library(partio::partio INTERFACE IMPORTED)
+  target_link_libraries(partio::partio INTERFACE Partio::partio)
+endif()
+
 set(Partio_FOUND TRUE)
+set(partio_FOUND TRUE)
 ]=])
 
 file(WRITE "${_config_dir}/PartioConfigVersion.cmake" "set(PACKAGE_VERSION \"${PARTIO_CONFIG_VERSION}\")\n\n")
@@ -54,3 +61,12 @@ else()
   set(PACKAGE_VERSION_UNSUITABLE TRUE)
 endif()
 ]=])
+
+foreach(_alias_dir IN ITEMS "${_config_dir}" "${_lower_config_dir}")
+  file(WRITE "${_alias_dir}/partio-config.cmake" [=[
+include("${CMAKE_CURRENT_LIST_DIR}/../Partio/PartioConfig.cmake")
+]=])
+  file(WRITE "${_alias_dir}/partio-config-version.cmake" [=[
+include("${CMAKE_CURRENT_LIST_DIR}/../Partio/PartioConfigVersion.cmake")
+]=])
+endforeach()

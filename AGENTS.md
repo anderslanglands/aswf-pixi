@@ -130,7 +130,7 @@ Partio packaging decisions:
 - Build `partio-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
 - Keep GUI tools disabled or omitted for now. Upstream's `partview` requires OpenGL/GLUT, while `partedit` and `partinspect` require Qt Python bindings.
 - Build `partio-tools` with only headless tools: `partattr`, `partconvert`, and `partinfo`.
-- Upstream 1.20.0 does not install CMake package metadata; install a small recipe-side `PartioConfig.cmake` exporting `Partio::partio` and validate consumers through CMake.
+- Upstream 1.20.0 does not install CMake package metadata; install a small recipe-side `PartioConfig.cmake` exporting `Partio::partio`, lowercase `partio` config-mode aliases, and the `partio::partio` compatibility target, and validate consumers through CMake.
 - Use external zlib support for compressed particle formats.
 - Patch the upstream Python binding CMake during the recipe build so macOS extension modules use dynamic symbol lookup instead of linking directly to `libpython`; direct `libpython` linkage segfaulted during `import partio` on `osx-arm64`.
 
@@ -187,6 +187,7 @@ OpenShadingLanguage packaging decisions:
 - Package the OpenImageIO OSL procedural input plugin as `openimageio-format-osl`; it depends on `openshadinglanguage-lib` and `openimageio-lib`, not the OSL compatibility metapackage.
 - Build `openshadinglanguage-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14. The Python module imports `OpenImageIO`, so it must depend on `openimageio-python` as well as the matching OSL runtime.
 - Keep upstream tests, `testshade`, and `testrender` disabled in package builds unless Anders explicitly asks to package or run them.
+- Use `winflexbison` for Windows OSL builds because conda-forge does not publish `bison`/`flex` for `win-64`; keep LLVM link-time dependencies such as `libxml2-devel` and `zstd` explicit in OSL host requirements.
 - Provide a Linux-only CUDA-enabled flavor named with `-cuda` package suffixes (`openshadinglanguage-cuda-lib`, `openshadinglanguage-cuda-dev`, `openshadinglanguage-cuda-tools`, `openshadinglanguage-cuda-guitools`, `openshadinglanguage-cuda-python`, `openimageio-format-osl-cuda`, and `openshadinglanguage-cuda`). Do not call these packages `-optix`.
 - Keep `osl_gpu=cpu` as the only default recipe variant. Build CUDA packages explicitly with `--variant osl_gpu=cuda` and an optional `--variant cuda_target_arch=sm_XX`; the root task uses `sm_60` as a conservative default.
 - Do not create or publish an OptiX SDK/header package. OSL 1.15.5.0 only requires OptiX headers when `OSL_USE_OPTIX=ON` and `OSL_BUILD_TESTS=ON`; package builds keep tests off, so the CUDA flavor builds the embedded CUDA/PTX path with conda CUDA packages and no redistributed OptiX payload.

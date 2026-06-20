@@ -123,7 +123,7 @@ Recipe versions: `1.20.0`
 Partio is Walt Disney Animation Studios' particle file I/O and manipulation library.
 
 - `partio-lib`: Shared Partio runtime library with zlib support.
-- `partio-dev`: Public headers and recipe-side CMake package metadata exporting `Partio::partio`. Depends on the matching `partio-lib`.
+- `partio-dev`: Public headers and recipe-side CMake package metadata exporting `Partio::partio` plus lowercase `partio` config-mode aliases and the `partio::partio` compatibility target. Depends on the matching `partio-lib`.
 - `partio-tools`: Headless command-line tools, currently `partattr`, `partconvert`, and `partinfo`. Depends on the matching `partio-lib`.
 - `partio-python`: SWIG Python bindings for Partio, built for Python 3.10 through 3.14. Depends on the matching `partio-lib`.
 - `partio`: Default metapackage for C++ and headless tool consumers. Depends on the matching `partio-lib`, `partio-dev`, and `partio-tools`; Python bindings and GUI tools are opt-in or omitted for now.
@@ -190,7 +190,7 @@ Recipe versions: `1.15.5.0`
 
 OpenShadingLanguage provides a production shading language, compiler, runtime libraries, and OpenImageIO integration.
 
-- `openshadinglanguage-lib`: Shared OSL runtime libraries for CPU rendering. Depends on OpenImageIO, Imath, Partio, pugixml, zlib, and LLVM/Clang runtime libraries.
+- `openshadinglanguage-lib`: Shared OSL runtime libraries for CPU rendering. Depends on OpenImageIO, Imath, Partio, pugixml, libxml2, zlib, zstd, and LLVM/Clang runtime libraries.
 - `openshadinglanguage-dev`: C++ headers, CMake package files, pkg-config metadata, and Windows import libraries. Depends on the matching `openshadinglanguage-lib` and `openshadinglanguage-tools` because upstream exports `oslc` and `oslinfo` in its CMake target set.
 - `openshadinglanguage-tools`: Headless command-line tools, currently `oslc` and `oslinfo`, plus installed standard shader headers.
 - `openshadinglanguage-guitools`: Qt-dependent GUI tools, currently `osltoy`. Depends on the matching `openshadinglanguage-lib` and Qt 6.
