@@ -32,8 +32,18 @@ jobs:
       RUN_HTML_URL: ${{ github.event.workflow_run.html_url }}
       RUN_ID: ${{ github.event.workflow_run.id }}
       RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-      GH_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ secrets.UPSTREAM_RELEASE_PR_TOKEN }}
     steps:
+      - name: Require upstream release token
+        shell: bash
+        env:
+          UPSTREAM_RELEASE_PR_TOKEN: ${{ secrets.UPSTREAM_RELEASE_PR_TOKEN }}
+        run: |
+          if [[ -z "$UPSTREAM_RELEASE_PR_TOKEN" ]]; then
+            echo "UPSTREAM_RELEASE_PR_TOKEN is required to merge upstream release PRs so promotion workflows can run." >&2
+            exit 1
+          fi
+
       - name: Check out repository
         uses: actions/checkout@v6
 

@@ -18,6 +18,15 @@ if [[ "$publish_target" == "default-label" ]]; then
   exit 1
 fi
 
+if [[ "$dispatch_build" == "true" && "${GITHUB_ACTIONS:-}" == "true" && -z "${ACTIONS_GH_TOKEN:-}" ]]; then
+  message="UPSTREAM_RELEASE_PR_TOKEN is required to dispatch build workflows from GitHub Actions so downstream auto-merge can run."
+  echo "$message" >&2
+  if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+    echo "$message" >> "$GITHUB_STEP_SUMMARY"
+  fi
+  exit 1
+fi
+
 staging="$RUNNER_TEMP/upstream-release-recipes"
 created_tsv="$RUNNER_TEMP/upstream-release-created.tsv"
 rm -rf "$staging"

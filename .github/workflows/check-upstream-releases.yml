@@ -81,7 +81,7 @@ jobs:
         env:
           RESULT_JSON: ${{ runner.temp }}/upstream-releases.json
           PR_GH_TOKEN: ${{ secrets.UPSTREAM_RELEASE_PR_TOKEN || github.token }}
-          ACTIONS_GH_TOKEN: ${{ github.token }}
+          ACTIONS_GH_TOKEN: ${{ secrets.UPSTREAM_RELEASE_PR_TOKEN }}
           PLATFORMS: ${{ inputs.platforms }}
           PUBLISH_TARGET: ${{ inputs.publish_target }}
           RUN_SMOKE_TESTS: ${{ inputs.run_smoke_tests }}

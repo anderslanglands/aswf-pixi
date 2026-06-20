@@ -46,7 +46,7 @@ else
     {
       echo "Could not create the upstream release PR automatically."
       echo
-      echo "Enable repository Actions setting 'Allow GitHub Actions to create and approve pull requests' or configure an \`UPSTREAM_RELEASE_PR_TOKEN\` secret with pull request write access."
+      echo "Enable repository Actions setting 'Allow GitHub Actions to create and approve pull requests' or configure an \`UPSTREAM_RELEASE_PR_TOKEN\` secret with Contents read/write, Pull requests read/write, and Actions read/write access."
       echo
       echo "Manual PR URL: $compare_url"
     } >> "$GITHUB_STEP_SUMMARY"

@@ -235,7 +235,7 @@ about:
         self.assertIn("BASE_BRANCH: ${{ github.event.repository.default_branch }}", workflow)
         self.assertIn("RESULT_JSON: ${{ runner.temp }}/upstream-releases.json", fanout)
         self.assertIn("PR_GH_TOKEN: ${{ secrets.UPSTREAM_RELEASE_PR_TOKEN || github.token }}", fanout)
-        self.assertIn("ACTIONS_GH_TOKEN: ${{ github.token }}", fanout)
+        self.assertIn("ACTIONS_GH_TOKEN: ${{ secrets.UPSTREAM_RELEASE_PR_TOKEN }}", fanout)
         self.assertIn("DISPATCH_BUILD: ${{ github.event_name == 'schedule' || inputs.dispatch_build }}", fanout)
         self.assertIn("run: scripts/create_upstream_release_prs.sh", fanout)
         self.assertNotIn("steps.pr.outputs.number", workflow)
@@ -308,7 +308,7 @@ about:
                 'printf "%s\\n" "$*" >> "$GH_LOG"\n'
                 'if [[ "$1 $2" == "pr list" ]]; then [[ -f "$GH_STATE" ]] && echo 7; exit 0; fi\n'
                 'if [[ "$1 $2" == "pr create" ]]; then touch "$GH_STATE"; exit 0; fi\n'
-                'if [[ "$1 $2" == "workflow run" ]]; then exit 0; fi\n'
+                'if [[ "$1 $2" == "workflow run" ]]; then printf "workflow-token=%s\\n" "${GH_TOKEN:-}" >> "$GH_LOG"; exit 0; fi\n'
                 'echo unexpected gh command: $* >&2\n'
                 'exit 2\n',
                 encoding="utf-8",
@@ -358,6 +358,42 @@ about:
             self.assertIn("workflow run build-packages.yml --ref automation/upstream-release-prs/foo/1.2.4 -f recipes=foo/1.2.4", gh_text)
             self.assertIn("-f publish_target=test-label", gh_text)
             self.assertIn("-f run_smoke_tests=true", gh_text)
+            self.assertIn("workflow-token=actions-token", gh_text)
+
+    def test_create_upstream_release_prs_requires_actions_token_for_github_dispatch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            result_json = tmp / "upstream-releases.json"
+            result_json.write_text("{}\n", encoding="utf-8")
+            summary = tmp / "summary.md"
+            env = {
+                **os.environ,
+                "RESULT_JSON": str(result_json),
+                "RUNNER_TEMP": str(tmp),
+                "GITHUB_STEP_SUMMARY": str(summary),
+                "GITHUB_ACTIONS": "true",
+                "PUBLISH_TARGET": "test-label",
+                "DISPATCH_BUILD": "true",
+            }
+            env.pop("ACTIONS_GH_TOKEN", None)
+            env.pop("GH_TOKEN", None)
+
+            result = subprocess.run(
+                [str(ROOT / "scripts" / "create_upstream_release_prs.sh")],
+                cwd=tmp,
+                env=env,
+                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("UPSTREAM_RELEASE_PR_TOKEN is required to dispatch build workflows", result.stderr)
+            self.assertIn(
+                "UPSTREAM_RELEASE_PR_TOKEN is required to dispatch build workflows",
+                summary.read_text(encoding="utf-8"),
+            )
 
     def test_create_upstream_release_prs_script_preserves_existing_pr_branch(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
@@ -400,7 +436,7 @@ about:
                 'printf "%s\\n" "$*" >> "$GH_LOG"\n'
                 'if [[ "$1 $2" == "pr list" ]]; then echo 7; exit 0; fi\n'
                 'if [[ "$1 $2" == "pr edit" ]]; then exit 0; fi\n'
-                'if [[ "$1 $2" == "workflow run" ]]; then exit 0; fi\n'
+                'if [[ "$1 $2" == "workflow run" ]]; then printf "workflow-token=%s\\n" "${GH_TOKEN:-}" >> "$GH_LOG"; exit 0; fi\n'
                 'echo unexpected gh command: $* >&2\n'
                 'exit 2\n',
                 encoding="utf-8",
@@ -419,6 +455,7 @@ about:
                 "GITHUB_REPOSITORY": "anders/aswf-pixi",
                 "GIT_LOG": str(git_log),
                 "GH_LOG": str(gh_log),
+                "ACTIONS_GH_TOKEN": "actions-token",
                 "BASE_BRANCH": "main",
                 "AUTOMATION_BRANCH_PREFIX": "automation/upstream-release-prs",
                 "PLATFORMS": "default",
@@ -485,7 +522,7 @@ about:
                 'printf "%s\\n" "$*" >> "$GH_LOG"\n'
                 'if [[ "$1 $2" == "pr list" ]]; then [[ -f "$GH_CREATED" ]] && echo 9; exit 0; fi\n'
                 'if [[ "$1 $2" == "pr create" ]]; then touch "$GH_CREATED"; exit 0; fi\n'
-                'if [[ "$1 $2" == "workflow run" ]]; then exit 0; fi\n'
+                'if [[ "$1 $2" == "workflow run" ]]; then printf "workflow-token=%s\\n" "${GH_TOKEN:-}" >> "$GH_LOG"; exit 0; fi\n'
                 'echo unexpected gh command: $* >&2\n'
                 'exit 2\n',
                 encoding="utf-8",
@@ -504,6 +541,7 @@ about:
                 "GITHUB_REPOSITORY": "anders/aswf-pixi",
                 "GIT_LOG": str(git_log),
                 "GH_LOG": str(gh_log),
+                "ACTIONS_GH_TOKEN": "actions-token",
                 "GH_CREATED": str(gh_created),
                 "BASE_BRANCH": "main",
                 "AUTOMATION_BRANCH_PREFIX": "automation/upstream-release-prs",
