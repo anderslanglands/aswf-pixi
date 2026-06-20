@@ -1065,7 +1065,7 @@ outputs:
               - test -f "$PREFIX/lib/osl.imageio.so"
           - if: osx
             then:
-              - test -f "$PREFIX/lib/osl.imageio.dylib"
+              - test -f "$PREFIX/lib/osl.imageio.so"
           - if: win
             then:
               - if not exist "%LIBRARY_BIN%\osl.imageio.dll" exit /b 1
