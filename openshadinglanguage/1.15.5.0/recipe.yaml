@@ -1015,6 +1015,7 @@ outputs:
           then: true
       string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
       files:
+        - lib/site-packages/oslquery/**
         - lib/python*/site-packages/oslquery/**
         - Lib/site-packages/oslquery/**
     requirements:
