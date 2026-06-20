@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -219,16 +221,85 @@ about:
         self.assertIsNotNone(match)
         assert match is not None
         publish_target_input = match.group("body")
+        pr_step = re.search(
+            r"(?ms)^      - name: Open or update pull request\n(?P<body>.*?)(?=^      - name: )",
+            workflow,
+        )
+        self.assertIsNotNone(pr_step)
+        assert pr_step is not None
+        dispatch_step = re.search(
+            r"(?ms)^      - name: Dispatch package build workflow\n(?P<body>.*?)(?=^      - name: |\Z)",
+            workflow,
+        )
+        self.assertIsNotNone(dispatch_step)
+        assert dispatch_step is not None
 
-        self.assertIn("gh workflow run build-packages.yml", workflow)
-        self.assertIn('--ref "$AUTOMATION_BRANCH"', workflow)
-        self.assertIn('publish_target="${PUBLISH_TARGET:-test-label}"', workflow)
+        self.assertIn("GH_TOKEN: ${{ secrets.UPSTREAM_RELEASE_PR_TOKEN || github.token }}", pr_step.group("body"))
+        self.assertIn("run: scripts/open_upstream_release_pr.sh", pr_step.group("body"))
+        self.assertIn(
+            "if: ${{ steps.detect.outputs.created == 'true' && (github.event_name == 'schedule' || inputs.dispatch_build) }}",
+            dispatch_step.group("body"),
+        )
+        self.assertNotIn("steps.pr.outputs.number", dispatch_step.group("body"))
+        self.assertIn("gh workflow run build-packages.yml", dispatch_step.group("body"))
+        self.assertIn('--ref "$AUTOMATION_BRANCH"', dispatch_step.group("body"))
+        self.assertIn('publish_target="${PUBLISH_TARGET:-test-label}"', dispatch_step.group("body"))
         self.assertIn("- artifact-only", publish_target_input)
         self.assertIn("- test-label", publish_target_input)
         self.assertIn("default: test-label", publish_target_input)
         self.assertNotIn("- default-label", publish_target_input)
         self.assertIn('if [[ "$publish_target" == "default-label" ]]; then', workflow)
         self.assertIn("Nightly upstream release checks may not dispatch default-label publishes.", workflow)
+
+    def test_open_upstream_release_pr_script_tolerates_pr_creation_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            bin_dir = tmp / "bin"
+            bin_dir.mkdir()
+            fake_gh = bin_dir / "gh"
+            fake_gh.write_text(
+                "#!/usr/bin/env bash\n"
+                "set -euo pipefail\n"
+                "if [[ \"$1 $2\" == \"pr list\" ]]; then exit 0; fi\n"
+                "if [[ \"$1 $2\" == \"pr create\" ]]; then echo 'blocked' >&2; exit 1; fi\n"
+                "echo unexpected gh command: $* >&2\n"
+                "exit 2\n",
+                encoding="utf-8",
+            )
+            fake_gh.chmod(0o755)
+            report = tmp / "report.md"
+            report.write_text("- `foo/1.2.4`\n", encoding="utf-8")
+            output = tmp / "output.txt"
+            summary = tmp / "summary.md"
+
+            env = {
+                **os.environ,
+                "PATH": f"{bin_dir}:{os.environ['PATH']}",
+                "RUNNER_TEMP": str(tmp),
+                "REPORT": str(report),
+                "AUTOMATION_BRANCH": "automation/upstream-releases",
+                "GITHUB_REF_NAME": "main",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "anders/aswf-pixi",
+                "GITHUB_OUTPUT": str(output),
+                "GITHUB_STEP_SUMMARY": str(summary),
+            }
+
+            completed = subprocess.run(
+                [str(ROOT / "scripts" / "open_upstream_release_pr.sh")],
+                env=env,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            self.assertIn("Could not create upstream release PR", completed.stdout)
+            self.assertEqual(output.read_text(encoding="utf-8"), "number=\n")
+            self.assertIn(
+                "Manual PR URL: https://github.com/anders/aswf-pixi/compare/main...automation/upstream-releases?expand=1",
+                summary.read_text(encoding="utf-8"),
+            )
 
 
 if __name__ == "__main__":

@@ -101,30 +101,9 @@ jobs:
         id: pr
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.UPSTREAM_RELEASE_PR_TOKEN || github.token }}
           REPORT: ${{ runner.temp }}/upstream-release-report.md
-        run: |
-          body_file="$RUNNER_TEMP/upstream-release-pr-body.md"
-          {
-            echo "Automated upstream release check created new recipe copies."
-            echo
-            cat "$REPORT"
-            echo "The build workflow is dispatched separately on this branch when enabled."
-          } > "$body_file"
-
-          existing="$(gh pr list --head "$AUTOMATION_BRANCH" --state open --json number --jq '.[0].number // empty')"
-          if [[ -n "$existing" ]]; then
-            gh pr edit "$existing" --title "Add upstream release recipe updates" --body-file "$body_file"
-            pr_number="$existing"
-          else
-            gh pr create \
-              --head "$AUTOMATION_BRANCH" \
-              --base "$GITHUB_REF_NAME" \
-              --title "Add upstream release recipe updates" \
-              --body-file "$body_file"
-            pr_number="$(gh pr view "$AUTOMATION_BRANCH" --json number --jq '.number')"
-          fi
-          echo "number=$pr_number" >> "$GITHUB_OUTPUT"
+        run: scripts/open_upstream_release_pr.sh
 
       - name: Dispatch package build workflow
         if: ${{ steps.detect.outputs.created == 'true' && (github.event_name == 'schedule' || inputs.dispatch_build) }}

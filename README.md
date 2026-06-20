@@ -33,7 +33,7 @@ platforms = ["linux-64", "win-64", "osx-arm64"]
 
 The `Check upstream releases` workflow runs nightly and can also be started manually. It checks the upstream GitHub releases for the package recipe directories in this repo, copies the semantically closest existing version recipe when a newer numbered release is found, updates the version/tag/source hash, and opens or refreshes a PR from `automation/upstream-releases`.
 
-By default, generated recipes dispatch the existing package build workflow against the PR branch with `publish_target = test-label`. When that automation PR is merged to `main`, the `Promote upstream releases` workflow creates a promotion ref at the merge commit and dispatches the existing package build workflow from that ref with `publish_target = default-label`, so production uploads still pass through the `anaconda-production` environment gate.
+By default, generated recipes dispatch the existing package build workflow against the PR branch with `publish_target = test-label`. When that automation PR is merged to `main`, the `Promote upstream releases` workflow creates a promotion ref at the merge commit and dispatches the existing package build workflow from that ref with `publish_target = default-label`, so production uploads still pass through the `anaconda-production` environment gate. Automatic PR creation uses `UPSTREAM_RELEASE_PR_TOKEN` when configured, otherwise `GITHUB_TOKEN`; if repository settings block GitHub Actions from creating PRs, the workflow leaves the branch in place, reports a manual PR URL, and still dispatches the test-label build.
 
 # Packages
 
