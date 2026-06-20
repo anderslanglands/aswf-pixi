@@ -29,6 +29,12 @@ channels = [
 platforms = ["linux-64", "win-64", "osx-arm64"]
 ```
 
+# Upstream Release Automation
+
+The `Check upstream releases` workflow runs nightly and can also be started manually. It checks the upstream GitHub releases for the package recipe directories in this repo, copies the semantically closest existing version recipe when a newer numbered release is found, updates the version/tag/source hash, and opens or refreshes a PR from `automation/upstream-releases`.
+
+By default, generated recipes dispatch the existing package build workflow against the PR branch with `publish_target = test-label`. Production `default-label` publishing remains an explicit manual workflow choice.
+
 # Packages
 
 ## Imath
