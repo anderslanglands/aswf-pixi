@@ -114,7 +114,7 @@ outputs:
               -B %SRC_DIR%\..\build ^
               -S .
 
-            cmake --build %SRC_DIR%\..\build --target install --config Release
+            cmake --build %SRC_DIR%\..\build --target install --config Release --parallel 1
     requirements:
       build:
         - if: osl_gpu == "cpu"
@@ -240,7 +240,7 @@ outputs:
               -B %SRC_DIR%\..\build-plugin ^
               -S .
 
-            cmake --build %SRC_DIR%\..\build-plugin --target install --config Release
+            cmake --build %SRC_DIR%\..\build-plugin --target install --config Release --parallel 1
             if %ERRORLEVEL% neq 0 exit /b 1
 
             powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; New-Item -ItemType Directory -Force -Path $env:LIBRARY_BIN | Out-Null; Get-ChildItem -Path $env:LIBRARY_LIB -Filter '*.imageio.dll' -File | ForEach-Object { Move-Item -LiteralPath $_.FullName -Destination (Join-Path $env:LIBRARY_BIN $_.Name) -Force }"
@@ -368,7 +368,7 @@ outputs:
               -B %SRC_DIR%\..\build-guitools ^
               -S .
 
-            cmake --build %SRC_DIR%\..\build-guitools --target install --config Release
+            cmake --build %SRC_DIR%\..\build-guitools --target install --config Release --parallel 1
     requirements:
       build:
         - if: osl_gpu == "cpu"
@@ -502,7 +502,7 @@ outputs:
               -B %SRC_DIR%\..\build-python ^
               -S .
 
-            cmake --build %SRC_DIR%\..\build-python --target install --config Release
+            cmake --build %SRC_DIR%\..\build-python --target install --config Release --parallel 1
     requirements:
       build:
         - if: osl_gpu == "cpu"
@@ -935,9 +935,11 @@ outputs:
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\cmake\OSL\OSLConfig.cmake" exit /b 1
-              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
-              - cmake --build build --config Release
-              - build\openshadinglanguage_consumer.exe
+              - set "OSL_TEST_BUILD=%TEMP%\osl-consumer-%RANDOM%-%RANDOM%"
+              - cmake -E rm -rf "%OSL_TEST_BUILD%"
+              - cmake -S tests -B "%OSL_TEST_BUILD%" -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build "%OSL_TEST_BUILD%" --config Release
+              - call "%OSL_TEST_BUILD%\openshadinglanguage_consumer.exe"
         files:
           recipe:
             - tests/CMakeLists.txt
@@ -1109,9 +1111,11 @@ outputs:
               - test -f "$PREFIX/share/OSL/shaders/stdosl.h"
           - if: win
             then:
-              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
-              - cmake --build build --config Release
-              - build\openshadinglanguage_consumer.exe
+              - set "OSL_TEST_BUILD=%TEMP%\osl-consumer-%RANDOM%-%RANDOM%"
+              - cmake -E rm -rf "%OSL_TEST_BUILD%"
+              - cmake -S tests -B "%OSL_TEST_BUILD%" -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build "%OSL_TEST_BUILD%" --config Release
+              - call "%OSL_TEST_BUILD%\openshadinglanguage_consumer.exe"
               - python -c "from pathlib import Path; Path('recipe_test.osl').write_text('shader recipe_test(output color result = 0) {}' + chr(10), encoding='utf-8')"
               - oslc recipe_test.osl
               - oslinfo recipe_test.oso
