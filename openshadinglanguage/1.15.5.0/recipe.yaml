@@ -241,6 +241,9 @@ outputs:
               -S .
 
             cmake --build %SRC_DIR%\..\build-plugin --target install --config Release
+            if %ERRORLEVEL% neq 0 exit /b 1
+
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; New-Item -ItemType Directory -Force -Path $env:LIBRARY_BIN | Out-Null; Get-ChildItem -Path $env:LIBRARY_LIB -Filter '*.imageio.dll' -File | ForEach-Object { Move-Item -LiteralPath $_.FullName -Destination (Join-Path $env:LIBRARY_BIN $_.Name) -Force }"
     requirements:
       build:
         - if: osl_gpu == "cpu"
