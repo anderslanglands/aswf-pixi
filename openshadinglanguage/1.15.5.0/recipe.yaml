@@ -123,6 +123,7 @@ outputs:
             - ${{ compiler('cxx') }}
             - cmake
             - ninja
+            - python 3.14.*
             - pkg-config
             - if: unix
               then: bison
@@ -140,7 +141,6 @@ outputs:
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
             - pugixml
-            - python
             - tsl_robin_map 1.4.*
             - zlib
             - zstd
@@ -249,6 +249,7 @@ outputs:
             - ${{ compiler('cxx') }}
             - cmake
             - ninja
+            - python 3.14.*
             - if: unix
               then: bison
             - if: unix
@@ -265,7 +266,6 @@ outputs:
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
             - pugixml
-            - python
             - tsl_robin_map 1.4.*
             - zlib
             - zstd
@@ -374,6 +374,7 @@ outputs:
             - ${{ compiler('cxx') }}
             - cmake
             - ninja
+            - python 3.14.*
             - if: unix
               then: bison
             - if: unix
@@ -390,7 +391,6 @@ outputs:
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
             - pugixml
-            - python
             - qt6-main
             - tsl_robin_map 1.4.*
             - zlib
@@ -585,6 +585,7 @@ outputs:
             - cmake
             - flex
             - ninja
+            - python 3.14.*
             - pkg-config
       host:
         - if: osl_gpu == "cuda" and target_platform == "linux-64"
@@ -598,7 +599,6 @@ outputs:
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
             - pugixml
-            - python
             - tsl_robin_map 1.4.*
             - zlib
             - zstd
@@ -661,6 +661,7 @@ outputs:
             - cmake
             - flex
             - ninja
+            - python 3.14.*
       host:
         - if: osl_gpu == "cuda" and target_platform == "linux-64"
           then:
@@ -673,7 +674,6 @@ outputs:
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
             - pugixml
-            - python
             - tsl_robin_map 1.4.*
             - zlib
             - zstd
@@ -736,6 +736,7 @@ outputs:
             - cmake
             - flex
             - ninja
+            - python 3.14.*
       host:
         - if: osl_gpu == "cuda" and target_platform == "linux-64"
           then:
@@ -748,7 +749,6 @@ outputs:
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
             - pugixml
-            - python
             - qt6-main
             - tsl_robin_map 1.4.*
             - zlib
