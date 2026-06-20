@@ -269,12 +269,12 @@ outputs:
           - if: unix
             then:
               - test -f "$PREFIX/lib/cmake/OpenEXRCore/OpenEXRCoreConfig.cmake"
-              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENEXR_CONSUMER_EXPECT_VERSION=${{ version }}
               - cmake --build build
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\cmake\OpenEXRCore\OpenEXRCoreConfig.cmake" exit /b 1
-              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENEXR_CONSUMER_EXPECT_VERSION=${{ version }}
               - cmake --build build --config Release
         files:
           recipe:
@@ -389,12 +389,12 @@ outputs:
           - if: unix
             then:
               - test -f "$PREFIX/lib/cmake/OpenEXR/OpenEXRConfig.cmake"
-              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENEXR_CONSUMER_EXPECT_FULL=ON
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENEXR_CONSUMER_EXPECT_VERSION=${{ version }} -DOPENEXR_CONSUMER_EXPECT_FULL=ON
               - cmake --build build
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\cmake\OpenEXR\OpenEXRConfig.cmake" exit /b 1
-              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENEXR_CONSUMER_EXPECT_FULL=ON
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENEXR_CONSUMER_EXPECT_VERSION=${{ version }} -DOPENEXR_CONSUMER_EXPECT_FULL=ON
               - cmake --build build --config Release
         files:
           recipe:
@@ -467,12 +467,12 @@ outputs:
           - if: unix
             then:
               - test -f "$PREFIX/lib/cmake/OpenEXR/OpenEXRConfig.cmake"
-              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENEXR_CONSUMER_EXPECT_FULL=ON
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENEXR_CONSUMER_EXPECT_VERSION=${{ version }} -DOPENEXR_CONSUMER_EXPECT_FULL=ON
               - cmake --build build
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\cmake\OpenEXR\OpenEXRConfig.cmake" exit /b 1
-              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENEXR_CONSUMER_EXPECT_FULL=ON
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENEXR_CONSUMER_EXPECT_VERSION=${{ version }} -DOPENEXR_CONSUMER_EXPECT_FULL=ON
               - cmake --build build --config Release
         files:
           recipe:
