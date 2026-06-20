@@ -1,4 +1,5 @@
 name: Promote upstream releases
+run-name: ${{ github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && startsWith(github.event.pull_request.head.ref, 'automation/upstream-release-prs/') && github.event.pull_request.head.repo.full_name == github.repository && format('Promote {0} to default-label', github.event.pull_request.head.ref) || format('Evaluate promotion for {0}', github.event.pull_request.head.ref) }}
 
 on:
   pull_request:
@@ -16,7 +17,7 @@ concurrency:
 
 jobs:
   promote:
-    name: Dispatch default-label publish
+    name: ${{ github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && startsWith(github.event.pull_request.head.ref, 'automation/upstream-release-prs/') && github.event.pull_request.head.repo.full_name == github.repository && format('Dispatch {0} to default-label', github.event.pull_request.head.ref) || format('Evaluate promotion for {0}', github.event.pull_request.head.ref) }}
     if: >-
       github.event.pull_request.merged == true &&
       github.event.pull_request.base.ref == 'main' &&

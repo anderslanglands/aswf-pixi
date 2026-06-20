@@ -1,4 +1,5 @@
 name: Check upstream releases
+run-name: ${{ github.event_name == 'workflow_dispatch' && inputs.packages != '' && format('Check upstream releases for {0}', inputs.packages) || 'Check upstream releases for all packages' }}
 
 on:
   schedule:
@@ -43,7 +44,7 @@ concurrency:
 
 jobs:
   check:
-    name: Check upstream releases
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.packages != '' && format('Check upstream releases for {0}', inputs.packages) || 'Check upstream releases for all packages' }}
     runs-on: ubuntu-latest
     env:
       AUTOMATION_BRANCH_PREFIX: automation/upstream-release-prs

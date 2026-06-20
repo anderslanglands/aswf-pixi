@@ -317,6 +317,8 @@ about:
 
         gitattributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
         self.assertRegex(gitattributes, r"(?m)^README\.md\s+merge=union$")
+        self.assertIn("run-name: ${{ github.event_name == 'workflow_dispatch' && inputs.packages != '' && format('Check upstream releases for {0}', inputs.packages) || 'Check upstream releases for all packages' }}", workflow)
+        self.assertIn("name: ${{ github.event_name == 'workflow_dispatch' && inputs.packages != '' && format('Check upstream releases for {0}', inputs.packages) || 'Check upstream releases for all packages' }}", workflow)
         self.assertIn("AUTOMATION_BRANCH_PREFIX: automation/upstream-release-prs", workflow)
         self.assertIn("BASE_BRANCH: ${{ github.event.repository.default_branch }}", workflow)
         self.assertIn("RESULT_JSON: ${{ runner.temp }}/upstream-releases.json", fanout)

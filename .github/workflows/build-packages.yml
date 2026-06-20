@@ -41,7 +41,7 @@ concurrency:
 
 jobs:
   prepare:
-    name: Prepare matrix
+    name: Prepare ${{ inputs.recipes }} matrix
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
@@ -133,7 +133,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: Publish to Anaconda
+    name: ${{ inputs.publish_target == 'artifact-only' && format('Skip publish for {0} (artifact-only)', inputs.recipes) || format('Publish {0} to Anaconda ({1})', inputs.recipes, inputs.publish_target) }}
     if: ${{ inputs.publish_target != 'artifact-only' }}
     needs:
       - prepare
@@ -163,7 +163,7 @@ jobs:
         run: pixi run python scripts/publish_packages.py --target "$PUBLISH_TARGET" --root artifacts
 
   smoke:
-    name: Smoke ${{ matrix.recipe }} (${{ matrix.platform }})
+    name: Evaluate smoke for ${{ matrix.recipe }} (${{ matrix.platform }}, ${{ inputs.publish_target }}, smoke=${{ inputs.run_smoke_tests }})
     if: ${{ inputs.publish_target != 'artifact-only' && inputs.run_smoke_tests }}
     needs:
       - prepare

@@ -78,6 +78,10 @@ class CiMatrixTests(unittest.TestCase):
 
     def test_build_packages_workflow_defaults_to_default_label(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "build-packages.yml").read_text(encoding="utf-8")
+        self.assertIn("run-name: Build ${{ inputs.recipes }} (${{ inputs.platforms }}, ${{ inputs.publish_target }}, smoke=${{ inputs.run_smoke_tests }})", workflow)
+        self.assertIn("name: Prepare ${{ inputs.recipes }} matrix", workflow)
+        self.assertIn("name: ${{ inputs.publish_target == 'artifact-only' && format('Skip publish for {0} (artifact-only)', inputs.recipes) || format('Publish {0} to Anaconda ({1})', inputs.recipes, inputs.publish_target) }}", workflow)
+        self.assertIn("name: Evaluate smoke for ${{ matrix.recipe }} (${{ matrix.platform }}, ${{ inputs.publish_target }}, smoke=${{ inputs.run_smoke_tests }})", workflow)
         match = re.search(r"(?ms)^      publish_target:\n(?P<body>(?:        .*\n)+)", workflow)
         self.assertIsNotNone(match)
         assert match is not None

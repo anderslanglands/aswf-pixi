@@ -62,6 +62,8 @@ class ChangedRecipeTests(unittest.TestCase):
         workflow = (ROOT / ".github" / "workflows" / "promote-upstream-releases.yml").read_text(encoding="utf-8")
 
         self.assertIn("pull_request:", workflow)
+        self.assertIn("run-name: ${{ github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && startsWith(github.event.pull_request.head.ref, 'automation/upstream-release-prs/') && github.event.pull_request.head.repo.full_name == github.repository && format('Promote {0} to default-label', github.event.pull_request.head.ref) || format('Evaluate promotion for {0}', github.event.pull_request.head.ref) }}", workflow)
+        self.assertIn("name: ${{ github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && startsWith(github.event.pull_request.head.ref, 'automation/upstream-release-prs/') && github.event.pull_request.head.repo.full_name == github.repository && format('Dispatch {0} to default-label', github.event.pull_request.head.ref) || format('Evaluate promotion for {0}', github.event.pull_request.head.ref) }}", workflow)
         self.assertIn("closed", workflow)
         self.assertIn("github.event.pull_request.merged == true", workflow)
         self.assertIn("github.event.pull_request.base.ref == 'main'", workflow)
@@ -95,6 +97,8 @@ class ChangedRecipeTests(unittest.TestCase):
         build_workflow = (ROOT / ".github" / "workflows" / "build-packages.yml").read_text(encoding="utf-8")
 
         self.assertIn("workflow_run:", workflow)
+        self.assertIn("run-name: Evaluate merge for ${{ github.event.workflow_run.head_branch }} after ${{ github.event.workflow_run.display_title }}", workflow)
+        self.assertIn("name: Evaluate merge for ${{ github.event.workflow_run.head_branch }}", workflow)
         self.assertIn("- Build packages", workflow)
         self.assertIn("- completed", workflow)
         self.assertIn("actions: read", workflow)

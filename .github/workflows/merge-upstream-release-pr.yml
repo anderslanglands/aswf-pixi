@@ -1,4 +1,5 @@
 name: Merge upstream release PR
+run-name: Evaluate merge for ${{ github.event.workflow_run.head_branch }} after ${{ github.event.workflow_run.display_title }}
 
 on:
   workflow_run:
@@ -18,7 +19,7 @@ concurrency:
 
 jobs:
   merge:
-    name: Merge successful test-label PR
+    name: Evaluate merge for ${{ github.event.workflow_run.head_branch }}
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'workflow_dispatch' &&
