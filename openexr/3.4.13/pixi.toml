@@ -1,0 +1,39 @@
+[workspace]
+name = "openexr-3.4.13-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.openexr-core-lib.dependencies]
+openexr-core-lib = "==3.4.13"
+
+[feature.openexr-core-dev.dependencies]
+openexr-core-dev = "==3.4.13"
+
+[feature.openexr-lib.dependencies]
+openexr-lib = "==3.4.13"
+
+[feature.openexr-dev.dependencies]
+openexr-dev = "==3.4.13"
+
+[feature.openexr-tools.dependencies]
+openexr-tools = "==3.4.13"
+
+[feature.openexr-python.dependencies]
+openexr-python = "==3.4.13"
+
+[feature.openexr.dependencies]
+openexr = "==3.4.13"
+
+[environments]
+openexr-core-lib = ["openexr-core-lib"]
+openexr-core-dev = ["openexr-core-dev"]
+openexr-lib = ["openexr-lib"]
+openexr-dev = ["openexr-dev"]
+openexr-tools = ["openexr-tools"]
+openexr-python = ["openexr-python"]
+openexr = ["openexr"]

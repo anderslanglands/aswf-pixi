@@ -61,7 +61,7 @@ Imath is a C++ math library for 2D and 3D graphics.
 
 ## OpenEXR
 
-Recipe versions: `3.4.12`
+Recipe versions: `3.4.12`, `3.4.13`
 
 OpenEXR provides high dynamic-range image file format libraries and tools.
 
