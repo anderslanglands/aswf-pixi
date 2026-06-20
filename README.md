@@ -49,7 +49,7 @@ Imath is a C++ math library for 2D and 3D graphics.
 
 ## OpenEXR
 
-Recipe versions: `3.4.12`
+Recipe versions: `3.4.12`, `3.4.13`
 
 OpenEXR provides high dynamic-range image file format libraries and tools.
 
@@ -63,7 +63,7 @@ OpenEXR provides high dynamic-range image file format libraries and tools.
 
 ## OpenColorIO
 
-Recipe versions: `2.5.1`
+Recipe versions: `2.5.1`, `2.5.2`
 
 OpenColorIO is a color management solution for motion picture production.
 
@@ -92,7 +92,7 @@ OpenVDB provides sparse volumetric data structures, file I/O, and tools. NanoVDB
 
 ## MaterialX
 
-Recipe versions: `1.39.4`
+Recipe versions: `1.39.4`, `1.39.5`
 
 MaterialX is an open standard for transferring rich material and look-development content.
 
@@ -113,7 +113,7 @@ libuhdr is Google's reference codec for the JPEG/R gain map based Ultra HDR imag
 
 ## Ptex
 
-Recipe versions: `2.5.1`
+Recipe versions: `2.5.1`, `2.5.2`
 
 Ptex is Walt Disney Animation Studios' per-face texture mapping system for production rendering.
 
@@ -171,7 +171,7 @@ SeExpr is an embeddable expression evaluation engine for graphics applications.
 
 ## OpenImageIO
 
-Recipe versions: `2.5.19.1`, `3.0.19.1`, `3.1.14.0`
+Recipe versions: `2.5.19.1`, `3.0.19.1`, `3.1.14.0`, `3.1.14.1`
 
 OpenImageIO provides image file I/O libraries, command-line tools, texture utilities, and optional format plugins.
 

@@ -1,0 +1,31 @@
+[workspace]
+name = "opencolorio-2.5.2-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.opencolorio-lib.dependencies]
+opencolorio-lib = "==2.5.2"
+
+[feature.opencolorio-dev.dependencies]
+opencolorio-dev = "==2.5.2"
+
+[feature.opencolorio-tools.dependencies]
+opencolorio-tools = "==2.5.2"
+
+[feature.opencolorio-python.dependencies]
+opencolorio-python = "==2.5.2"
+
+[feature.opencolorio.dependencies]
+opencolorio = "==2.5.2"
+
+[environments]
+opencolorio-lib = ["opencolorio-lib"]
+opencolorio-dev = ["opencolorio-dev"]
+opencolorio-tools = ["opencolorio-tools"]
+opencolorio-python = ["opencolorio-python"]
+opencolorio = ["opencolorio"]
