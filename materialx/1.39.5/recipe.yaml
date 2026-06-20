@@ -1,0 +1,394 @@
+context:
+  version: "1.39.5"
+  build_number: 0
+
+recipe:
+  name: materialx
+  version: ${{ version }}
+
+source:
+  url: https://github.com/AcademySoftwareFoundation/MaterialX/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: c0d739b70a36f6f72888a0e8e66db5c83ae87c40737cc9b51c108166804f3a3b
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: materialx-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DMATERIALX_BUILD_SHARED_LIBS=ON \
+              -DMATERIALX_BUILD_PYTHON=OFF \
+              -DMATERIALX_BUILD_VIEWER=OFF \
+              -DMATERIALX_BUILD_GRAPH_EDITOR=OFF \
+              -DMATERIALX_BUILD_DOCS=OFF \
+              -DMATERIALX_BUILD_TESTS=OFF \
+              -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF \
+              -DMATERIALX_BUILD_GEN_GLSL=ON \
+              -DMATERIALX_BUILD_GEN_OSL=OFF \
+              -DMATERIALX_BUILD_GEN_MDL=OFF \
+              -DMATERIALX_BUILD_GEN_MSL=ON \
+              -DMATERIALX_BUILD_RENDER=OFF \
+              -DMATERIALX_BUILD_RENDER_PLATFORMS=OFF \
+              -DMATERIALX_BUILD_OIIO=OFF \
+              -DMATERIALX_INSTALL_RESOURCES=ON \
+              -DMATERIALX_WARNINGS_AS_ERRORS=OFF \
+              -B $SRC_DIR/../build \
+              -S .
+
+            cmake --build $SRC_DIR/../build --target install
+
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake \
+              -DMATERIALX_CONFIG_FILE="$PREFIX/lib/cmake/MaterialX/MaterialXConfig.cmake" \
+              -P "$recipe_dir/cmake/remove-unused-x11-dependency.cmake"
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DMATERIALX_BUILD_SHARED_LIBS=ON ^
+              -DMATERIALX_BUILD_PYTHON=OFF ^
+              -DMATERIALX_BUILD_VIEWER=OFF ^
+              -DMATERIALX_BUILD_GRAPH_EDITOR=OFF ^
+              -DMATERIALX_BUILD_DOCS=OFF ^
+              -DMATERIALX_BUILD_TESTS=OFF ^
+              -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF ^
+              -DMATERIALX_BUILD_GEN_GLSL=ON ^
+              -DMATERIALX_BUILD_GEN_OSL=OFF ^
+              -DMATERIALX_BUILD_GEN_MDL=OFF ^
+              -DMATERIALX_BUILD_GEN_MSL=ON ^
+              -DMATERIALX_BUILD_RENDER=OFF ^
+              -DMATERIALX_BUILD_RENDER_PLATFORMS=OFF ^
+              -DMATERIALX_BUILD_OIIO=OFF ^
+              -DMATERIALX_INSTALL_RESOURCES=ON ^
+              -DMATERIALX_WARNINGS_AS_ERRORS=OFF ^
+              -B %SRC_DIR%\..\build ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build --target install --config Release
+
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake ^
+              -DMATERIALX_CONFIG_FILE="%LIBRARY_LIB%\cmake\MaterialX\MaterialXConfig.cmake" ^
+              -P "%RECIPE_DIR_VAR%\cmake\remove-unused-x11-dependency.cmake"
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+
+  - staging:
+      name: materialx-python-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-python
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DMATERIALX_BUILD_SHARED_LIBS=ON \
+              -DMATERIALX_BUILD_PYTHON=ON \
+              -DMATERIALX_PYTHON_VERSION=${{ python }} \
+              -DMATERIALX_PYTHON_EXECUTABLE=$PYTHON \
+              -DMATERIALX_BUILD_VIEWER=OFF \
+              -DMATERIALX_BUILD_GRAPH_EDITOR=OFF \
+              -DMATERIALX_BUILD_DOCS=OFF \
+              -DMATERIALX_BUILD_TESTS=OFF \
+              -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF \
+              -DMATERIALX_BUILD_GEN_GLSL=ON \
+              -DMATERIALX_BUILD_GEN_OSL=OFF \
+              -DMATERIALX_BUILD_GEN_MDL=OFF \
+              -DMATERIALX_BUILD_GEN_MSL=ON \
+              -DMATERIALX_BUILD_RENDER=OFF \
+              -DMATERIALX_BUILD_RENDER_PLATFORMS=OFF \
+              -DMATERIALX_BUILD_OIIO=OFF \
+              -DMATERIALX_INSTALL_PYTHON=ON \
+              -DMATERIALX_INSTALL_RESOURCES=ON \
+              -DMATERIALX_WARNINGS_AS_ERRORS=OFF \
+              -B $SRC_DIR/../build-python \
+              -S .
+
+            cmake --build $SRC_DIR/../build-python --target install
+
+            if [ -d "$PREFIX/python/MaterialX" ]; then
+              rm -rf "$PREFIX/python/MaterialX/_scripts"
+              mkdir -p "$SP_DIR"
+              rm -rf "$SP_DIR/MaterialX"
+              mv "$PREFIX/python/MaterialX" "$SP_DIR/MaterialX"
+              rm -rf "$PREFIX/python"
+            fi
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-python
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DMATERIALX_BUILD_SHARED_LIBS=ON ^
+              -DMATERIALX_BUILD_PYTHON=ON ^
+              -DMATERIALX_PYTHON_VERSION=${{ python }} ^
+              -DMATERIALX_PYTHON_EXECUTABLE=%PYTHON% ^
+              -DMATERIALX_BUILD_VIEWER=OFF ^
+              -DMATERIALX_BUILD_GRAPH_EDITOR=OFF ^
+              -DMATERIALX_BUILD_DOCS=OFF ^
+              -DMATERIALX_BUILD_TESTS=OFF ^
+              -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF ^
+              -DMATERIALX_BUILD_GEN_GLSL=ON ^
+              -DMATERIALX_BUILD_GEN_OSL=OFF ^
+              -DMATERIALX_BUILD_GEN_MDL=OFF ^
+              -DMATERIALX_BUILD_GEN_MSL=ON ^
+              -DMATERIALX_BUILD_RENDER=OFF ^
+              -DMATERIALX_BUILD_RENDER_PLATFORMS=OFF ^
+              -DMATERIALX_BUILD_OIIO=OFF ^
+              -DMATERIALX_INSTALL_PYTHON=ON ^
+              -DMATERIALX_INSTALL_RESOURCES=ON ^
+              -DMATERIALX_WARNINGS_AS_ERRORS=OFF ^
+              -B %SRC_DIR%\..\build-python ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-python --target install --config Release
+
+            if exist "%LIBRARY_PREFIX%\python\MaterialX" (
+              if exist "%LIBRARY_PREFIX%\python\MaterialX\_scripts" rmdir /S /Q "%LIBRARY_PREFIX%\python\MaterialX\_scripts"
+              if not exist "%SP_DIR%" mkdir "%SP_DIR%"
+              if exist "%SP_DIR%\MaterialX" rmdir /S /Q "%SP_DIR%\MaterialX"
+              move "%LIBRARY_PREFIX%\python\MaterialX" "%SP_DIR%\MaterialX"
+              rmdir /S /Q "%LIBRARY_PREFIX%\python"
+            )
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+      host:
+        - python
+        - pip
+        - pybind11
+        - setuptools
+        - wheel
+
+  - package:
+      name: materialx-lib
+    inherit: materialx-build
+    build:
+      files:
+        - lib/libMaterialX*.so*
+        - lib/libMaterialX*.dylib*
+        - Library/bin/MaterialX*.dll
+        - libraries/**
+        - resources/**
+        - Library/libraries/**
+        - Library/resources/**
+    requirements:
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('materialx-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/MaterialXCore/Document.h
+              - lib/cmake/MaterialX/MaterialXConfig.cmake
+              - lib/libMaterialXRender.so
+              - lib/libMaterialXRenderGlsl.so
+              - lib/libMaterialXRenderHw.so
+              - lib/libMaterialXRender.dylib
+              - lib/libMaterialXRenderGlsl.dylib
+              - lib/libMaterialXRenderHw.dylib
+              - Library/include/MaterialXCore/Document.h
+              - Library/lib/cmake/MaterialX/MaterialXConfig.cmake
+              - Library/bin/MaterialXRender.dll
+              - Library/bin/MaterialXRenderGlsl.dll
+              - Library/bin/MaterialXRenderHw.dll
+      - script:
+          - if: linux
+            then:
+              - test -f "$PREFIX/libraries/stdlib/stdlib_defs.mtlx"
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libMaterialXCore.so*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: osx
+            then:
+              - test -f "$PREFIX/libraries/stdlib/stdlib_defs.mtlx"
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libMaterialXCore*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: win
+            then:
+              - if not exist "%LIBRARY_PREFIX%\libraries\stdlib\stdlib_defs.mtlx" exit /b 1
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'MaterialXCore*.dll')); assert paths; ctypes.WinDLL(paths[0])"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: materialx-dev
+    inherit: materialx-build
+    build:
+      files:
+        - include/MaterialX*/**
+        - lib/cmake/MaterialX/**
+        - Library/include/MaterialX*/**
+        - Library/lib/cmake/MaterialX/**
+        - Library/lib/MaterialX*.lib
+    requirements:
+      run:
+        - ${{ pin_subpackage('materialx-lib', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('materialx-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - MaterialXCore/Document.h
+            - MaterialXCore/Util.h
+          files:
+            not_exists:
+              - include/MaterialXRender/TextureBaker.h
+              - include/MaterialXRenderGlsl/GlslRenderer.h
+              - include/MaterialXRenderHw/HwRenderer.h
+              - Library/include/MaterialXRender/TextureBaker.h
+              - Library/include/MaterialXRenderGlsl/GlslRenderer.h
+              - Library/include/MaterialXRenderHw/HwRenderer.h
+              - Library/lib/MaterialXRender.lib
+              - Library/lib/MaterialXRenderGlsl.lib
+              - Library/lib/MaterialXRenderHw.lib
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/MaterialX/MaterialXConfig.cmake"
+              - cmake -DMATERIALX_CONFIG_FILE="$PREFIX/lib/cmake/MaterialX/MaterialXConfig.cmake" -P tests/check-no-x11-dependency.cmake
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/materialx_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\MaterialX\MaterialXConfig.cmake" exit /b 1
+              - cmake -DMATERIALX_CONFIG_FILE="%LIBRARY_LIB%\cmake\MaterialX\MaterialXConfig.cmake" -P tests\check-no-x11-dependency.cmake
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\materialx_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/check-no-x11-dependency.cmake
+            - tests/materialx_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: materialx-python
+    inherit: materialx-python-build
+    build:
+      string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+      files:
+        - lib/python*/site-packages/MaterialX/**
+        - lib/python*/site-packages/MaterialX-*.dist-info/**
+        - lib/python*/site-packages/MaterialX-*.egg-info/**
+        - Lib/site-packages/MaterialX/**
+        - Lib/site-packages/MaterialX-*.dist-info/**
+        - Lib/site-packages/MaterialX-*.egg-info/**
+    requirements:
+      run:
+        - python
+        - ${{ pin_subpackage('materialx-lib', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - MaterialX
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/libraries/stdlib/stdlib_defs.mtlx"
+          - if: win
+            then:
+              - if not exist "%LIBRARY_PREFIX%\libraries\stdlib\stdlib_defs.mtlx" exit /b 1
+          - python -c "import MaterialX as mx, os; from pathlib import Path; prefix = Path(os.environ.get('LIBRARY_PREFIX') or os.environ['PREFIX']); doc = mx.createDocument(); loaded = mx.loadLibraries([str(prefix / 'libraries')], mx.FileSearchPath(str(prefix)), doc); assert mx.getVersionString() == '${{ version }}'; assert loaded; assert doc.getNodeDefs()"
+          - python -c "import importlib.util; modules = ('MaterialX.PyMaterialXRender', 'MaterialX.PyMaterialXRenderGlsl', 'MaterialX.PyMaterialXRenderMsl', 'MaterialX.PyMaterialXRenderOsl'); found = [module for module in modules if importlib.util.find_spec(module) is not None]; assert not found, found"
+          - python -c "import MaterialX, pathlib; assert not (pathlib.Path(MaterialX.__file__).parent / '_scripts').exists()"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: materialx
+    requirements:
+      run:
+        - ${{ pin_subpackage('materialx-lib', exact=True) }}
+        - ${{ pin_subpackage('materialx-dev', exact=True) }}
+        - materialx-python ==${{ version }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('materialx-lib', upper_bound='x.x') }}
+    tests:
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/MaterialX/MaterialXConfig.cmake"
+              - cmake -DMATERIALX_CONFIG_FILE="$PREFIX/lib/cmake/MaterialX/MaterialXConfig.cmake" -P tests/check-no-x11-dependency.cmake
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/materialx_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\MaterialX\MaterialXConfig.cmake" exit /b 1
+              - cmake -DMATERIALX_CONFIG_FILE="%LIBRARY_LIB%\cmake\MaterialX\MaterialXConfig.cmake" -P tests\check-no-x11-dependency.cmake
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\materialx_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/check-no-x11-dependency.cmake
+            - tests/materialx_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/libraries/stdlib/stdlib_defs.mtlx"
+          - if: win
+            then:
+              - if not exist "%LIBRARY_PREFIX%\libraries\stdlib\stdlib_defs.mtlx" exit /b 1
+          - python -c "import MaterialX as mx, os; from pathlib import Path; prefix = Path(os.environ.get('LIBRARY_PREFIX') or os.environ['PREFIX']); doc = mx.createDocument(); loaded = mx.loadLibraries([str(prefix / 'libraries')], mx.FileSearchPath(str(prefix)), doc); assert mx.getVersionString() == '${{ version }}'; assert loaded; assert doc.getNodeDefs()"
+          - python -c "import importlib.util; modules = ('MaterialX.PyMaterialXRender', 'MaterialX.PyMaterialXRenderGlsl', 'MaterialX.PyMaterialXRenderMsl', 'MaterialX.PyMaterialXRenderOsl'); found = [module for module in modules if importlib.util.find_spec(module) is not None]; assert not found, found"
+        requirements:
+          run:
+            - python
+
+about:
+  homepage: https://materialx.org
+  repository: https://github.com/AcademySoftwareFoundation/MaterialX
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Open standard for transfer of rich material and look-development content

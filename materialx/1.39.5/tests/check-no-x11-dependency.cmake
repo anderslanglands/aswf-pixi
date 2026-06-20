@@ -1,0 +1,13 @@
+if(NOT DEFINED MATERIALX_CONFIG_FILE)
+    message(FATAL_ERROR "MATERIALX_CONFIG_FILE is required")
+endif()
+
+get_filename_component(_materialx_config_dir "${MATERIALX_CONFIG_FILE}" DIRECTORY)
+file(GLOB _materialx_cmake_files "${_materialx_config_dir}/*.cmake")
+foreach(_materialx_cmake_file IN LISTS _materialx_cmake_files)
+    file(READ "${_materialx_cmake_file}" _materialx_cmake_content)
+    string(TOLOWER "${_materialx_cmake_content}" _materialx_cmake_content_lower)
+    if(_materialx_cmake_content_lower MATCHES "find_(dependency|package)[ \t\r\n]*\\([ \t\r\n]*x11")
+        message(FATAL_ERROR "MaterialX CMake metadata unexpectedly requires X11: ${_materialx_cmake_file}")
+    endif()
+endforeach()
