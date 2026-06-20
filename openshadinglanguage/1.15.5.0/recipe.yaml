@@ -22,6 +22,12 @@ outputs:
         - if: unix and osl_gpu == "cpu"
           then: |
             cmake -E rm -rf $SRC_DIR/../build
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake -DOSL_PARTIO_PREFIX="$PREFIX" -P "$recipe_dir/cmake/patch-partio-target.cmake"
 
             cmake $CMAKE_ARGS \
               -GNinja \
@@ -57,6 +63,13 @@ outputs:
           then: |
             cmake -E rm -rf %SRC_DIR%\..\build
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake -DOSL_PARTIO_PREFIX="%LIBRARY_PREFIX_FWD%" -P "%RECIPE_DIR_VAR%\cmake\patch-partio-target.cmake"
             set "CL=/utf-8 %CL%"
             set "CXXFLAGS=%CXXFLAGS% /utf-8"
 
@@ -123,6 +136,12 @@ outputs:
         - if: unix and osl_gpu == "cpu"
           then: |
             cmake -E rm -rf $SRC_DIR/../build-plugin
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake -DOSL_PARTIO_PREFIX="$PREFIX" -P "$recipe_dir/cmake/patch-partio-target.cmake"
 
             cmake $CMAKE_ARGS \
               -GNinja \
@@ -157,6 +176,13 @@ outputs:
           then: |
             cmake -E rm -rf %SRC_DIR%\..\build-plugin
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake -DOSL_PARTIO_PREFIX="%LIBRARY_PREFIX_FWD%" -P "%RECIPE_DIR_VAR%\cmake\patch-partio-target.cmake"
             set "CL=/utf-8 %CL%"
             set "CXXFLAGS=%CXXFLAGS% /utf-8"
 
@@ -221,6 +247,12 @@ outputs:
         - if: unix and osl_gpu == "cpu"
           then: |
             cmake -E rm -rf $SRC_DIR/../build-guitools
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake -DOSL_PARTIO_PREFIX="$PREFIX" -P "$recipe_dir/cmake/patch-partio-target.cmake"
 
             cmake $CMAKE_ARGS \
               -GNinja \
@@ -255,6 +287,13 @@ outputs:
           then: |
             cmake -E rm -rf %SRC_DIR%\..\build-guitools
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake -DOSL_PARTIO_PREFIX="%LIBRARY_PREFIX_FWD%" -P "%RECIPE_DIR_VAR%\cmake\patch-partio-target.cmake"
             set "CL=/utf-8 %CL%"
             set "CXXFLAGS=%CXXFLAGS% /utf-8"
 
@@ -320,6 +359,12 @@ outputs:
         - if: unix and osl_gpu == "cpu"
           then: |
             cmake -E rm -rf $SRC_DIR/../build-python
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake -DOSL_PARTIO_PREFIX="$PREFIX" -P "$recipe_dir/cmake/patch-partio-target.cmake"
 
             cmake $CMAKE_ARGS \
               -GNinja \
@@ -356,6 +401,13 @@ outputs:
           then: |
             cmake -E rm -rf %SRC_DIR%\..\build-python
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake -DOSL_PARTIO_PREFIX="%LIBRARY_PREFIX_FWD%" -P "%RECIPE_DIR_VAR%\cmake\patch-partio-target.cmake"
             set "CL=/utf-8 %CL%"
             set "CXXFLAGS=%CXXFLAGS% /utf-8"
 
@@ -424,6 +476,12 @@ outputs:
         - if: linux and osl_gpu == "cuda" and target_platform == "linux-64"
           then: |
             cmake -E rm -rf $SRC_DIR/../build-cuda
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake -DOSL_PARTIO_PREFIX="$PREFIX" -P "$recipe_dir/cmake/patch-partio-target.cmake"
 
             cmake $CMAKE_ARGS \
               -GNinja \
@@ -492,6 +550,12 @@ outputs:
         - if: linux and osl_gpu == "cuda" and target_platform == "linux-64"
           then: |
             cmake -E rm -rf $SRC_DIR/../build-cuda-plugin
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake -DOSL_PARTIO_PREFIX="$PREFIX" -P "$recipe_dir/cmake/patch-partio-target.cmake"
 
             cmake $CMAKE_ARGS \
               -GNinja \
@@ -559,6 +623,12 @@ outputs:
         - if: linux and osl_gpu == "cuda" and target_platform == "linux-64"
           then: |
             cmake -E rm -rf $SRC_DIR/../build-cuda-guitools
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake -DOSL_PARTIO_PREFIX="$PREFIX" -P "$recipe_dir/cmake/patch-partio-target.cmake"
 
             cmake $CMAKE_ARGS \
               -GNinja \
@@ -627,6 +697,12 @@ outputs:
         - if: linux and osl_gpu == "cuda" and target_platform == "linux-64"
           then: |
             cmake -E rm -rf $SRC_DIR/../build-cuda-python
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake -DOSL_PARTIO_PREFIX="$PREFIX" -P "$recipe_dir/cmake/patch-partio-target.cmake"
 
             cmake $CMAKE_ARGS \
               -GNinja \
