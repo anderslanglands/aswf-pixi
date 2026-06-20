@@ -92,7 +92,7 @@ OpenVDB provides sparse volumetric data structures, file I/O, and tools. NanoVDB
 
 ## MaterialX
 
-Recipe versions: `1.39.4`
+Recipe versions: `1.39.4`, `1.39.5`
 
 MaterialX is an open standard for transferring rich material and look-development content.
 
