@@ -35,6 +35,18 @@ The `Check upstream releases` workflow runs nightly and can also be started manu
 
 By default, each generated recipe PR dispatches the existing package build workflow for only that recipe selector with `publish_target = test-label` and smoke tests enabled. When that exact branch/head SHA succeeds for a smoke-tested test-label run, the `Merge upstream release PR` workflow merges the matching PR to `main`. That merge triggers the `Promote upstream releases` workflow, which creates a promotion ref at the merge commit and dispatches the existing package build workflow from that ref with `publish_target = default-label`, so production uploads still pass through the `anaconda-production` environment gate. Automatic PR creation uses `UPSTREAM_RELEASE_PR_TOKEN` when configured, otherwise `GITHUB_TOKEN`; if repository settings block GitHub Actions from creating PRs, the workflow leaves each branch in place, reports a manual PR URL, and still dispatches the test-label build.
 
+If a generated upstream release PR fails, commit the fix to that PR branch and rerun the test-label workflow against the same branch and recipe selector:
+
+```bash
+gh workflow run build-packages.yml \
+  --ref automation/upstream-release-prs/<package>/<version> \
+  -f recipes="<package>/<version>" \
+  -f platforms="default" \
+  -f publish_target="test-label" \
+  -f build_number="" \
+  -f run_smoke_tests="true"
+```
+
 # Packages
 
 ## Imath
