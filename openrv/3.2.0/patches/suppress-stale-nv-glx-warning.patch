@@ -1,0 +1,22 @@
+diff --git a/src/lib/app/RvCommon/RvDocument.cpp b/src/lib/app/RvCommon/RvDocument.cpp
+index 1b9f77e..e4a6326 100644
+--- a/src/lib/app/RvCommon/RvDocument.cpp
++++ b/src/lib/app/RvCommon/RvDocument.cpp
+@@ -39,6 +39,7 @@
+ #include <TwkMath/Iostream.h>
+ #include <TwkDeploy/Deploy.h>
+ #include <TwkUtil/File.h>
++#include <cstdlib>
+ #include <iostream>
+ #include <fstream>
+ #include <sstream>
+@@ -261,7 +262,8 @@ namespace Rv
+ 
+         bool haveNV = XQueryExtension(QX11Info::display(), "NV-GLX", &op_ret, &ev_ret, &er_ret);
+ 
+-        if (!haveNV)
++        const bool reportMissingNVGLX = std::getenv("RV_REPORT_MISSING_NV_GLX") != nullptr;
++        if (!haveNV && reportMissingNVGLX)
+         {
+             cerr << endl;
+             cerr << "ERROR:******* NV-GLX Extension Missing ***********" << endl;

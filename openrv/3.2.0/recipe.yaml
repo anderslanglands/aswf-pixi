@@ -37,6 +37,7 @@ source:
     - patches/nedmalloc-gnu-source.patch
     - patches/honor-build-testing.patch
     - patches/audio-gc-build-order.patch
+    - patches/suppress-stale-nv-glx-warning.patch
 
 build:
   number: ${{ build_number }}
@@ -200,6 +201,13 @@ build:
                 ;;
             Linux)
                 export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"
+                if [ -z "${DBUS_SYSTEM_BUS_ADDRESS:-}" ]; then
+                    if [ -S /run/dbus/system_bus_socket ]; then
+                        export DBUS_SYSTEM_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
+                    elif [ -S /var/run/dbus/system_bus_socket ]; then
+                        export DBUS_SYSTEM_BUS_ADDRESS="unix:path=/var/run/dbus/system_bus_socket"
+                    fi
+                fi
                 prepend_path_var LD_LIBRARY_PATH "$rv_home/lib"
                 prepend_path_var LD_LIBRARY_PATH "$qt_root/lib"
                 ;;
