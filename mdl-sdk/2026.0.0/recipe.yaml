@@ -22,9 +22,20 @@ outputs:
           then: |
             cmake -E rm -rf $SRC_DIR/../build
 
-            clang_path="${BUILD_PREFIX:-$PREFIX}/bin/clang"
+            tool_prefix="${BUILD_PREFIX:-$PREFIX}"
+            clang_path="$tool_prefix/bin/clang-12"
             if [ ! -x "$clang_path" ]; then
-              clang_path="$(command -v clang)"
+              clang_path="$tool_prefix/bin/clang"
+            fi
+            if [ ! -x "$clang_path" ]; then
+              clang_path="$(command -v clang-12 2>/dev/null || true)"
+            fi
+            if [ -z "$clang_path" ]; then
+              clang_path="$(command -v clang 2>/dev/null || true)"
+            fi
+            if [ -z "$clang_path" ]; then
+              echo "clang-12 or clang was not found" >&2
+              exit 1
             fi
 
             llvm_darwin_args=""
@@ -67,7 +78,9 @@ outputs:
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build
 
-            set "CLANG_PATH=%BUILD_PREFIX%\Library\bin\clang.exe"
+            set "CLANG_PATH=%BUILD_PREFIX%\Library\bin\clang-12.exe"
+            if not exist "%CLANG_PATH%" set "CLANG_PATH=%BUILD_PREFIX%\bin\clang-12.exe"
+            if not exist "%CLANG_PATH%" set "CLANG_PATH=%BUILD_PREFIX%\Library\bin\clang.exe"
             if not exist "%CLANG_PATH%" set "CLANG_PATH=%BUILD_PREFIX%\bin\clang.exe"
             set "MDL_CONDA_TOOLCHAIN=%SRC_DIR%\..\conda-toolchain.cmake"
             > "%MDL_CONDA_TOOLCHAIN%" echo # Conda package build intentionally uses CMake package discovery from CMAKE_PREFIX_PATH.
@@ -113,7 +126,7 @@ outputs:
       build:
         - ${{ compiler('c') }}
         - ${{ compiler('cxx') }}
-        - clangdev ==12.0.1
+        - clang-12 ==12.0.1
         - cmake
         - coco
         - ninja

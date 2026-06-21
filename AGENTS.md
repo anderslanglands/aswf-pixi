@@ -210,7 +210,7 @@ MDL SDK packaging decisions:
 - Include `openexr-dev` as a host requirement when building the OpenImageIO plugin; upstream's MDL OpenImageIO finder separately calls `find_package(OpenEXR)`.
 - Ignore run exports from staging-only `openimageio-dev` and `openexr-dev` requirements so `mdl-sdk-lib` stays free of image I/O dependencies and only `mdl-sdk-plugin-openimageio` depends on `openimageio-lib`.
 - Build `mdl-sdk-python` with the recipe-side standalone SWIG extension helper instead of enabling upstream `MDL_ENABLE_PYTHON_BINDINGS` in a full SDK build for every Python ABI. Keep Python staging requirements limited to Python, SWIG, CMake/Ninja, and compilers; put `numpy` on the final `mdl-sdk-python` runtime dependency because `pymdl.py` imports it.
-- Use upstream's required Clang/LLVM 12.0.1 toolchain path for MDL JIT/codegen build support; do not add a runtime LLVM dependency unless the produced packages prove to link dynamically to conda LLVM.
+- Use the versioned conda `clang-12` executable for MDL's `clang_PATH` bitcode-generation helper, but keep package C/C++ compilation on the normal platform compiler wrappers. Do not use `clangdev ==12.0.1` as a build requirement on macOS, because that forces Clang 12 to compile against current Xcode libc++ headers.
 - On macOS, pass `LLVM_ENABLE_LIBCXX=ON` and pre-seed LLVM 12's atomics cache checks for the embedded LLVM build. Conda's macOS Clang toolchain uses libc++, LLVM 12's default `LLVM_ENABLE_LIBCXX=OFF` path runs stale libstdc++ version probes, and the old atomics probe can report a missing Linux-style `libatomic` even though Apple arm64 atomics are provided by the toolchain.
 
 OpenRV packaging decisions:
