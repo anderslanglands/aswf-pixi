@@ -196,3 +196,18 @@ OpenShadingLanguage packaging decisions:
 - Keep `osl_gpu=cpu` as the only default recipe variant. Build CUDA packages explicitly with `--variant osl_gpu=cuda` and an optional `--variant cuda_target_arch=sm_XX`; the root task uses `sm_60` as a conservative default.
 - Do not create or publish an OptiX SDK/header package. OSL 1.15.5.0 only requires OptiX headers when `OSL_USE_OPTIX=ON` and `OSL_BUILD_TESTS=ON`; package builds keep tests off, so the CUDA flavor builds the embedded CUDA/PTX path with conda CUDA packages and no redistributed OptiX payload.
 - The CPU and CUDA OSL flavors install overlapping headers, libraries, tools, and CMake metadata; keep them mutually exclusive through run constraints.
+
+MDL SDK packaging decisions:
+
+- Package MDL SDK 2026.0.0 as `mdl-sdk-lib`, `mdl-sdk-dev`, `mdl-sdk-tools`, `mdl-sdk-plugin-dds`, `mdl-sdk-plugin-openimageio`, `mdl-sdk-plugin-distiller`, `mdl-sdk-python`, and a compatibility/default `mdl-sdk` metapackage.
+- Do not split `libmdl_core` into a separate runtime package for now. Upstream installs `libmdl_core` and `libmdl_sdk` as distinct loadable modules, but they share substantial internal implementation and the useful consumer surface is simpler as one `mdl-sdk-lib` runtime.
+- The `mdl-sdk` metapackage should depend on the C++ runtime, development surface, headless tools, and standard plugins only; keep Python bindings opt-in as `mdl-sdk-python`.
+- `mdl-sdk-dev` should depend on the matching runtime, tools, and standard plugin outputs because upstream installs one CMake export set containing all of those targets.
+- Build `mdl-sdk-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
+- Keep SDK examples, CUDA examples, OpenGL/Vulkan/DXR/OptiX examples, Qt browser, Arnold plugin, AxF support, MaterialX example integration, Slang support, API documentation generation, and upstream unit tests disabled unless Anders explicitly asks for them.
+- Treat CUDA support as part of the normal SDK code-generation API surface unless a build proves a separate runtime flavor is needed. Validate the PTX backend API without requiring a CUDA driver; package CUDA example binaries separately only if Anders asks for examples.
+- Use external `openimageio-dev`/`openimageio-lib` for the `nv_openimageio` plugin. Keep the plugin separate so non-image consumers can install the SDK runtime without OpenImageIO.
+- Include `openexr-dev` as a host requirement when building the OpenImageIO plugin; upstream's MDL OpenImageIO finder separately calls `find_package(OpenEXR)`.
+- Ignore run exports from staging-only `openimageio-dev` and `openexr-dev` requirements so `mdl-sdk-lib` stays free of image I/O dependencies and only `mdl-sdk-plugin-openimageio` depends on `openimageio-lib`.
+- Pass both `PYTHON_DIR` and `python_PATH` for Python binding builds. Upstream uses `PYTHON_DIR` for Python headers/libraries and `python_PATH` for the executable.
+- Use upstream's required Clang/LLVM 12.0.1 toolchain path for MDL JIT/codegen build support; do not add a runtime LLVM dependency unless the produced packages prove to link dynamically to conda LLVM.

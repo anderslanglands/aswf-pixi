@@ -240,3 +240,19 @@ OpenShadingLanguage provides a production shading language, compiler, runtime li
 - `openimageio-format-osl`: OpenImageIO input plugin for procedural OSL images (`.osl`, `.oso`, `.oslgroup`, and `.oslbody`). Depends on the matching OSL runtime and OpenImageIO runtime.
 - `openshadinglanguage`: Default metapackage for C++ and headless tool consumers. Depends on the matching `openshadinglanguage-lib`, `openshadinglanguage-dev`, and `openshadinglanguage-tools`; Python bindings, GUI tools, and OIIO plugin are opt-in.
 - `openshadinglanguage-cuda-*` and `openimageio-format-osl-cuda`: Linux-only CUDA-enabled flavor built with `osl_gpu=cuda`. These packages install the same upstream CMake target names as the CPU flavor and are mutually exclusive with the CPU packages. They are intended for explicit local/private builds rather than the default publish path.
+
+## MDL SDK
+
+Recipe versions:
+- `2026.0.0`
+
+The NVIDIA Material Definition Language SDK provides the MDL compiler, runtime SDK APIs, image plugins, command-line tools, and Python bindings.
+
+- `mdl-sdk-lib`: Runtime loadable modules for both the full SDK (`libmdl_sdk`) and lower-level Core API (`libmdl_core`). PTX/CUDA code generation is part of this normal runtime API surface and does not use a separate CUDA library flavor.
+- `mdl-sdk-dev`: Public C++ headers and upstream CMake package files. Depends on the matching runtime, tools, and standard plugin packages because upstream exports all of those targets in one CMake target set.
+- `mdl-sdk-tools`: Headless command-line tools: `mdlc`, `mdlm`, `mdltlc`, `i18n`, and `mdl_distiller_cli`.
+- `mdl-sdk-plugin-dds`: DDS image plugin.
+- `mdl-sdk-plugin-openimageio`: OpenImageIO image plugin. Depends on the matching MDL SDK runtime and OpenImageIO runtime.
+- `mdl-sdk-plugin-distiller`: MDL distiller plugin.
+- `mdl-sdk-python`: Python bindings (`pymdlsdk` and `pymdl`), built for Python 3.10 through 3.14. Depends on the matching runtime and standard plugins.
+- `mdl-sdk`: Default metapackage for C++ and headless tool consumers. Depends on the matching runtime, development surface, tools, and standard plugins; Python bindings are opt-in.

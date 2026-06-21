@@ -1,0 +1,43 @@
+[workspace]
+name = "mdl-sdk-2026.0.0-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.mdl-sdk-lib.dependencies]
+mdl-sdk-lib = "==2026.0.0"
+
+[feature.mdl-sdk-dev.dependencies]
+mdl-sdk-dev = "==2026.0.0"
+
+[feature.mdl-sdk-tools.dependencies]
+mdl-sdk-tools = "==2026.0.0"
+
+[feature.mdl-sdk-plugin-dds.dependencies]
+mdl-sdk-plugin-dds = "==2026.0.0"
+
+[feature.mdl-sdk-plugin-openimageio.dependencies]
+mdl-sdk-plugin-openimageio = "==2026.0.0"
+
+[feature.mdl-sdk-plugin-distiller.dependencies]
+mdl-sdk-plugin-distiller = "==2026.0.0"
+
+[feature.mdl-sdk-python.dependencies]
+mdl-sdk-python = "==2026.0.0"
+
+[feature.mdl-sdk.dependencies]
+mdl-sdk = "==2026.0.0"
+
+[environments]
+mdl-sdk-lib = ["mdl-sdk-lib"]
+mdl-sdk-dev = ["mdl-sdk-dev"]
+mdl-sdk-tools = ["mdl-sdk-tools"]
+mdl-sdk-plugin-dds = ["mdl-sdk-plugin-dds"]
+mdl-sdk-plugin-openimageio = ["mdl-sdk-plugin-openimageio"]
+mdl-sdk-plugin-distiller = ["mdl-sdk-plugin-distiller"]
+mdl-sdk-python = ["mdl-sdk-python"]
+mdl-sdk = ["mdl-sdk"]

@@ -1,0 +1,505 @@
+context:
+  version: "2026.0.0"
+  build_number: 0
+
+recipe:
+  name: mdl-sdk
+  version: ${{ version }}
+
+source:
+  url: https://github.com/NVIDIA/MDL-SDK/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 5cf905e87f885eebb3873bea5ab717f48f7f2377575718fc11737be3e6b53cd5
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: mdl-sdk-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build
+
+            clang_path="${BUILD_PREFIX:-$PREFIX}/bin/clang"
+            if [ ! -x "$clang_path" ]; then
+              clang_path="$(command -v clang)"
+            fi
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -Dclang_PATH="$clang_path" \
+              -DMDL_BUILD_SDK=ON \
+              -DMDL_BUILD_SDK_EXAMPLES=OFF \
+              -DMDL_BUILD_CORE_EXAMPLES=OFF \
+              -DMDL_BUILD_ARNOLD_PLUGIN=OFF \
+              -DMDL_BUILD_DDS_PLUGIN=ON \
+              -DMDL_BUILD_OPENIMAGEIO_PLUGIN=ON \
+              -DMDL_BUILD_DOCUMENTATION=OFF \
+              -DMDL_ENABLE_UNIT_TESTS=OFF \
+              -DMDL_ENABLE_PYTHON_BINDINGS=OFF \
+              -DMDL_ENABLE_CUDA_EXAMPLES=OFF \
+              -DMDL_ENABLE_OPENGL_EXAMPLES=OFF \
+              -DMDL_ENABLE_QT_EXAMPLES=OFF \
+              -DMDL_ENABLE_VULKAN_EXAMPLES=OFF \
+              -DMDL_ENABLE_D3D12_EXAMPLES=OFF \
+              -DMDL_ENABLE_OPTIX7_EXAMPLES=OFF \
+              -DMDL_ENABLE_MATERIALX=OFF \
+              -DMDL_ENABLE_SLANG=OFF \
+              -DMDL_BUILD_WITHOUT_CUDA_DRIVER=ON \
+              -DMDL_LOG_DEPENDENCIES=OFF \
+              -DMDL_LOG_PLATFORM_INFOS=ON \
+              -B $SRC_DIR/../build \
+              -S .
+
+            cmake --build $SRC_DIR/../build --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build
+
+            set "CLANG_PATH=%BUILD_PREFIX%\Library\bin\clang.exe"
+            if not exist "%CLANG_PATH%" set "CLANG_PATH=%BUILD_PREFIX%\bin\clang.exe"
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -Dclang_PATH="%CLANG_PATH%" ^
+              -DMDL_MSVC_DYNAMIC_RUNTIME=ON ^
+              -DMDL_BUILD_SDK=ON ^
+              -DMDL_BUILD_SDK_EXAMPLES=OFF ^
+              -DMDL_BUILD_CORE_EXAMPLES=OFF ^
+              -DMDL_BUILD_ARNOLD_PLUGIN=OFF ^
+              -DMDL_BUILD_DDS_PLUGIN=ON ^
+              -DMDL_BUILD_OPENIMAGEIO_PLUGIN=ON ^
+              -DMDL_BUILD_DOCUMENTATION=OFF ^
+              -DMDL_ENABLE_UNIT_TESTS=OFF ^
+              -DMDL_ENABLE_PYTHON_BINDINGS=OFF ^
+              -DMDL_ENABLE_CUDA_EXAMPLES=OFF ^
+              -DMDL_ENABLE_OPENGL_EXAMPLES=OFF ^
+              -DMDL_ENABLE_QT_EXAMPLES=OFF ^
+              -DMDL_ENABLE_VULKAN_EXAMPLES=OFF ^
+              -DMDL_ENABLE_D3D12_EXAMPLES=OFF ^
+              -DMDL_ENABLE_OPTIX7_EXAMPLES=OFF ^
+              -DMDL_ENABLE_MATERIALX=OFF ^
+              -DMDL_ENABLE_SLANG=OFF ^
+              -DMDL_BUILD_WITHOUT_CUDA_DRIVER=ON ^
+              -DMDL_LOG_DEPENDENCIES=OFF ^
+              -DMDL_LOG_PLATFORM_INFOS=ON ^
+              -B %SRC_DIR%\..\build ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build --target install --config Release
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - clangdev ==12.0.1
+        - cmake
+        - coco
+        - ninja
+      host:
+        - libboost-devel 1.90.*
+        - openexr-dev >=3.4,<4
+        - openimageio-dev >=3.0,<4
+      ignore_run_exports:
+        from_package:
+          - openexr-dev
+          - openimageio-dev
+
+  - staging:
+      name: mdl-sdk-python-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-python
+
+            clang_path="${BUILD_PREFIX:-$PREFIX}/bin/clang"
+            if [ ! -x "$clang_path" ]; then
+              clang_path="$(command -v clang)"
+            fi
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -Dclang_PATH="$clang_path" \
+              -DPYTHON_DIR="$PREFIX" \
+              -Dpython_PATH="$PYTHON" \
+              -DMDL_BUILD_SDK=ON \
+              -DMDL_BUILD_SDK_EXAMPLES=OFF \
+              -DMDL_BUILD_CORE_EXAMPLES=OFF \
+              -DMDL_BUILD_ARNOLD_PLUGIN=OFF \
+              -DMDL_BUILD_DDS_PLUGIN=ON \
+              -DMDL_BUILD_OPENIMAGEIO_PLUGIN=ON \
+              -DMDL_BUILD_DOCUMENTATION=OFF \
+              -DMDL_ENABLE_UNIT_TESTS=OFF \
+              -DMDL_ENABLE_PYTHON_BINDINGS=ON \
+              -DMDL_ENABLE_CUDA_EXAMPLES=OFF \
+              -DMDL_ENABLE_OPENGL_EXAMPLES=OFF \
+              -DMDL_ENABLE_QT_EXAMPLES=OFF \
+              -DMDL_ENABLE_VULKAN_EXAMPLES=OFF \
+              -DMDL_ENABLE_D3D12_EXAMPLES=OFF \
+              -DMDL_ENABLE_OPTIX7_EXAMPLES=OFF \
+              -DMDL_ENABLE_MATERIALX=OFF \
+              -DMDL_ENABLE_SLANG=OFF \
+              -DMDL_BUILD_WITHOUT_CUDA_DRIVER=ON \
+              -DMDL_LOG_DEPENDENCIES=OFF \
+              -DMDL_LOG_PLATFORM_INFOS=ON \
+              -B $SRC_DIR/../build-python \
+              -S .
+
+            cmake --build $SRC_DIR/../build-python --target install
+
+            if [ -d "$PREFIX/lib/python" ]; then
+              mkdir -p "$SP_DIR"
+              mv "$PREFIX/lib/python"/pymdl.py "$SP_DIR/"
+              mv "$PREFIX/lib/python"/pymdlsdk.py "$SP_DIR/"
+              mv "$PREFIX/lib/python"/_pymdlsdk* "$SP_DIR/"
+            fi
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-python
+
+            set "CLANG_PATH=%BUILD_PREFIX%\Library\bin\clang.exe"
+            if not exist "%CLANG_PATH%" set "CLANG_PATH=%BUILD_PREFIX%\bin\clang.exe"
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -Dclang_PATH="%CLANG_PATH%" ^
+              -DPYTHON_DIR="%PREFIX%" ^
+              -Dpython_PATH="%PYTHON%" ^
+              -DMDL_MSVC_DYNAMIC_RUNTIME=ON ^
+              -DMDL_BUILD_SDK=ON ^
+              -DMDL_BUILD_SDK_EXAMPLES=OFF ^
+              -DMDL_BUILD_CORE_EXAMPLES=OFF ^
+              -DMDL_BUILD_ARNOLD_PLUGIN=OFF ^
+              -DMDL_BUILD_DDS_PLUGIN=ON ^
+              -DMDL_BUILD_OPENIMAGEIO_PLUGIN=ON ^
+              -DMDL_BUILD_DOCUMENTATION=OFF ^
+              -DMDL_ENABLE_UNIT_TESTS=OFF ^
+              -DMDL_ENABLE_PYTHON_BINDINGS=ON ^
+              -DMDL_ENABLE_CUDA_EXAMPLES=OFF ^
+              -DMDL_ENABLE_OPENGL_EXAMPLES=OFF ^
+              -DMDL_ENABLE_QT_EXAMPLES=OFF ^
+              -DMDL_ENABLE_VULKAN_EXAMPLES=OFF ^
+              -DMDL_ENABLE_D3D12_EXAMPLES=OFF ^
+              -DMDL_ENABLE_OPTIX7_EXAMPLES=OFF ^
+              -DMDL_ENABLE_MATERIALX=OFF ^
+              -DMDL_ENABLE_SLANG=OFF ^
+              -DMDL_BUILD_WITHOUT_CUDA_DRIVER=ON ^
+              -DMDL_LOG_DEPENDENCIES=OFF ^
+              -DMDL_LOG_PLATFORM_INFOS=ON ^
+              -B %SRC_DIR%\..\build-python ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-python --target install --config Release
+
+            if not exist "%SP_DIR%" mkdir "%SP_DIR%"
+            if exist "%LIBRARY_LIB%\python\pymdl.py" move /Y "%LIBRARY_LIB%\python\pymdl.py" "%SP_DIR%\pymdl.py"
+            if exist "%LIBRARY_LIB%\python\pymdlsdk.py" move /Y "%LIBRARY_LIB%\python\pymdlsdk.py" "%SP_DIR%\pymdlsdk.py"
+            if exist "%LIBRARY_LIB%\python\_pymdlsdk*.pyd" move /Y "%LIBRARY_LIB%\python\_pymdlsdk*.pyd" "%SP_DIR%"
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - clangdev ==12.0.1
+        - cmake
+        - coco
+        - ninja
+        - swig 4.2.*
+      host:
+        - libboost-devel 1.90.*
+        - numpy
+        - openexr-dev >=3.4,<4
+        - openimageio-dev >=3.0,<4
+        - python
+      ignore_run_exports:
+        from_package:
+          - openexr-dev
+          - openimageio-dev
+
+  - package:
+      name: mdl-sdk-lib
+    inherit: mdl-sdk-build
+    build:
+      files:
+        - lib/libmdl_sdk.so
+        - lib/libmdl_core.so
+        - Library/bin/libmdl_sdk.dll
+        - Library/bin/libmdl_core.dll
+    requirements:
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('mdl-sdk-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/mi/mdl_sdk.h
+              - share/mdl/mdl-config.cmake
+              - bin/mdlc
+              - lib/dds.so
+              - lib/nv_openimageio.so
+              - lib/mdl_distiller.so
+              - Library/include/mi/mdl_sdk.h
+              - Library/share/mdl/mdl-config.cmake
+              - Library/bin/mdlc.exe
+              - Library/bin/dds.dll
+              - Library/bin/nv_openimageio.dll
+              - Library/bin/mdl_distiller.dll
+      - script:
+          - if: linux
+            then:
+              - python -c "import ctypes, os; ctypes.CDLL(os.path.join(os.environ['PREFIX'], 'lib', 'libmdl_sdk.so')); ctypes.CDLL(os.path.join(os.environ['PREFIX'], 'lib', 'libmdl_core.so'))"
+          - if: osx
+            then:
+              - python -c "import ctypes, os; ctypes.CDLL(os.path.join(os.environ['PREFIX'], 'lib', 'libmdl_sdk.so')); ctypes.CDLL(os.path.join(os.environ['PREFIX'], 'lib', 'libmdl_core.so'))"
+          - if: win
+            then:
+              - python -c "import ctypes, os; ctypes.WinDLL(os.path.join(os.environ['LIBRARY_BIN'], 'libmdl_sdk.dll')); ctypes.WinDLL(os.path.join(os.environ['LIBRARY_BIN'], 'libmdl_core.dll'))"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: mdl-sdk-plugin-dds
+    inherit:
+      from: mdl-sdk-build
+      run_exports: false
+    build:
+      files:
+        - lib/dds.so
+        - Library/bin/dds.dll
+    requirements:
+      run:
+        - ${{ pin_subpackage('mdl-sdk-lib', exact=True) }}
+    tests:
+      - script:
+          - python tests/check_plugins.py dds
+        files:
+          recipe:
+            - tests/check_plugins.py
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: mdl-sdk-plugin-openimageio
+    inherit:
+      from: mdl-sdk-build
+      run_exports: false
+    build:
+      files:
+        - lib/nv_openimageio.so
+        - Library/bin/nv_openimageio.dll
+    requirements:
+      run:
+        - ${{ pin_subpackage('mdl-sdk-lib', exact=True) }}
+        - openimageio-lib >=3.0,<4
+    tests:
+      - script:
+          - python tests/check_plugins.py nv_openimageio
+        files:
+          recipe:
+            - tests/check_plugins.py
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: mdl-sdk-plugin-distiller
+    inherit:
+      from: mdl-sdk-build
+      run_exports: false
+    build:
+      files:
+        - lib/mdl_distiller.so
+        - Library/bin/mdl_distiller.dll
+    requirements:
+      run:
+        - ${{ pin_subpackage('mdl-sdk-lib', exact=True) }}
+    tests:
+      - script:
+          - python tests/check_plugins.py mdl_distiller
+        files:
+          recipe:
+            - tests/check_plugins.py
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: mdl-sdk-tools
+    inherit:
+      from: mdl-sdk-build
+      run_exports: false
+    build:
+      files:
+        - bin/i18n
+        - bin/mdlc
+        - bin/mdlm
+        - bin/mdltlc
+        - bin/mdl_distiller_cli
+        - Library/bin/i18n.exe
+        - Library/bin/mdlc.exe
+        - Library/bin/mdlm.exe
+        - Library/bin/mdltlc.exe
+        - Library/bin/mdl_distiller_cli.exe
+    requirements:
+      run:
+        - ${{ pin_subpackage('mdl-sdk-lib', exact=True) }}
+        - ${{ pin_subpackage('mdl-sdk-plugin-distiller', exact=True) }}
+    tests:
+      - script:
+          - python tests/check_tools.py
+        files:
+          recipe:
+            - tests/check_tools.py
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: mdl-sdk-dev
+    inherit: mdl-sdk-build
+    build:
+      files:
+        - include/mi/**
+        - share/mdl/**
+        - Library/include/mi/**
+        - Library/share/mdl/**
+    requirements:
+      run:
+        - ${{ pin_subpackage('mdl-sdk-lib', exact=True) }}
+        - ${{ pin_subpackage('mdl-sdk-plugin-dds', exact=True) }}
+        - ${{ pin_subpackage('mdl-sdk-plugin-openimageio', exact=True) }}
+        - ${{ pin_subpackage('mdl-sdk-plugin-distiller', exact=True) }}
+        - ${{ pin_subpackage('mdl-sdk-tools', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('mdl-sdk-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - mi/mdl_sdk.h
+            - mi/mdl/mdl_code_generators.h
+            - mi/neuraylib/imdl_backend_api.h
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/share/mdl/mdl-config.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/mdl_sdk_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_PREFIX%\share\mdl\mdl-config.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\mdl_sdk_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/mdl_sdk_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: mdl-sdk-python
+    inherit: mdl-sdk-python-build
+    build:
+      string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+      files:
+        - lib/python*/site-packages/pymdl.py
+        - lib/python*/site-packages/pymdlsdk.py
+        - lib/python*/site-packages/_pymdlsdk*
+        - Lib/site-packages/pymdl.py
+        - Lib/site-packages/pymdlsdk.py
+        - Lib/site-packages/_pymdlsdk*
+    requirements:
+      run:
+        - python
+        - ${{ pin_subpackage('mdl-sdk-lib', exact=True) }}
+        - ${{ pin_subpackage('mdl-sdk-plugin-dds', exact=True) }}
+        - ${{ pin_subpackage('mdl-sdk-plugin-openimageio', exact=True) }}
+        - ${{ pin_subpackage('mdl-sdk-plugin-distiller', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - pymdlsdk
+            - pymdl
+      - script:
+          - python tests/check_python.py
+        files:
+          recipe:
+            - tests/check_python.py
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: mdl-sdk
+    requirements:
+      run:
+        - ${{ pin_subpackage('mdl-sdk-lib', exact=True) }}
+        - ${{ pin_subpackage('mdl-sdk-dev', exact=True) }}
+        - ${{ pin_subpackage('mdl-sdk-tools', exact=True) }}
+        - ${{ pin_subpackage('mdl-sdk-plugin-dds', exact=True) }}
+        - ${{ pin_subpackage('mdl-sdk-plugin-openimageio', exact=True) }}
+        - ${{ pin_subpackage('mdl-sdk-plugin-distiller', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('mdl-sdk-lib', upper_bound='x.x') }}
+    tests:
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/share/mdl/mdl-config.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/mdl_sdk_consumer
+              - python tests/check_tools.py
+              - python tests/check_plugins.py dds nv_openimageio mdl_distiller
+          - if: win
+            then:
+              - if not exist "%LIBRARY_PREFIX%\share\mdl\mdl-config.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\mdl_sdk_consumer.exe
+              - python tests/check_tools.py
+              - python tests/check_plugins.py dds nv_openimageio mdl_distiller
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/mdl_sdk_consumer.cpp
+            - tests/check_plugins.py
+            - tests/check_tools.py
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - python
+
+about:
+  homepage: https://developer.nvidia.com/mdl-sdk
+  repository: https://github.com/NVIDIA/MDL-SDK
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  summary: NVIDIA Material Definition Language SDK
