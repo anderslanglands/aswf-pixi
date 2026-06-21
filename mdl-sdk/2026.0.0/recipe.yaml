@@ -22,6 +22,22 @@ outputs:
           then: |
             cmake -E rm -rf $SRC_DIR/../build
 
+            resolve_executable() {
+              candidate="$1"
+              if [ -z "$candidate" ]; then
+                return 1
+              fi
+              if [ -x "$candidate" ]; then
+                printf '%s\n' "$candidate"
+                return 0
+              fi
+              if command -v "$candidate" >/dev/null 2>&1; then
+                command -v "$candidate"
+                return 0
+              fi
+              return 1
+            }
+
             tool_prefix="${BUILD_PREFIX:-$PREFIX}"
             is_darwin=0
             if [ "$(uname)" = "Darwin" ]; then
@@ -29,23 +45,33 @@ outputs:
             fi
 
             if [ "$is_darwin" -eq 1 ]; then
-              clang_path="$tool_prefix/bin/clang"
-            else
-              clang_path="$tool_prefix/bin/clang-12"
-              if [ ! -x "$clang_path" ]; then
-                clang_path="$tool_prefix/bin/clang"
+              clang_path="$(resolve_executable "$tool_prefix/bin/clang" || true)"
+              if [ -z "$clang_path" ]; then
+                clang_path="$(resolve_executable "${CLANG:-}" || true)"
               fi
-            fi
-            if [ ! -x "$clang_path" ] && [ "$is_darwin" -eq 0 ]; then
-              clang_path="$(command -v clang-12 2>/dev/null || true)"
-            fi
-            if [ -z "$clang_path" ] || [ ! -x "$clang_path" ]; then
-              clang_path="$(command -v clang 2>/dev/null || true)"
+              if [ -z "$clang_path" ]; then
+                clang_path="$(resolve_executable "${CC:-}" || true)"
+              fi
+              if [ -z "$clang_path" ] && [ -n "${CONDA_TOOLCHAIN_HOST:-}" ]; then
+                clang_path="$(resolve_executable "$tool_prefix/bin/${CONDA_TOOLCHAIN_HOST}-clang" || true)"
+              fi
+            else
+              clang_path="$(resolve_executable "$tool_prefix/bin/clang-12" || true)"
+              if [ -z "$clang_path" ]; then
+                clang_path="$(resolve_executable clang-12 || true)"
+              fi
+              if [ -z "$clang_path" ]; then
+                clang_path="$(resolve_executable "$tool_prefix/bin/clang" || true)"
+              fi
+              if [ -z "$clang_path" ]; then
+                clang_path="$(resolve_executable clang || true)"
+              fi
             fi
             if [ -z "$clang_path" ]; then
               echo "clang or clang-12 was not found" >&2
               exit 1
             fi
+            echo "Using clang_PATH=$clang_path"
 
             llvm_darwin_args=""
             if [ "$is_darwin" -eq 1 ]; then
@@ -135,6 +161,8 @@ outputs:
       build:
         - ${{ compiler('c') }}
         - ${{ compiler('cxx') }}
+        - if: osx
+          then: clang 22.1.*
         - if: not osx
           then: clang-12 ==12.0.1
         - cmake

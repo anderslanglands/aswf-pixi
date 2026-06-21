@@ -95,6 +95,9 @@ add_library(_pymdlsdk MODULE
 )
 
 target_compile_features(_pymdlsdk PRIVATE cxx_std_17)
+if(MSVC)
+    target_compile_options(_pymdlsdk PRIVATE /bigobj)
+endif()
 target_include_directories(_pymdlsdk PRIVATE
     "${_binding_dir}"
     "${_include_dir}"
