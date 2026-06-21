@@ -1,0 +1,13 @@
+diff --git a/cmake/dependencies/glew.cmake b/cmake/dependencies/glew.cmake
+index 7b665a4..e1fbe39 100644
+--- a/cmake/dependencies/glew.cmake
++++ b/cmake/dependencies/glew.cmake
+@@ -36,7 +36,7 @@ EXTERNALPROJECT_ADD(
+   URL_MD5 ${_download_hash}
+   DOWNLOAD_NAME glew-glew-${_version}.tar.gz
+   DOWNLOAD_DIR ${RV_DEPS_DOWNLOAD_DIR}
+-  CONFIGURE_COMMAND cd auto && ${_make_command} && cd .. && ${_make_command}
++  CONFIGURE_COMMAND cd auto && ${_make_command} PYTHON=$ENV{BUILD_PREFIX}/bin/python && cd .. && ${_make_command}
+   BUILD_COMMAND ${_make_command} -j${_cpu_count} GLEW_DEST=${_install_dir}
+   INSTALL_COMMAND ${_make_command} install LIBDIR=${_lib_dir} GLEW_DEST=${_install_dir}
+   BUILD_IN_SOURCE TRUE

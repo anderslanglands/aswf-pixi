@@ -1,0 +1,30 @@
+diff --git a/src/build/test_python.py b/src/build/test_python.py
+--- a/src/build/test_python.py
++++ b/src/build/test_python.py
+@@ -54,16 +54,6 @@ def test_python_distribution(python_home: str, variant: str) -> None:
+         # Note: OpenTimelineIO is installed via requirements.txt for all platforms and build types.
+         # The git URL in requirements.txt ensures it builds from source with proper linkage.
+ 
+-        wheel_install_arg = python_interpreter_args + [
+-            "-m",
+-            "pip",
+-            "install",
+-            "cryptography",
+-        ]
+-
+-        print(f"Validating that we can install a wheel with {wheel_install_arg}")
+-        subprocess.run(wheel_install_arg).check_returncode()
+-
+         python_validation_args = python_interpreter_args + [
+             "-c",
+             "\n".join(
+@@ -78,6 +68,9 @@ def test_python_distribution(python_home: str, variant: str) -> None:
+                     "import certifi",
+                     # Make sure the SSL_CERT_FILE variable is set
+                     "import os",
++                    # Make sure wheel-installed native runtime modules are available after relocation.
++                    "import cryptography",
++                    "import cffi",
+                     "assert certifi.where() == os.environ['SSL_CERT_FILE']",
+                     # Make sure ssl is correctly built and linked
+                     "import ssl",

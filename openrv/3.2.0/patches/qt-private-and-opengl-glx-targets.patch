@@ -1,0 +1,35 @@
+--- a/src/lib/app/RvCommon/CMakeLists.txt
++++ b/src/lib/app/RvCommon/CMakeLists.txt
+@@ -435,7 +435,7 @@
+     )
+   ELSEIF(RV_VFX_PLATFORM STRGREATER_EQUAL CY2024)
+     SET(_rvcommon_qt_components
+-        Gui
++        Gui GuiPrivate
+     )
+     SET(_rvcommon_link_libraries
+         Qt::GuiPrivate
+--- a/src/lib/graphics/TwkGLFFBO/CMakeLists.txt
++++ b/src/lib/graphics/TwkGLFFBO/CMakeLists.txt
+@@ -41,7 +41,11 @@
+     PRIVATE glew
+   )
+ ELSE()
+-  FIND_PACKAGE(OpenGL REQUIRED)
++  IF(RV_TARGET_LINUX)
++    FIND_PACKAGE(OpenGL REQUIRED COMPONENTS OpenGL GLX)
++  ELSE()
++    FIND_PACKAGE(OpenGL REQUIRED)
++  ENDIF()
+   TARGET_LINK_LIBRARIES(
+     ${_target}
+     PRIVATE OpenGL::GL
+@@ -52,7 +56,7 @@
+   IF(RV_TARGET_LINUX)
+     TARGET_LINK_LIBRARIES(
+       ${_target}
+-      PRIVATE OpenGL::GLX X11
++      PRIVATE ${OPENGL_glx_LIBRARY} X11
+     )
+   ENDIF()
+ ENDIF()

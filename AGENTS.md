@@ -212,3 +212,13 @@ MDL SDK packaging decisions:
 - Build `mdl-sdk-python` with the recipe-side standalone SWIG extension helper instead of enabling upstream `MDL_ENABLE_PYTHON_BINDINGS` in a full SDK build for every Python ABI. Keep Python staging requirements limited to Python, SWIG, CMake/Ninja, and compilers; put `numpy` on the final `mdl-sdk-python` runtime dependency because `pymdl.py` imports it.
 - Use upstream's required Clang/LLVM 12.0.1 toolchain path for MDL JIT/codegen build support; do not add a runtime LLVM dependency unless the produced packages prove to link dynamically to conda LLVM.
 - On macOS, pass `LLVM_ENABLE_LIBCXX=ON` and pre-seed LLVM 12's atomics cache checks for the embedded LLVM build. Conda's macOS Clang toolchain uses libc++, LLVM 12's default `LLVM_ENABLE_LIBCXX=OFF` path runs stale libstdc++ version probes, and the old atomics probe can report a missing Linux-style `libatomic` even though Apple arm64 atomics are provided by the toolchain.
+
+OpenRV packaging decisions:
+
+- Package OpenRV 3.2.0 as a single `openrv` application package for now; do not split development/runtime subpackages unless a concrete downstream need appears.
+- Use the OpenRV v3.2.0 git source with submodules rather than the GitHub release archive, because the archive does not include required submodule contents under `src/pub` and `src/lib/files/WFObj`.
+- Build against the CY2026 dependency set, updated to the newer versions used in this repository where OpenRV has matching support: Imath 3.2.2, OpenEXR 3.4.13, OpenColorIO 2.5.2, OpenImageIO 3.1.14.1, FFmpeg 8, Qt 6.10.2, and PySide 6.10.2.
+- Use conda-forge `qt6-main` and `qt6-webengine` 6.10.2 as external build/runtime dependencies. Do not copy Qt into the staged OpenRV app package.
+- Do not build `osx-64` for OpenRV 3.2.0 while using Qt WebEngine 6.10.2, because conda-forge does not publish that Qt WebEngine version for Intel macOS.
+- Omit proprietary/optional SDK integrations initially when their SDKs are unavailable, including Blackmagic DeckLink, NDI, and Apple ProRes SDK support. Keep AJA enabled because upstream builds it from the open libajantv2 source.
+- Keep package tests headless: validate launcher/app-tree layout, external Qt/WebEngine path assumptions, and `rv -version`; defer GUI launch smoke tests until there is a reliable headless GUI strategy.

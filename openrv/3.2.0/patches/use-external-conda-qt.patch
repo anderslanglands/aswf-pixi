@@ -1,0 +1,56 @@
+--- a/cmake/dependencies/qt6.cmake
++++ b/cmake/dependencies/qt6.cmake
+@@ -11,6 +11,8 @@
+ SET(_target
+     RV_DEPS_QT
+ )
++OPTION(RV_DEPS_QT_COPY "Copy Qt runtime files into RV's staged application tree." ON)
++
+ IF(NOT RV_DEPS_QT_LOCATION
+    OR RV_DEPS_QT_LOCATION STREQUAL ""
+ )
+@@ -160,12 +162,28 @@
+ SET(_qt_copy_message
+     "Copying Qt into ${RV_STAGE_ROOT_DIR}"
+ )
+-MESSAGE(STATUS "${_qt_copy_message}")
+ 
+ SET(RV_DEPS_QT_VERSION
+     ${Qt6Core_VERSION}
+     CACHE STRING "Qt Version String"
+ )
++
++# Qt5: OpenGLWidgets is in component Widgets Qt6: OpenGLWidgets is in component OpenGLWidgets
++SET(QT6_QOPENGLWIDGET_COMPONENT
++    "OpenGLWidgets"
++    CACHE STRING "Qt QOpenGLWidget component name"
++)
++SET(QT6_QOPENGLWIDGET_TARGET
++    "Qt6::OpenGLWidgets"
++    CACHE STRING "Qt QOpenGLWidget target name"
++)
++
++IF(NOT RV_DEPS_QT_COPY)
++  MESSAGE(STATUS "Using external Qt runtime from ${RV_DEPS_QT_LOCATION}; skipping Qt copy into ${RV_STAGE_ROOT_DIR}")
++  RETURN()
++ENDIF()
++
++MESSAGE(STATUS "${_qt_copy_message}")
+ 
+ # Common to both Mac and Linux platforms
+ IF(RV_TARGET_DARWIN
+@@ -366,14 +384,4 @@
+   )
+ ENDIF()
+ 
+-# Qt5: OpenGLWidgets is in component Widgets Qt6: OpenGLWidgets is in component OpenGLWidgets
+-SET(QT6_QOPENGLWIDGET_COMPONENT
+-    "OpenGLWidgets"
+-    CACHE STRING "Qt QOpenGLWidget component name"
+-)
+-SET(QT6_QOPENGLWIDGET_TARGET
+-    "Qt6::OpenGLWidgets"
+-    CACHE STRING "Qt QOpenGLWidget target name"
+-)
+-
+ MESSAGE(STATUS "${_qt_copy_message} -- DONE")

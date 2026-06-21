@@ -1,0 +1,61 @@
+diff --git i/cmake/dependencies/boost.cmake w/cmake/dependencies/boost.cmake
+index e1929cb..e6528af 100644
+--- i/cmake/dependencies/boost.cmake
++++ w/cmake/dependencies/boost.cmake
+@@ -160,6 +160,40 @@ LIST(
+ SET(__boost_arch__
+     x86
+ )
++SET(_boost_toolset
++    ${_toolset}
++)
++SET(_boost_configure_command
++    ${_bootstrap_command} --with-toolset=${_toolset} --with-python=${_boost_python_bin}
++)
++IF(RV_TARGET_LINUX
++   AND CMAKE_CXX_COMPILER
++)
++  SET(_boost_toolset
++      gcc-conda
++  )
++  SET(_boost_configure_script
++      ${CMAKE_CURRENT_BINARY_DIR}/${_target}_configure.cmake
++  )
++  SET(_boost_configure_script_content
++      [=[
++set(ENV{CC} "@CMAKE_C_COMPILER@")
++set(ENV{CXX} "@CMAKE_CXX_COMPILER@")
++execute_process(
++  COMMAND "@_bootstrap_command@" --with-toolset=gcc --with-python="@_boost_python_bin@"
++  WORKING_DIRECTORY "@RV_DEPS_BASE_DIR@/@_target@/src"
++  RESULT_VARIABLE _boost_bootstrap_result
++)
++if(NOT _boost_bootstrap_result EQUAL 0)
++  message(FATAL_ERROR "Boost bootstrap failed")
++endif()
++file(APPEND "@RV_DEPS_BASE_DIR@/@_target@/src/project-config.jam" "\nusing gcc : conda : @CMAKE_CXX_COMPILER@ ;\n")
++]=]
++  )
++  STRING(CONFIGURE "${_boost_configure_script_content}" _boost_configure_script_content @ONLY)
++  FILE(WRITE ${_boost_configure_script} "${_boost_configure_script_content}")
++  SET(_boost_configure_command ${CMAKE_COMMAND} -P ${_boost_configure_script})
++ENDIF()
+ IF(APPLE)
+   IF(RV_TARGET_APPLE_ARM64)
+     SET(__boost_arch__
+@@ -178,12 +212,12 @@ EXTERNALPROJECT_ADD(
+   INSTALL_DIR ${_install_dir}
+   URL ${_download_url}
+   URL_MD5 ${_download_hash}
+-  CONFIGURE_COMMAND ${_bootstrap_command} --with-toolset=${_toolset} --with-python=${_boost_python_bin}
++  CONFIGURE_COMMAND ${_boost_configure_command}
+   BUILD_COMMAND
+     # Ref.: https://www.boost.org/doc/libs/1_70_0/tools/build/doc/html/index.html#bbv2.builtin.features.cflags Ref.:
+     # https://www.boost.org/doc/libs/1_76_0/tools/build/doc/html/index.html#bbv2.builtin.features.cflags
+-    ./b2 -a -q toolset=${_toolset} cxxstd=${RV_CPP_STANDARD} variant=${_boost_variant} link=shared threading=multi architecture=${__boost_arch__}
+-    address-model=64 ${_boost_with_list} ${_boost_b2_options} -j${_cpu_count} install --prefix=${_install_dir}
++    ./b2 -a -q toolset=${_boost_toolset} cxxstd=${RV_CPP_STANDARD} variant=${_boost_variant} link=shared threading=multi architecture=${__boost_arch__}
++    address-model=64 ${_boost_with_list} ${_boost_b2_options} cxxflags=-fPIC -j${_cpu_count} install --prefix=${_install_dir}
+   INSTALL_COMMAND echo "Boost was both built and installed in the build stage"
+   BUILD_IN_SOURCE TRUE
+   BUILD_ALWAYS FALSE

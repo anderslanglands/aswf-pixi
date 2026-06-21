@@ -67,3 +67,7 @@ build-mdl-sdk-2026-0-0 = "rattler-build build --recipe mdl-sdk/2026.0.0/recipe.y
 build-mdl-sdk = { depends-on = ["build-mdl-sdk-2026-0-0"] }
 upload-mdl-sdk-2026-0-0-test = "anaconda upload --user anderslanglands --label test output/*/mdl-sdk-lib-2026.0.0-*.conda output/*/mdl-sdk-dev-2026.0.0-*.conda output/*/mdl-sdk-tools-2026.0.0-*.conda output/*/mdl-sdk-plugin-dds-2026.0.0-*.conda output/*/mdl-sdk-plugin-openimageio-2026.0.0-*.conda output/*/mdl-sdk-plugin-distiller-2026.0.0-*.conda output/*/mdl-sdk-python-2026.0.0-*.conda output/*/mdl-sdk-2026.0.0-*.conda"
 upload-mdl-sdk-2026-0-0 = "anaconda upload --user anderslanglands output/*/mdl-sdk-lib-2026.0.0-*.conda output/*/mdl-sdk-dev-2026.0.0-*.conda output/*/mdl-sdk-tools-2026.0.0-*.conda output/*/mdl-sdk-plugin-dds-2026.0.0-*.conda output/*/mdl-sdk-plugin-openimageio-2026.0.0-*.conda output/*/mdl-sdk-plugin-distiller-2026.0.0-*.conda output/*/mdl-sdk-python-2026.0.0-*.conda output/*/mdl-sdk-2026.0.0-*.conda"
+build-openrv-3-2-0 = "rattler-build build --recipe openrv/3.2.0/recipe.yaml --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native"
+build-openrv = { depends-on = ["build-openrv-3-2-0"] }
+upload-openrv-3-2-0-test = "anaconda upload --user anderslanglands --label test output/*/openrv-3.2.0-*.conda"
+upload-openrv-3-2-0 = "anaconda upload --user anderslanglands output/*/openrv-3.2.0-*.conda"

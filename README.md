@@ -256,3 +256,12 @@ The NVIDIA Material Definition Language SDK provides the MDL compiler, runtime S
 - `mdl-sdk-plugin-distiller`: MDL distiller plugin.
 - `mdl-sdk-python`: Python bindings (`pymdlsdk` and `pymdl`), built for Python 3.10 through 3.14. Depends on the matching runtime and standard plugins.
 - `mdl-sdk`: Default metapackage for C++ and headless tool consumers. Depends on the matching runtime, development surface, tools, and standard plugins; Python bindings are opt-in.
+
+## OpenRV
+
+Recipe versions:
+- `3.2.0`
+
+OpenRV is an image and sequence playback, review, and inspection application for production workflows.
+
+- `openrv`: Application package installing the staged OpenRV app under `opt/openrv` with a `rv` launcher on PATH. It uses conda-forge Qt 6 and Qt WebEngine 6.10.2 at runtime instead of bundling Qt into the package.

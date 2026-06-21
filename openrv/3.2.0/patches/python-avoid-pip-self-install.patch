@@ -1,0 +1,22 @@
+diff --git a/cmake/dependencies/python3.cmake b/cmake/dependencies/python3.cmake
+--- a/cmake/dependencies/python3.cmake
++++ b/cmake/dependencies/python3.cmake
+@@ -285,7 +285,6 @@ ENDIF()
+ # Build dependencies that must be installed FIRST before building other packages. These are installed from wheels in a separate pip command to ensure they're
+ # available when packages like PyOpenGL_accelerate need Cython to compile .pyx files.
+ SET(RV_PYTHON_BUILD_DEPS
+-    "pip" # Package installer (pure Python)
+     "setuptools" # Build system (pure Python)
+     "wheel" # Wheel format support (pure Python)
+     "Cython" # Build tool - MUST be installed before packages with .pyx files
+diff --git a/src/build/requirements.txt.in b/src/build/requirements.txt.in
+--- a/src/build/requirements.txt.in
++++ b/src/build/requirements.txt.in
+@@ -6,7 +6,6 @@
+ #       Pure Python packages and build tools safe to install from wheels are listed in RV_PYTHON_WHEEL_SAFE in python3.cmake.
+ #       This approach ensures safety by default: new packages will be built from source unless explicitly marked as wheel-safe.
+ 
+-pip==24.0               # License: MIT License (MIT)
+ setuptools==69.5.1      # License: MIT License
+ wheel==0.43.0           # License: MIT License (MIT)
+ numpy==@_numpy_version@ # License: BSD License (BSD-3-Clause) - Required by PySide6
