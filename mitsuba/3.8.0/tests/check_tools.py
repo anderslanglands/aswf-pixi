@@ -1,4 +1,6 @@
+import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -33,6 +35,24 @@ SCENE_XML = """<scene version="3.0.0">
 """
 
 
+def configure_drjit_llvm_path() -> None:
+    if "DRJIT_LIBLLVM_PATH" in os.environ:
+        return
+
+    prefix = Path(sys.prefix)
+    candidates = [
+        prefix / "lib" / "libLLVM-22.so",
+        prefix / "lib" / "libLLVM.so",
+        prefix / "Library" / "bin" / "LLVM-C.dll",
+        prefix / "Library" / "bin" / "LLVM.dll",
+        prefix / "lib" / "libLLVM.dylib",
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            os.environ["DRJIT_LIBLLVM_PATH"] = str(candidate)
+            return
+
+
 def run_checked(command: list[str]) -> subprocess.CompletedProcess[str]:
     result = subprocess.run(
         command,
@@ -49,6 +69,8 @@ def run_checked(command: list[str]) -> subprocess.CompletedProcess[str]:
 
 
 def main() -> None:
+    configure_drjit_llvm_path()
+
     help_result = run_checked(["mitsuba", "--help"])
     if "Mitsuba" not in help_result.stdout:
         raise SystemExit("mitsuba --help did not print the expected help text")
@@ -58,7 +80,7 @@ def main() -> None:
         scene = tmp / "scene.xml"
         output = tmp / "render.exr"
         scene.write_text(SCENE_XML, encoding="utf-8")
-        run_checked(["mitsuba", "-m", "scalar_rgb", "-o", str(output), str(scene)])
+        run_checked(["mitsuba", "-m", "llvm_ad_rgb", "-o", str(output), str(scene)])
         if not output.is_file() or output.stat().st_size == 0:
             raise SystemExit("mitsuba CLI did not produce a non-empty render output")
 

@@ -74,6 +74,21 @@ outputs:
                 unset DRJIT_LIBLLVM_PATH
             fi
             EOF
+            cat > "$PREFIX/bin/mitsuba" <<"EOF"
+            #!/bin/sh
+            set -e
+            _this_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+            _prefix=$(CDPATH= cd -- "$_this_dir/.." && pwd)
+            if [ -z "${DRJIT_LIBLLVM_PATH+x}" ]; then
+                if [ -f "$_prefix/lib/libLLVM-${{ llvm_major }}.so" ]; then
+                    export DRJIT_LIBLLVM_PATH="$_prefix/lib/libLLVM-${{ llvm_major }}.so"
+                elif [ -f "$_prefix/lib/libLLVM.so" ]; then
+                    export DRJIT_LIBLLVM_PATH="$_prefix/lib/libLLVM.so"
+                fi
+            fi
+            exec "$_prefix/bin/python" -c 'import sys; from mitsuba.cli import _main; sys.argv[0] = "mitsuba"; raise SystemExit(_main())' "$@"
+            EOF
+            chmod +x "$PREFIX/bin/mitsuba"
           else: |
             set CMAKE_GENERATOR=Ninja
             python -m pip install ./ext/nanobind ^

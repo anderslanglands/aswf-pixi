@@ -1,4 +1,7 @@
 import importlib
+import os
+import sys
+from pathlib import Path
 
 import drjit as dr
 import mitsuba as mi
@@ -21,6 +24,24 @@ EXPECTED_VARIANTS = {
 }
 
 
+def configure_drjit_llvm_path() -> None:
+    if "DRJIT_LIBLLVM_PATH" in os.environ:
+        return
+
+    prefix = Path(sys.prefix)
+    candidates = [
+        prefix / "lib" / "libLLVM-22.so",
+        prefix / "lib" / "libLLVM.so",
+        prefix / "Library" / "bin" / "LLVM-C.dll",
+        prefix / "Library" / "bin" / "LLVM.dll",
+        prefix / "lib" / "libLLVM.dylib",
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            os.environ["DRJIT_LIBLLVM_PATH"] = str(candidate)
+            return
+
+
 def make_tiny_cornell_box() -> dict:
     scene_dict = mi.cornell_box()
     scene_dict["integrator"]["max_depth"] = 2
@@ -31,6 +52,8 @@ def make_tiny_cornell_box() -> dict:
 
 
 def main() -> None:
+    configure_drjit_llvm_path()
+
     config = importlib.import_module("mitsuba.config")
     built_variants = set(config.MI_VARIANTS)
     missing = EXPECTED_VARIANTS - built_variants
