@@ -214,6 +214,29 @@ MDL SDK packaging decisions:
 - On Windows, compile the generated SWIG Python binding with MSVC `/bigobj` because the generated wrapper exceeds the default COFF section limit.
 - On macOS, pass `LLVM_ENABLE_LIBCXX=ON` and pre-seed LLVM 12's atomics cache checks for the embedded LLVM build. Conda's macOS Clang toolchain uses libc++, LLVM 12's default `LLVM_ENABLE_LIBCXX=OFF` path runs stale libstdc++ version probes, and the old atomics probe can report a missing Linux-style `libatomic` even though Apple arm64 atomics are provided by the toolchain.
 
+Mitsuba packaging decisions:
+
+- Package Mitsuba 3.8.0 as `mitsuba-python`, `mitsuba-tools`, and a compatibility/default `mitsuba` metapackage.
+- The `mitsuba` metapackage should depend on the Python package and CLI wrapper only; do not create `mitsuba-lib` or `mitsuba-dev` in the first pass because upstream's supported packaging path is Python-first and does not install CMake package metadata.
+- Build `mitsuba-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
+- Build from the `v3.8.0` git commit with submodules instead of the GitHub release archive, because Mitsuba requires vendored submodules and `resources/data` during the build. Pin the peeled tag commit rather than the annotated tag name for rattler-build source checkout stability.
+- Build and package the bundled upstream `drjit` 1.3.1 submodule as part of `mitsuba-python` instead of depending on conda-forge `drjit`, because the conda-forge `drjit` 1.3.1 headers currently differ from the upstream tag used by Mitsuba 3.8.0. Keep a run constraint excluding external `drjit` to avoid top-level Python package file overlap.
+- Use bundled `nanobind` 2.11.0 from Mitsuba as a build tool for the scikit-build package, then remove it from the final environment. This keeps the nanobind ABI aligned with the bundled Dr.Jit extension modules.
+- Keep the upstream PyPI variant set enabled by passing `MI_DEFAULT_VARIANTS`: scalar RGB/spectral, LLVM AD mono/RGB/spectral, CUDA AD mono/RGB/spectral, and their upstream polarized variants.
+- Treat CUDA/OptiX variants as part of the default Python package for now. They dynamically load CUDA/OptiX through Dr.Jit at runtime and should not introduce a packaged OptiX SDK/header dependency.
+- The scikit-build path still builds upstream's vendored Embree, OpenEXR, libpng, libjpeg, pugixml, asmjit, and rgb2spec components inside the package; discuss any future unbundling separately.
+
+pbrt packaging decisions:
+
+- Package pbrt 4.0.0 as a single `pbrt` CPU-only application/tool package for now.
+- Use a pinned git commit from `mmp/pbrt-v4` with submodules instead of a tag archive, because upstream does not provide a `4.0.0`/`v4.0.0` tag or GitHub release.
+- Install the command-line tools `pbrt`, `imgtool`, `pspec`, `plytool`, and `cyhair2pbrt`.
+- Do not create `pbrt-lib` or `pbrt-dev` in the first pass because upstream installs only a static internal `pbrt_lib` and does not install headers or CMake package metadata for downstream consumers.
+- Keep CUDA/OptiX GPU support disabled until Anders explicitly asks for a GPU flavor; upstream requires CUDA plus an external OptiX SDK path.
+- Disable `PBRT_BUILD_NATIVE_EXECUTABLE` for distributable packages so CI runner CPU flags are not baked into published binaries.
+- Build Linux packages with GLFW's X11 backend only; keep Wayland disabled unless Anders asks for Wayland runtime support.
+- Use external `openexr-dev`/`openexr-lib` and zlib where upstream CMake supports them; keep the rest of upstream's required `src/ext` submodules vendored for now.
+
 OpenRV packaging decisions:
 
 - Package OpenRV 3.2.0 as a single `openrv` application package for now; do not split development/runtime subpackages unless a concrete downstream need appears.

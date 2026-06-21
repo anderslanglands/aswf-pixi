@@ -1,0 +1,124 @@
+context:
+  version: "4.0.0"
+  build_number: 0
+  upstream_rev: "5f7a606806a4ac7b939131ded9d7a30ebd02416e"
+
+package:
+  name: pbrt
+  version: ${{ version }}
+
+source:
+  git: https://github.com/mmp/pbrt-v4.git
+  rev: ${{ upstream_rev }}
+  submodules: true
+
+build:
+  number: ${{ build_number }}
+  files:
+    - bin/pbrt
+    - bin/imgtool
+    - bin/pspec
+    - bin/plytool
+    - bin/cyhair2pbrt
+    - Library/bin/pbrt.exe
+    - Library/bin/imgtool.exe
+    - Library/bin/pspec.exe
+    - Library/bin/plytool.exe
+    - Library/bin/cyhair2pbrt.exe
+  script:
+    - if: unix
+      then: |
+        cmake -E rm -rf "$SRC_DIR/../build"
+
+        glfw_args=()
+        if [ "$(uname -s)" = "Linux" ]; then
+          glfw_args+=(
+            -DGLFW_BUILD_WAYLAND=OFF
+            -DGLFW_BUILD_X11=ON
+          )
+        fi
+
+        cmake $CMAKE_ARGS \
+          -GNinja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+          -DCMAKE_INSTALL_LIBDIR=lib \
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+          -DPBRT_BUILD_NATIVE_EXECUTABLE=OFF \
+          -DPBRT_OPTIX_PATH= \
+          -DPBRT_NVML=OFF \
+          -DPBRT_NVTX=OFF \
+          "${glfw_args[@]}" \
+          -B "$SRC_DIR/../build" \
+          -S .
+
+        cmake --build "$SRC_DIR/../build" --target install --parallel "${CPU_COUNT:-2}"
+      else: |
+        cmake -E rm -rf %SRC_DIR%\..\build
+
+        cmake %CMAKE_ARGS% ^
+          -GNinja ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+          -DCMAKE_INSTALL_LIBDIR=lib ^
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+          -DPBRT_BUILD_NATIVE_EXECUTABLE=OFF ^
+          -DPBRT_OPTIX_PATH= ^
+          -DPBRT_NVML=OFF ^
+          -DPBRT_NVTX=OFF ^
+          -B %SRC_DIR%\..\build ^
+          -S .
+
+        cmake --build %SRC_DIR%\..\build --target install --config Release --parallel %CPU_COUNT%
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - git
+    - ninja
+  host:
+    - openexr-dev 3.4.*
+    - zlib
+    - if: linux
+      then:
+        - libgl-devel
+        - xorg-libx11
+        - xorg-libxcursor
+        - xorg-libxext
+        - xorg-libxi
+        - xorg-libxinerama
+        - xorg-libxrandr
+        - xorg-libxxf86vm
+        - xorg-xorgproto
+  run:
+    - openexr-lib 3.4.*
+    - zlib
+    - if: linux
+      then:
+        - libgl-devel
+        - xorg-libx11
+        - xorg-libxcursor
+        - xorg-libxext
+        - xorg-libxi
+        - xorg-libxinerama
+        - xorg-libxrandr
+        - xorg-libxxf86vm
+
+tests:
+  - script:
+      - python tests/check_tools.py
+    files:
+      recipe:
+        - tests/check_tools.py
+    requirements:
+      run:
+        - python
+
+about:
+  homepage: https://pbrt.org
+  repository: https://github.com/mmp/pbrt-v4
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: Physically based rendering system described by the PBRT book.

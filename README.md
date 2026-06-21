@@ -257,6 +257,26 @@ The NVIDIA Material Definition Language SDK provides the MDL compiler, runtime S
 - `mdl-sdk-python`: Python bindings (`pymdlsdk` and `pymdl`), built for Python 3.10 through 3.14. Depends on the matching runtime and standard plugins.
 - `mdl-sdk`: Default metapackage for C++ and headless tool consumers. Depends on the matching runtime, development surface, tools, and standard plugins; Python bindings are opt-in.
 
+## Mitsuba
+
+Recipe versions:
+- `3.8.0`
+
+Mitsuba 3 is a retargetable forward and inverse renderer with scalar, LLVM, and CUDA/OptiX JIT variants.
+
+- `mitsuba-python`: Python-first Mitsuba package built for Python 3.10 through 3.14. It builds and vendors the matching upstream `drjit` 1.3.1 submodule, uses bundled `nanobind` 2.11.0 build tooling from Mitsuba, and includes the upstream PyPI variant set: scalar RGB/spectral, LLVM AD mono/RGB/spectral, CUDA AD mono/RGB/spectral, and polarized variants where upstream ships them.
+- `mitsuba-tools`: Console entry point package exposing `mitsuba` on PATH. Depends on the matching `mitsuba-python` package.
+- `mitsuba`: Default metapackage depending on `mitsuba-python` and `mitsuba-tools`. A C++ `-lib`/`-dev` split is deferred because upstream's supported packaging path is Python-first and does not install CMake package metadata.
+
+## pbrt
+
+Recipe versions:
+- `4.0.0`
+
+pbrt is the physically based rendering system described by the PBRT book.
+
+- `pbrt`: CPU-only command-line application package installing `pbrt`, `imgtool`, `pspec`, `plytool`, and `cyhair2pbrt`. CUDA/OptiX GPU support is deferred to a separate flavor decision, and a C++ `-lib`/`-dev` split is deferred because upstream does not install supported downstream development metadata.
+
 ## OpenRV
 
 Recipe versions:
