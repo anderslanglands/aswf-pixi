@@ -23,23 +23,32 @@ outputs:
             cmake -E rm -rf $SRC_DIR/../build
 
             tool_prefix="${BUILD_PREFIX:-$PREFIX}"
-            clang_path="$tool_prefix/bin/clang-12"
-            if [ ! -x "$clang_path" ]; then
-              clang_path="$tool_prefix/bin/clang"
+            is_darwin=0
+            if [ "$(uname)" = "Darwin" ]; then
+              is_darwin=1
             fi
-            if [ ! -x "$clang_path" ]; then
+
+            if [ "$is_darwin" -eq 1 ]; then
+              clang_path="$tool_prefix/bin/clang"
+            else
+              clang_path="$tool_prefix/bin/clang-12"
+              if [ ! -x "$clang_path" ]; then
+                clang_path="$tool_prefix/bin/clang"
+              fi
+            fi
+            if [ ! -x "$clang_path" ] && [ "$is_darwin" -eq 0 ]; then
               clang_path="$(command -v clang-12 2>/dev/null || true)"
             fi
-            if [ -z "$clang_path" ]; then
+            if [ -z "$clang_path" ] || [ ! -x "$clang_path" ]; then
               clang_path="$(command -v clang 2>/dev/null || true)"
             fi
             if [ -z "$clang_path" ]; then
-              echo "clang-12 or clang was not found" >&2
+              echo "clang or clang-12 was not found" >&2
               exit 1
             fi
 
             llvm_darwin_args=""
-            if [ "$(uname)" = "Darwin" ]; then
+            if [ "$is_darwin" -eq 1 ]; then
               llvm_darwin_args="-DLLVM_ENABLE_LIBCXX=ON -DHAVE_CXX_ATOMICS_WITHOUT_LIB=ON -DHAVE_CXX_ATOMICS64_WITHOUT_LIB=ON -DLLVM_HAS_ATOMICS=ON"
             fi
 
@@ -126,7 +135,8 @@ outputs:
       build:
         - ${{ compiler('c') }}
         - ${{ compiler('cxx') }}
-        - clang-12 ==12.0.1
+        - if: not osx
+          then: clang-12 ==12.0.1
         - cmake
         - coco
         - ninja
