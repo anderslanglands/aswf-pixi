@@ -209,6 +209,6 @@ MDL SDK packaging decisions:
 - Use external `openimageio-dev`/`openimageio-lib` for the `nv_openimageio` plugin. Keep the plugin separate so non-image consumers can install the SDK runtime without OpenImageIO.
 - Include `openexr-dev` as a host requirement when building the OpenImageIO plugin; upstream's MDL OpenImageIO finder separately calls `find_package(OpenEXR)`.
 - Ignore run exports from staging-only `openimageio-dev` and `openexr-dev` requirements so `mdl-sdk-lib` stays free of image I/O dependencies and only `mdl-sdk-plugin-openimageio` depends on `openimageio-lib`.
-- Pass both `PYTHON_DIR` and `python_PATH` for Python binding builds. Upstream uses `PYTHON_DIR` for Python headers/libraries and `python_PATH` for the executable.
+- Build `mdl-sdk-python` with the recipe-side standalone SWIG extension helper instead of enabling upstream `MDL_ENABLE_PYTHON_BINDINGS` in a full SDK build for every Python ABI. Keep Python staging requirements limited to Python, SWIG, CMake/Ninja, and compilers; put `numpy` on the final `mdl-sdk-python` runtime dependency because `pymdl.py` imports it.
 - Use upstream's required Clang/LLVM 12.0.1 toolchain path for MDL JIT/codegen build support; do not add a runtime LLVM dependency unless the produced packages prove to link dynamically to conda LLVM.
 - On macOS, pass `LLVM_ENABLE_LIBCXX=ON` into the embedded LLVM build. Conda's macOS Clang toolchain uses libc++, and LLVM 12's default `LLVM_ENABLE_LIBCXX=OFF` path runs stale libstdc++ version probes that fail before compilation starts.

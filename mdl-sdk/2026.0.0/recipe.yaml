@@ -134,128 +134,55 @@ outputs:
           then: |
             cmake -E rm -rf $SRC_DIR/../build-python
 
-            clang_path="${BUILD_PREFIX:-$PREFIX}/bin/clang"
-            if [ ! -x "$clang_path" ]; then
-              clang_path="$(command -v clang)"
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
             fi
 
-            llvm_stdlib_args=""
-            if [ "$(uname)" = "Darwin" ]; then
-              llvm_stdlib_args="-DLLVM_ENABLE_LIBCXX=ON"
-            fi
-
+            mkdir -p "$SP_DIR"
             cmake $CMAKE_ARGS \
               -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_INSTALL_PREFIX=$PREFIX \
-              -DCMAKE_INSTALL_LIBDIR=lib \
-              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-              -Dclang_PATH="$clang_path" \
-              $llvm_stdlib_args \
-              -DPYTHON_DIR="$PREFIX" \
-              -Dpython_PATH="$PYTHON" \
-              -DMDL_BUILD_SDK=ON \
-              -DMDL_BUILD_SDK_EXAMPLES=OFF \
-              -DMDL_BUILD_CORE_EXAMPLES=OFF \
-              -DMDL_BUILD_ARNOLD_PLUGIN=OFF \
-              -DMDL_BUILD_DDS_PLUGIN=ON \
-              -DMDL_BUILD_OPENIMAGEIO_PLUGIN=ON \
-              -DMDL_BUILD_DOCUMENTATION=OFF \
-              -DMDL_ENABLE_UNIT_TESTS=OFF \
-              -DMDL_ENABLE_PYTHON_BINDINGS=ON \
-              -DMDL_ENABLE_CUDA_EXAMPLES=OFF \
-              -DMDL_ENABLE_OPENGL_EXAMPLES=OFF \
-              -DMDL_ENABLE_QT_EXAMPLES=OFF \
-              -DMDL_ENABLE_VULKAN_EXAMPLES=OFF \
-              -DMDL_ENABLE_D3D12_EXAMPLES=OFF \
-              -DMDL_ENABLE_OPTIX7_EXAMPLES=OFF \
-              -DMDL_ENABLE_MATERIALX=OFF \
-              -DMDL_ENABLE_SLANG=OFF \
-              -DMDL_BUILD_WITHOUT_CUDA_DRIVER=ON \
-              -DMDL_LOG_DEPENDENCIES=OFF \
-              -DMDL_LOG_PLATFORM_INFOS=ON \
+              -DPython3_EXECUTABLE="$PYTHON" \
+              -DMDL_SDK_SOURCE_DIR="$SRC_DIR" \
+              -DMDL_PYTHON_INSTALL_DIR="$SP_DIR" \
               -B $SRC_DIR/../build-python \
-              -S .
+              -S "$recipe_dir/cmake/python-bindings"
 
             cmake --build $SRC_DIR/../build-python --target install
-
-            if [ -d "$PREFIX/lib/python" ]; then
-              mkdir -p "$SP_DIR"
-              mv "$PREFIX/lib/python"/pymdl.py "$SP_DIR/"
-              mv "$PREFIX/lib/python"/pymdlsdk.py "$SP_DIR/"
-              mv "$PREFIX/lib/python"/_pymdlsdk* "$SP_DIR/"
-            fi
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build-python
 
-            set "CLANG_PATH=%BUILD_PREFIX%\Library\bin\clang.exe"
-            if not exist "%CLANG_PATH%" set "CLANG_PATH=%BUILD_PREFIX%\bin\clang.exe"
-            set "MDL_CONDA_TOOLCHAIN=%SRC_DIR%\..\conda-toolchain.cmake"
-            > "%MDL_CONDA_TOOLCHAIN%" echo # Conda package build intentionally uses CMake package discovery from CMAKE_PREFIX_PATH.
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
 
+            if not exist "%SP_DIR%" mkdir "%SP_DIR%"
             cmake %CMAKE_ARGS% ^
               -GNinja ^
               -DCMAKE_BUILD_TYPE=Release ^
               -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
-              -DCMAKE_INSTALL_LIBDIR=lib ^
-              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
-              -DCMAKE_TOOLCHAIN_FILE="%MDL_CONDA_TOOLCHAIN%" ^
-              -DBOOST_ROOT="%LIBRARY_PREFIX%" ^
-              -DBOOST_INCLUDEDIR="%LIBRARY_INC%" ^
-              -DBOOST_LIBRARYDIR="%LIBRARY_LIB%" ^
-              -DLLVM_ENABLE_DIA_SDK=OFF ^
-              -Dclang_PATH="%CLANG_PATH%" ^
-              -DPYTHON_DIR="%PREFIX%" ^
-              -Dpython_PATH="%PYTHON%" ^
-              -DMDL_MSVC_DYNAMIC_RUNTIME=ON ^
-              -DMDL_BUILD_SDK=ON ^
-              -DMDL_BUILD_SDK_EXAMPLES=OFF ^
-              -DMDL_BUILD_CORE_EXAMPLES=OFF ^
-              -DMDL_BUILD_ARNOLD_PLUGIN=OFF ^
-              -DMDL_BUILD_DDS_PLUGIN=ON ^
-              -DMDL_BUILD_OPENIMAGEIO_PLUGIN=ON ^
-              -DMDL_BUILD_DOCUMENTATION=OFF ^
-              -DMDL_ENABLE_UNIT_TESTS=OFF ^
-              -DMDL_ENABLE_PYTHON_BINDINGS=ON ^
-              -DMDL_ENABLE_CUDA_EXAMPLES=OFF ^
-              -DMDL_ENABLE_OPENGL_EXAMPLES=OFF ^
-              -DMDL_ENABLE_QT_EXAMPLES=OFF ^
-              -DMDL_ENABLE_VULKAN_EXAMPLES=OFF ^
-              -DMDL_ENABLE_D3D12_EXAMPLES=OFF ^
-              -DMDL_ENABLE_OPTIX7_EXAMPLES=OFF ^
-              -DMDL_ENABLE_MATERIALX=OFF ^
-              -DMDL_ENABLE_SLANG=OFF ^
-              -DMDL_BUILD_WITHOUT_CUDA_DRIVER=ON ^
-              -DMDL_LOG_DEPENDENCIES=OFF ^
-              -DMDL_LOG_PLATFORM_INFOS=ON ^
+              -DPython3_EXECUTABLE="%PYTHON%" ^
+              -DMDL_SDK_SOURCE_DIR="%SRC_DIR%" ^
+              -DMDL_PYTHON_INSTALL_DIR="%SP_DIR%" ^
               -B %SRC_DIR%\..\build-python ^
-              -S .
+              -S "%RECIPE_DIR_VAR%\cmake\python-bindings"
 
             cmake --build %SRC_DIR%\..\build-python --target install --config Release
-
-            if not exist "%SP_DIR%" mkdir "%SP_DIR%"
-            if exist "%LIBRARY_LIB%\python\pymdl.py" move /Y "%LIBRARY_LIB%\python\pymdl.py" "%SP_DIR%\pymdl.py"
-            if exist "%LIBRARY_LIB%\python\pymdlsdk.py" move /Y "%LIBRARY_LIB%\python\pymdlsdk.py" "%SP_DIR%\pymdlsdk.py"
-            if exist "%LIBRARY_LIB%\python\_pymdlsdk*.pyd" move /Y "%LIBRARY_LIB%\python\_pymdlsdk*.pyd" "%SP_DIR%"
     requirements:
       build:
         - ${{ compiler('c') }}
         - ${{ compiler('cxx') }}
-        - clangdev ==12.0.1
         - cmake
-        - coco
         - ninja
         - swig 4.2.*
       host:
-        - libboost-devel 1.90.*
-        - numpy
-        - openexr-dev >=3.4,<4
-        - openimageio-dev >=3.0,<4
         - python
-      ignore_run_exports:
-        from_package:
-          - openexr-dev
-          - openimageio-dev
 
   - package:
       name: mdl-sdk-lib
@@ -461,6 +388,7 @@ outputs:
     requirements:
       run:
         - python
+        - numpy
         - ${{ pin_subpackage('mdl-sdk-lib', exact=True) }}
         - ${{ pin_subpackage('mdl-sdk-plugin-dds', exact=True) }}
         - ${{ pin_subpackage('mdl-sdk-plugin-openimageio', exact=True) }}
