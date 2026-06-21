@@ -199,6 +199,7 @@ build:
                 prepend_path_var DYLD_LIBRARY_PATH "$qt_root/lib"
                 ;;
             Linux)
+                export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"
                 prepend_path_var LD_LIBRARY_PATH "$rv_home/lib"
                 prepend_path_var LD_LIBRARY_PATH "$qt_root/lib"
                 ;;

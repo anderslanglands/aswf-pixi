@@ -8,6 +8,9 @@ channels = [
 platforms = ["linux-64", "win-64", "osx-arm64"]
 channel-priority = "strict"
 
+[system-requirements]
+glibc = "2.34"
+
 [feature.openrv.dependencies]
 openrv = "==3.2.0"
 

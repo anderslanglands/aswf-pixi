@@ -222,3 +222,4 @@ OpenRV packaging decisions:
 - Do not build `osx-64` for OpenRV 3.2.0 while using Qt WebEngine 6.10.2, because conda-forge does not publish that Qt WebEngine version for Intel macOS.
 - Omit proprietary/optional SDK integrations initially when their SDKs are unavailable, including Blackmagic DeckLink, NDI, and Apple ProRes SDK support. Keep AJA enabled because upstream builds it from the open libajantv2 source.
 - Keep package tests headless: validate launcher/app-tree layout, external Qt/WebEngine path assumptions, and `rv -version`; defer GUI launch smoke tests until there is a reliable headless GUI strategy.
+- Default the Linux launcher to `QT_QPA_PLATFORM=xcb` unless the user explicitly overrides it; OpenRV 3.2.0 still uses X11/GLX-specific startup code and Qt Wayland crashed on startup with Qt 6.10 in local testing.
