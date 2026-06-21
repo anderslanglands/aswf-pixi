@@ -27,6 +27,11 @@ outputs:
               clang_path="$(command -v clang)"
             fi
 
+            llvm_stdlib_args=""
+            if [ "$(uname)" = "Darwin" ]; then
+              llvm_stdlib_args="-DLLVM_ENABLE_LIBCXX=ON"
+            fi
+
             cmake $CMAKE_ARGS \
               -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
@@ -34,6 +39,7 @@ outputs:
               -DCMAKE_INSTALL_LIBDIR=lib \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
               -Dclang_PATH="$clang_path" \
+              $llvm_stdlib_args \
               -DMDL_BUILD_SDK=ON \
               -DMDL_BUILD_SDK_EXAMPLES=OFF \
               -DMDL_BUILD_CORE_EXAMPLES=OFF \
@@ -126,6 +132,11 @@ outputs:
               clang_path="$(command -v clang)"
             fi
 
+            llvm_stdlib_args=""
+            if [ "$(uname)" = "Darwin" ]; then
+              llvm_stdlib_args="-DLLVM_ENABLE_LIBCXX=ON"
+            fi
+
             cmake $CMAKE_ARGS \
               -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
@@ -133,6 +144,7 @@ outputs:
               -DCMAKE_INSTALL_LIBDIR=lib \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
               -Dclang_PATH="$clang_path" \
+              $llvm_stdlib_args \
               -DPYTHON_DIR="$PREFIX" \
               -Dpython_PATH="$PYTHON" \
               -DMDL_BUILD_SDK=ON \
