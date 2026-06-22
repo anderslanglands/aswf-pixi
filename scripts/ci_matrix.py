@@ -19,6 +19,10 @@ RUNNERS = {
 
 DEFAULT_PLATFORMS = ["linux-64", "win-64", "osx-arm64"]
 
+RECIPE_SUPPORTED_PLATFORMS = {
+    "optix-dev": {"linux-64", "win-64"},
+}
+
 
 BUILD_NUMBER_RE = re.compile(r"[0-9]+")
 AUTO_BUILD_NUMBER = "auto"
@@ -156,7 +160,21 @@ def matrix(
         recipe_key = recipe.as_posix()
         package = recipe.parts[-2]
         version = recipe.parts[-1]
-        for platform in platforms:
+        supported_platforms = RECIPE_SUPPORTED_PLATFORMS.get(package)
+        recipe_platforms = [
+            platform
+            for platform in platforms
+            if supported_platforms is None or platform in supported_platforms
+        ]
+        if not recipe_platforms:
+            supported = ", ".join(sorted(supported_platforms or RUNNERS))
+            requested = ", ".join(platforms)
+            raise SystemExit(
+                f"Recipe {recipe_key} does not support any requested platforms "
+                f"({requested}). Supported: {supported}."
+            )
+
+        for platform in recipe_platforms:
             include.append(
                 {
                     "recipe": recipe_key,

@@ -38,14 +38,14 @@ if ((-not (Test-Path $optixDevMarker -PathType Leaf)) -or (-not (Test-Path (Join
     $optixDevStage = Join-Path $optixDevTmpRoot "optix-dev-$optixDevVersion"
     New-Item -ItemType Directory -Path $optixDevExtract, $optixDevStage -Force | Out-Null
 
-    Write-Error "optix-dev activation: downloading $optixDevArchiveUrl" -ErrorAction Continue
+    Write-Host "optix-dev activation: downloading $optixDevArchiveUrl"
     Invoke-WebRequest -Uri $optixDevArchiveUrl -OutFile $optixDevArchive -UseBasicParsing
     $optixDevActualSha256 = (Get-FileHash -Algorithm SHA256 -Path $optixDevArchive).Hash.ToLowerInvariant()
     if ($optixDevActualSha256 -ne $optixDevArchiveSha256) {
       throw "checksum mismatch for ${optixDevArchiveUrl}: expected ${optixDevArchiveSha256}, got ${optixDevActualSha256}"
     }
 
-    & tar -xzf $optixDevArchive -C $optixDevExtract
+    & tar --force-local -xzf $optixDevArchive -C $optixDevExtract
     if ($LASTEXITCODE -ne 0) { throw "failed to unpack $optixDevArchiveUrl" }
 
     $optixDevSourceRoot = Join-Path $optixDevExtract "optix-dev-$optixDevVersion"
