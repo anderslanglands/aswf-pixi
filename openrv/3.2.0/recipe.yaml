@@ -219,6 +219,7 @@ build:
     - if: win
       then: |
         cmake -E rm -rf %SRC_DIR%\..\build
+        set "BUILD_PREFIX_FWD=%BUILD_PREFIX:\=/%"
         set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
         set "OPENRV_PREFIX=%LIBRARY_PREFIX%\opt\openrv"
         set "OPENRV_PREFIX_FWD=%OPENRV_PREFIX:\=/%"
@@ -244,6 +245,7 @@ build:
           -DRV_BUILD_QTBONJOUR=OFF ^
           -DRV_DEPS_QT_LOCATION=%LIBRARY_PREFIX_FWD% ^
           -DRV_DEPS_QT_COPY=OFF ^
+          -DRV_DEPS_WIN_PERL_ROOT=%BUILD_PREFIX_FWD%/Library/bin ^
           -DRV_MAJOR_VERSION=3 ^
           -DRV_MINOR_VERSION=2 ^
           -DRV_REVISION_NUMBER=0 ^
@@ -292,6 +294,7 @@ requirements:
     - setuptools
     - wheel
     - pip
+    - meson
     - perl
     - nasm
     - yasm
