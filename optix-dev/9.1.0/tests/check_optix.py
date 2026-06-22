@@ -15,11 +15,16 @@ else:
 include_dir = pathlib.Path(
     os.environ.get("OPTIX_INCLUDE_DIR", library_prefix / "opt" / "optix-dev-9.1.0" / "include")
 )
+expected_hash = (
+    "1899c049bfe523755eade3aa24aa3dc975eb40d022160536aa32841f69ce3d08"
+    if sys.platform == "win32"
+    else "3a29b2254107fdfbb5e6bbad3ec154dd682149121f61e9c406607ac7b52a6ba6"
+)
 optix_h = include_dir / "optix.h"
 stubs_h = include_dir / "optix_stubs.h"
 function_table_h = include_dir / "optix_function_table_definition.h"
 config = library_prefix / "lib" / "cmake" / "OptiX" / "OptiXConfig.cmake"
-marker = library_prefix / "opt" / "optix-dev-9.1.0" / ".optix-dev-9.1.0-3a29b2254107fdfbb5e6bbad3ec154dd682149121f61e9c406607ac7b52a6ba6.installed"
+marker = library_prefix / "opt" / "optix-dev-9.1.0" / f".optix-dev-9.1.0-{expected_hash}.installed"
 unexpected_headers = [prefix / "include" / "optix.h", library_prefix / "include" / "optix.h"]
 
 for unexpected_header in unexpected_headers:
@@ -32,7 +37,6 @@ for path in (activation, marker, optix_h, stubs_h, function_table_h, config):
     if not path.is_file():
         raise SystemExit(f"Missing expected OptiX wrapper file: {path}")
 
-expected_hash = "3a29b2254107fdfbb5e6bbad3ec154dd682149121f61e9c406607ac7b52a6ba6"
 if marker.read_text(encoding="utf-8").strip() != expected_hash:
     raise SystemExit(f"OptiX marker does not contain the expected archive checksum: {marker}")
 

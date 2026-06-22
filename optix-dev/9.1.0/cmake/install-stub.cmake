@@ -15,8 +15,8 @@ if(WIN32)
 $ErrorActionPreference = "Stop"
 $optixDevVersion = "9.1.0"
 $optixDevTag = "v9.1.0"
-$optixDevArchiveSha256 = "3a29b2254107fdfbb5e6bbad3ec154dd682149121f61e9c406607ac7b52a6ba6"
-$optixDevArchiveUrl = "https://github.com/NVIDIA/optix-dev/archive/refs/tags/$optixDevTag.tar.gz"
+$optixDevArchiveSha256 = "1899c049bfe523755eade3aa24aa3dc975eb40d022160536aa32841f69ce3d08"
+$optixDevArchiveUrl = "https://github.com/NVIDIA/optix-dev/archive/refs/tags/$optixDevTag.zip"
 $optixDevPrefix = $env:CONDA_PREFIX
 if (-not $optixDevPrefix) { $optixDevPrefix = $env:PREFIX }
 if (-not $optixDevPrefix) { throw "CONDA_PREFIX is not set" }
@@ -33,7 +33,7 @@ if ((-not (Test-Path $optixDevMarker -PathType Leaf)) -or (-not (Test-Path (Join
   $optixDevTmpRoot = Join-Path ([IO.Path]::GetTempPath()) ("optix-dev." + [Guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path $optixDevTmpRoot -Force | Out-Null
   try {
-    $optixDevArchive = Join-Path $optixDevTmpRoot "optix-dev-$optixDevVersion.tar.gz"
+    $optixDevArchive = Join-Path $optixDevTmpRoot "optix-dev-$optixDevVersion.zip"
     $optixDevExtract = Join-Path $optixDevTmpRoot "extract"
     $optixDevStage = Join-Path $optixDevTmpRoot "optix-dev-$optixDevVersion"
     New-Item -ItemType Directory -Path $optixDevExtract, $optixDevStage -Force | Out-Null
@@ -45,8 +45,7 @@ if ((-not (Test-Path $optixDevMarker -PathType Leaf)) -or (-not (Test-Path (Join
       throw "checksum mismatch for ${optixDevArchiveUrl}: expected ${optixDevArchiveSha256}, got ${optixDevActualSha256}"
     }
 
-    & tar --force-local -xzf $optixDevArchive -C $optixDevExtract
-    if ($LASTEXITCODE -ne 0) { throw "failed to unpack $optixDevArchiveUrl" }
+    Expand-Archive -LiteralPath $optixDevArchive -DestinationPath $optixDevExtract -Force
 
     $optixDevSourceRoot = Join-Path $optixDevExtract "optix-dev-$optixDevVersion"
     if (-not (Test-Path (Join-Path $optixDevSourceRoot "include\optix.h") -PathType Leaf)) {
