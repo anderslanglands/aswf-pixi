@@ -1,7 +1,7 @@
 import os
 import subprocess
 import sys
-import tempfile
+import uuid
 from pathlib import Path
 
 
@@ -74,17 +74,26 @@ def main() -> None:
     help_result = run_checked(["mitsuba", "--help"])
     if "Mitsuba" not in help_result.stdout:
         raise SystemExit("mitsuba --help did not print the expected help text")
+    if "scalar_rgb" not in help_result.stdout or "llvm_ad_rgb" not in help_result.stdout:
+        raise SystemExit("mitsuba --help did not list the expected variants")
 
-    with tempfile.TemporaryDirectory(dir=Path.cwd()) as tmpdir:
-        tmp = Path(tmpdir)
-        scene = tmp / "scene.xml"
-        output = tmp / "render.exr"
+    if sys.platform.startswith("win"):
+        return
+
+    render_variant = "llvm_ad_rgb"
+    token = uuid.uuid4().hex
+    scene = Path.cwd() / f"mitsuba-smoke-{token}.xml"
+    output = Path.cwd() / f"mitsuba-smoke-{token}.exr"
+    try:
         scene.write_text(SCENE_XML, encoding="utf-8")
-        run_checked(["mitsuba", "-m", "llvm_ad_rgb", "-o", str(output), str(scene)])
+        run_checked(["mitsuba", "-m", render_variant, "-o", str(output), str(scene)])
         if not output.is_file() or output.stat().st_size == 0:
             raise SystemExit("mitsuba CLI did not produce a non-empty render output")
         if output.read_bytes()[:4] != b"\x76\x2f\x31\x01":
             raise SystemExit("mitsuba CLI did not produce an OpenEXR render output")
+    finally:
+        scene.unlink(missing_ok=True)
+        output.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

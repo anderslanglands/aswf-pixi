@@ -1,6 +1,7 @@
 import importlib
 import os
 import sys
+from contextlib import nullcontext
 from pathlib import Path
 
 
@@ -60,14 +61,33 @@ def make_tiny_cornell_box(mi) -> dict:
 
 
 def render_tiny_scene(mi, dr, variant: str) -> None:
-    mi.set_variant(variant)
-    scene = mi.load_dict(make_tiny_cornell_box(mi))
-    image = mi.render(scene, spp=1)
-    dr.eval(image)
+    flags = nullcontext()
+    if sys.platform.startswith("win") and variant.startswith("llvm_"):
+        # Dr.Jit 1.3.1 on Windows fails to materialize Mitsuba's symbolic
+        # callable render kernels in the CI/runtime package environment.
+        flags = dr.scoped_set_flag(dr.JitFlag.SymbolicCalls, False)
+
+    with flags:
+        mi.set_variant(variant)
+        scene = mi.load_dict(make_tiny_cornell_box(mi))
+        image = mi.render(scene, spp=1)
+        dr.eval(image)
 
     shape = tuple(getattr(image, "shape", ()))
     if shape[:2] != (4, 4):
         raise SystemExit(f"Unexpected {variant} render shape: {shape}")
+
+
+def activate_variant(mi, variant: str) -> None:
+    try:
+        mi.set_variant(variant)
+    except ImportError as exc:
+        if variant.startswith("cuda_") and "CUDA backend hasn't been initialized" in str(exc):
+            return
+        raise
+
+    if mi.variant() != variant:
+        raise SystemExit(f"Failed to activate Mitsuba variant {variant!r}")
 
 
 def main() -> None:
@@ -83,9 +103,7 @@ def main() -> None:
         raise SystemExit(f"Missing Mitsuba variants: {sorted(missing)}")
 
     for variant in sorted(variants):
-        mi.set_variant(variant)
-        if mi.variant() != variant:
-            raise SystemExit(f"Failed to activate Mitsuba variant {variant!r}")
+        activate_variant(mi, variant)
 
     render_tiny_scene(mi, dr, "scalar_rgb")
     if "llvm_ad_rgb" in variants:

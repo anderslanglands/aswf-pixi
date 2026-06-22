@@ -281,8 +281,8 @@ Recipe versions:
 
 Mitsuba 3 is a retargetable forward and inverse renderer with scalar, LLVM, and CUDA/OptiX JIT variants.
 
-- `mitsuba-python`: Python-first Mitsuba package built for Python 3.10 through 3.14. It builds and vendors the matching upstream `drjit` 1.3.1 submodule, uses bundled `nanobind` 2.11.0 build tooling from Mitsuba, and includes the upstream PyPI variant set: scalar RGB/spectral, LLVM AD mono/RGB/spectral, CUDA AD mono/RGB/spectral, and polarized variants where upstream ships them.
-- `mitsuba-tools`: Console entry point package exposing `mitsuba` on PATH. Depends on the matching `mitsuba-python` package. The native CLI smoke test renders with `llvm_ad_rgb`; scalar rendering is validated through the Python API because the upstream native scalar CLI path does not initialize Dr.Jit LLVM state in this bundled build.
+- `mitsuba-python`: Python-first Mitsuba package built for Python 3.10 through 3.14. It builds and vendors the matching upstream `drjit` 1.3.1 submodule, uses bundled `nanobind` 2.11.0 build tooling from Mitsuba, and includes scalar RGB/spectral plus LLVM AD mono/RGB/spectral variants on all platforms. Linux builds also include CUDA AD mono/RGB/spectral variants; polarized variants are included for the enabled backends where upstream ships them.
+- `mitsuba-tools`: Console entry point package exposing `mitsuba` on PATH. Depends on the matching `mitsuba-python` package. The native CLI smoke test renders with `llvm_ad_rgb` on Unix; on Windows it validates CLI startup and variant discovery while LLVM rendering is covered through the Python API with the packaged Dr.Jit runtime setup.
 - `mitsuba`: Default metapackage depending on `mitsuba-python` and `mitsuba-tools`. A C++ `-lib`/`-dev` split is deferred because upstream's supported packaging path is Python-first and does not install CMake package metadata.
 
 ## OptiX SDK
