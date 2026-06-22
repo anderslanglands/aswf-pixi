@@ -33,6 +33,10 @@ outputs:
               -G Ninja \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_INSTALL_PREFIX="$SP_DIR" \
+              -DPython_EXECUTABLE="$PYTHON" \
+              -DPython3_EXECUTABLE="$PYTHON" \
+              -DPython_FIND_REGISTRY=NEVER \
+              -DPython3_FIND_REGISTRY=NEVER \
               -DDRJIT_ENABLE_LLVM=ON \
               -DDRJIT_ENABLE_CUDA=ON \
               -DDRJIT_ENABLE_AUTODIFF=ON \
@@ -40,7 +44,7 @@ outputs:
               -DDRJIT_ENABLE_TESTS=OFF \
               -DDRJIT_ENABLE_LEAK_WARNINGS=OFF
             cmake --build build-drjit --target install --parallel "$CPU_COUNT"
-            WHEEL_TAG=$(python -c 'import sys, sysconfig; print(f"cp{sys.version_info.major}{sys.version_info.minor}-cp{sys.version_info.major}{sys.version_info.minor}-{sysconfig.get_platform().replace("-", "_").replace(".", "_")}")')
+            WHEEL_TAG=$(python -c 'import sys, sysconfig; v=sys.version_info; p=sysconfig.get_platform().replace("-", "_").replace(".", "_"); print("cp%d%d-cp%d%d-%s" % (v.major, v.minor, v.major, v.minor, p))')
             mkdir -p "build/$WHEEL_TAG/python"
             rm -rf "build/$WHEEL_TAG/python/drjit"
             ln -sfn "$SP_DIR/drjit" "build/$WHEEL_TAG/python/drjit"
@@ -95,21 +99,30 @@ outputs:
               --verbose ^
               --no-deps ^
               --no-build-isolation
+            if errorlevel 1 exit /b 1
             cmake -S ext/drjit -B build-drjit ^
               -G Ninja ^
               -DCMAKE_BUILD_TYPE=Release ^
               -DCMAKE_INSTALL_PREFIX="%SP_DIR%" ^
+              -DPython_EXECUTABLE="%PYTHON%" ^
+              -DPython3_EXECUTABLE="%PYTHON%" ^
+              -DPython_FIND_REGISTRY=NEVER ^
+              -DPython3_FIND_REGISTRY=NEVER ^
               -DDRJIT_ENABLE_LLVM=ON ^
               -DDRJIT_ENABLE_CUDA=ON ^
               -DDRJIT_ENABLE_AUTODIFF=ON ^
               -DDRJIT_ENABLE_PYTHON=ON ^
               -DDRJIT_ENABLE_TESTS=OFF ^
               -DDRJIT_ENABLE_LEAK_WARNINGS=OFF
+            if errorlevel 1 exit /b 1
             cmake --build build-drjit --target install --parallel "%CPU_COUNT%"
+            if errorlevel 1 exit /b 1
             for /f "usebackq" %%i in (`python -c "import sys, sysconfig; print(f'cp{sys.version_info.major}{sys.version_info.minor}-cp{sys.version_info.major}{sys.version_info.minor}-{sysconfig.get_platform().replace(chr(45), chr(95)).replace(chr(46), chr(95))}')"`) do set "WHEEL_TAG=%%i"
+            if not defined WHEEL_TAG exit /b 1
             if not exist "build\%WHEEL_TAG%\python" mkdir "build\%WHEEL_TAG%\python"
             if exist "build\%WHEEL_TAG%\python\drjit" rmdir /S /Q "build\%WHEEL_TAG%\python\drjit"
             xcopy /E /I /Y "%SP_DIR%\drjit" "build\%WHEEL_TAG%\python\drjit"
+            if errorlevel 1 exit /b 1
             set "PYTHONPATH=%SP_DIR%;%PYTHONPATH%"
             python -m pip install . ^
               --verbose ^
@@ -117,8 +130,11 @@ outputs:
               --no-build-isolation ^
               --config-settings=cmake.args="-DMI_DEFAULT_VARIANTS=${{ variants }}" ^
               --config-settings=cmake.args="-DMI_DRJIT_CMAKE_DIR=%SP_DIR%/share/cmake/drjit"
+            if errorlevel 1 exit /b 1
             python -c "import os; from pathlib import Path; metas=list(Path(os.environ['SP_DIR']).glob('mitsuba-*.dist-info/METADATA')); assert metas; [p.write_text(''.join(line for line in p.read_text().splitlines(True) if not line.startswith('Requires-Dist: drjit'))) for p in metas]"
+            if errorlevel 1 exit /b 1
             python -m pip uninstall -y nanobind
+            if errorlevel 1 exit /b 1
             if not exist "%PREFIX%\etc\conda\activate.d" mkdir "%PREFIX%\etc\conda\activate.d"
             if not exist "%PREFIX%\etc\conda\deactivate.d" mkdir "%PREFIX%\etc\conda\deactivate.d"
             (
