@@ -38,6 +38,7 @@ Package conversion process:
 - Prefer avoiding upstream patches. If builds fail, surface the problem to Anders with options and a recommendation before patching upstream library code.
 - Keep this `AGENTS.md` updated as the process evolves.
 - Keep `README.md` updated whenever package recipes or published package outputs are added, removed, renamed, or materially changed.
+- Include an `about.repository` URL pointing at the upstream GitHub repository in every recipe when one exists; upstream-release automation may warn and skip recipes that cannot be associated with a GitHub repository.
 - Keep root build tooling solvable before packages are uploaded; put package-specific consumer pixi feature manifests next to the versioned recipe when publishing has not happened yet.
 - For test-label validation, put `https://conda.anaconda.org/anderslanglands/label/test` before `https://conda.anaconda.org/anderslanglands` in consumer manifests.
 - Consumer validation manifests should list only platforms whose artifacts have actually been published for that label; broaden the platform list as CI publishes more platforms.

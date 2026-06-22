@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+import contextlib
+import io
 import os
 import re
 import shutil
@@ -102,6 +104,190 @@ class UpstreamReleaseCheckerTests(unittest.TestCase):
             upstream.closest_recipe(local_recipes, version("3.2.0.0")).path,
             Path("openimageio") / "3.1.14.0",
         )
+
+    def test_missing_about_repository_warns_and_uses_source_git(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            root = Path(tmp_raw)
+            recipe_dir = root / "foo" / "1.2.3"
+            recipe_dir.mkdir(parents=True)
+            (recipe_dir / "recipe.yaml").write_text(
+                """context:
+  version: "1.2.3"
+
+recipe:
+  name: foo
+  version: ${{ version }}
+
+source:
+  git: https://github.com/example/foo.git
+  rev: abc123
+""",
+                encoding="utf-8",
+            )
+
+            def fake_releases(repo: str, token: str | None) -> list[upstream.ReleaseCandidate]:
+                self.assertEqual(repo, "example/foo")
+                self.assertIsNone(token)
+                return [release("1.2.4")]
+
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                created = upstream.check_upstream_releases(
+                    root,
+                    packages={"foo"},
+                    token=None,
+                    apply=False,
+                    release_fetcher=fake_releases,
+                )
+
+            self.assertEqual([recipe.recipe for recipe in created], ["foo/1.2.4"])
+            self.assertIn("does not define an about.repository GitHub URL", stderr.getvalue())
+            self.assertIn("using source repository example/foo", stderr.getvalue())
+
+    def test_missing_about_repository_with_source_url_still_applies_recipe_copy(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            root = Path(tmp_raw)
+            recipe_dir = root / "foo" / "1.2.3"
+            recipe_dir.mkdir(parents=True)
+            (recipe_dir / "recipe.yaml").write_text(
+                f"""context:
+  version: "1.2.3"
+  build_number: 5
+
+recipe:
+  name: foo
+  version: ${{{{ version }}}}
+
+source:
+  url: https://github.com/example/foo/archive/refs/tags/v${{{{ version }}}}.tar.gz
+  sha256: {"0" * 64}
+""",
+                encoding="utf-8",
+            )
+
+            def fake_releases(repo: str, token: str | None) -> list[upstream.ReleaseCandidate]:
+                self.assertEqual(repo, "example/foo")
+                self.assertIsNone(token)
+                return [release("1.2.4")]
+
+            def fake_sha256(url: str, token: str | None) -> str:
+                self.assertEqual(url, "https://github.com/example/foo/archive/refs/tags/v1.2.4.tar.gz")
+                self.assertIsNone(token)
+                return "a" * 64
+
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                created = upstream.check_upstream_releases(
+                    root,
+                    packages={"foo"},
+                    token=None,
+                    apply=True,
+                    release_fetcher=fake_releases,
+                    sha256_fetcher=fake_sha256,
+                )
+
+            self.assertEqual([recipe.recipe for recipe in created], ["foo/1.2.4"])
+            new_recipe = (root / "foo" / "1.2.4" / "recipe.yaml").read_text(encoding="utf-8")
+            self.assertIn('version: "1.2.4"', new_recipe)
+            self.assertIn("build_number: 0", new_recipe)
+            self.assertIn(f"sha256: {'a' * 64}", new_recipe)
+            self.assertIn("does not define an about.repository GitHub URL", stderr.getvalue())
+            self.assertIn("using source repository example/foo", stderr.getvalue())
+
+    def test_missing_github_repository_warns_and_skips_recipe(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            root = Path(tmp_raw)
+            recipe_dir = root / "foo" / "1.2.3"
+            recipe_dir.mkdir(parents=True)
+            (recipe_dir / "recipe.yaml").write_text(
+                f"""context:
+  version: "1.2.3"
+
+recipe:
+  name: foo
+  version: ${{{{ version }}}}
+
+source:
+  url: https://downloads.example.invalid/foo-${{{{ version }}}}.tar.gz
+  sha256: {"0" * 64}
+""",
+                encoding="utf-8",
+            )
+
+            def fake_releases(repo: str, token: str | None) -> list[upstream.ReleaseCandidate]:
+                self.fail("recipes without any GitHub repository should be skipped")
+
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                created = upstream.check_upstream_releases(
+                    root,
+                    packages={"foo"},
+                    token=None,
+                    apply=False,
+                    release_fetcher=fake_releases,
+                )
+
+            self.assertEqual(created, [])
+            self.assertIn("does not point at a GitHub repository", stderr.getvalue())
+            self.assertIn("skipping upstream release checks", stderr.getvalue())
+
+    def test_untrackable_existing_recipe_version_warns_instead_of_recreating(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            root = Path(tmp_raw)
+            tracked = root / "foo" / "1.2.3"
+            tracked.mkdir(parents=True)
+            tracked.joinpath("recipe.yaml").write_text(
+                f"""context:
+  version: "1.2.3"
+
+recipe:
+  name: foo
+  version: ${{{{ version }}}}
+
+source:
+  url: https://github.com/example/foo/archive/refs/tags/v${{{{ version }}}}.tar.gz
+  sha256: {"0" * 64}
+
+about:
+  repository: https://github.com/example/foo
+""",
+                encoding="utf-8",
+            )
+            untracked = root / "foo" / "1.2.4"
+            untracked.mkdir(parents=True)
+            untracked.joinpath("recipe.yaml").write_text(
+                f"""context:
+  version: "1.2.4"
+
+recipe:
+  name: foo
+  version: ${{{{ version }}}}
+
+source:
+  url: https://downloads.example.invalid/foo-${{{{ version }}}}.tar.gz
+  sha256: {"0" * 64}
+""",
+                encoding="utf-8",
+            )
+
+            def fake_releases(repo: str, token: str | None) -> list[upstream.ReleaseCandidate]:
+                self.assertEqual(repo, "example/foo")
+                self.assertIsNone(token)
+                return [release("1.2.4")]
+
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                created = upstream.check_upstream_releases(
+                    root,
+                    packages={"foo"},
+                    token=None,
+                    apply=True,
+                    release_fetcher=fake_releases,
+                )
+
+            self.assertEqual(created, [])
+            self.assertIn("does not point at a GitHub repository", stderr.getvalue())
+            self.assertIn("already exists but was not usable", stderr.getvalue())
 
     def test_apply_copies_recipe_updates_tag_sha_build_number_and_readme(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:

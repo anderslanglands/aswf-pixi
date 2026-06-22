@@ -22,6 +22,7 @@ NUMBERED_TAG_RE = re.compile(r"^v?(?P<number>[0-9]+(?:[._][0-9]+)+)$", re.IGNORE
 GITHUB_REPO_RE = re.compile(r"github\.com[/:](?P<owner>[^/\s]+)/(?P<repo>[^/\s?#]+)")
 CONTEXT_VALUE_RE = re.compile(r"^  (?P<key>[A-Za-z_][A-Za-z0-9_]*):\s*(?P<value>.*?)\s*(?:#.*)?$")
 SOURCE_URL_RE = re.compile(r"(?m)^(\s*url:\s*)(?P<value>.+?)\s*$")
+SOURCE_REPOSITORY_RE = re.compile(r"(?m)^\s*(?:-\s*)?(?:url|git):\s*(?P<value>.+?)\s*$")
 SHA256_RE = re.compile(r"(?m)^(\s*sha256:\s*)([0-9a-fA-F]+)(\s*(?:#.*)?)$")
 BUILD_NUMBER_RE = re.compile(r"(?m)^(\s*build_number:\s*)[0-9]+(\s*(?:#.*)?)$")
 RECIPE_VERSIONS_RE = re.compile(r"(?m)^Recipe versions:(?P<inline>.*)$")
@@ -131,17 +132,29 @@ def github_repo_slug(url: str) -> str | None:
     return f"{match.group('owner')}/{repo}"
 
 
-def recipe_repository(recipe_text: str) -> str | None:
+def recipe_metadata_repository(recipe_text: str) -> str | None:
     repository_match = re.search(r"(?m)^\s*repository:\s*(?P<url>\S+)\s*$", recipe_text)
     if repository_match:
         slug = github_repo_slug(strip_quotes(repository_match.group("url")))
         if slug:
             return slug
-
-    source_match = SOURCE_URL_RE.search(recipe_text)
-    if source_match:
-        return github_repo_slug(strip_quotes(source_match.group("value")))
     return None
+
+
+def recipe_source_repository(recipe_text: str) -> str | None:
+    for source_match in SOURCE_REPOSITORY_RE.finditer(recipe_text):
+        slug = github_repo_slug(strip_quotes(source_match.group("value")))
+        if slug:
+            return slug
+    return None
+
+
+def recipe_repository(recipe_text: str) -> str | None:
+    return recipe_metadata_repository(recipe_text) or recipe_source_repository(recipe_text)
+
+
+def warn(message: str) -> None:
+    print(f"warning: {message}", file=sys.stderr)
 
 
 def read_local_recipe(path: Path) -> LocalRecipe | None:
@@ -163,9 +176,17 @@ def read_local_recipe(path: Path) -> LocalRecipe | None:
             f"{recipe_file} context.version {context_version.text} does not match directory {version.text}."
         )
 
-    repository = recipe_repository(recipe_text)
+    repository = recipe_metadata_repository(recipe_text)
     if repository is None:
-        raise SystemExit(f"{recipe_file} does not point at a GitHub repository.")
+        source_repository = recipe_source_repository(recipe_text)
+        if source_repository is None:
+            warn(f"{recipe_file} does not point at a GitHub repository; skipping upstream release checks.")
+            return None
+        warn(
+            f"{recipe_file} does not define an about.repository GitHub URL; "
+            f"using source repository {source_repository}."
+        )
+        repository = source_repository
 
     return LocalRecipe(
         package=path.parent.name,
@@ -556,12 +577,15 @@ def check_upstream_releases(
 ) -> list[CreatedRecipe]:
     recipes_by_package = discover_recipes(root, packages)
     if packages:
-        missing = sorted(packages - set(recipes_by_package))
+        existing_package_dirs = {path.name for path in root.iterdir() if path.is_dir()}
+        missing = sorted(packages - existing_package_dirs)
         if missing:
             raise SystemExit(f"No recipe package directories found for: {', '.join(missing)}")
 
     created: list[CreatedRecipe] = []
     for package, local_recipes in recipes_by_package.items():
+        if not local_recipes:
+            continue
         repository = local_recipes[-1].repository
         upstream_releases = release_fetcher(repository, token)
         releases = releases_to_package(local_recipes, upstream_releases)
@@ -570,6 +594,13 @@ def check_upstream_releases(
 
         anchor_versions = {recipe.version.text for recipe in local_recipes}
         for release in releases:
+            destination = root / package / release.version.text
+            if destination.exists():
+                warn(
+                    f"{destination} already exists but was not usable for upstream release checks; "
+                    "skipping this release candidate."
+                )
+                continue
             created.append(
                 create_recipe_copy(
                     root,

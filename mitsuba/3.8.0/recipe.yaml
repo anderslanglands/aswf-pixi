@@ -349,6 +349,7 @@ outputs:
 
 about:
   homepage: https://github.com/mitsuba-renderer/mitsuba3
+  repository: https://github.com/mitsuba-renderer/mitsuba3
   license: BSD-3-Clause
   license_file: LICENSE
   summary: Mitsuba 3 is a retargetable forward and inverse renderer.
