@@ -2,7 +2,7 @@ diff --git a/src/build/make_pyside6.py b/src/build/make_pyside6.py
 index fd95ee53..41058cdc 100644
 --- a/src/build/make_pyside6.py
 +++ b/src/build/make_pyside6.py
-@@ -212,6 +212,31 @@ def remove_broken_shortcuts(python_home: str) -> None:
+@@ -212,24 +212,55 @@ def remove_broken_shortcuts(python_home: str) -> None:
                  print(f"Keeping {filepath}...")
  
  
@@ -34,7 +34,7 @@ index fd95ee53..41058cdc 100644
  def build() -> None:
      """
      Run the build step of the build. It compile every target of the project.
-@@ -220,11 +245,12 @@ def build() -> None:
+     """
      python_home = PYTHON_OUTPUT_DIR
      python_interpreter_args = get_python_interpreter_args(python_home, VARIANT)
 +    qtpaths = find_qt_tool("qtpaths")
@@ -47,11 +47,24 @@ index fd95ee53..41058cdc 100644
          "--ignore-git",
          "--standalone",
          "--verbose",
+         "--verbose-build",
+         "--log-level=verbose",
+         f"--parallel={os.cpu_count() or 1}",
+     ]
+ 
++    if platform.system() == "Linux":
++        pyside_build_args.append(
++            f"--shiboken-extra-include-paths={os.path.join(QT_OUTPUT_DIR, 'include')}"
++        )
++
+     if OPENSSL_OUTPUT_DIR:
+         pyside_build_args.append(f"--openssl={os.path.join(OPENSSL_OUTPUT_DIR, 'bin')}")
 diff --git a/src/lib/mu/MuQt6/CMakeLists.txt b/src/lib/mu/MuQt6/CMakeLists.txt
 index 71144dc2..effc27e6 100644
 --- a/src/lib/mu/MuQt6/CMakeLists.txt
 +++ b/src/lib/mu/MuQt6/CMakeLists.txt
-@@ -324,7 +324,7 @@ SET_PROPERTY(
+@@ -311,7 +311,7 @@ SET_PROPERTY(
+ 
  ADD_CUSTOM_COMMAND(
    OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${_target}/generated/moc_SignalSpy.cpp
 -  COMMAND ${RV_DEPS_QT_LOCATION}/bin/moc -I ${CMAKE_CURRENT_SOURCE_DIR} -o ${CMAKE_CURRENT_SOURCE_DIR}/${_target}/generated/moc_SignalSpy.cpp
