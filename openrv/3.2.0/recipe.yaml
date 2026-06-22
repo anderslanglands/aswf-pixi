@@ -20,6 +20,7 @@ source:
     - patches/optional-osmesa.patch
     - patches/optional-qtbonjour.patch
     - patches/openssl-install-libdir-lib.patch
+    - patches/aja-macos-sdk-version.patch
     - patches/glew-build-python.patch
     - patches/minizip-gcc15-pointer-types.patch
     - patches/python-zlib-build-paths.patch
