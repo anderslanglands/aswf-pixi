@@ -79,3 +79,4 @@ build-pbrt-4-0-0 = "rattler-build build --recipe pbrt/4.0.0/recipe.yaml --channe
 build-pbrt = { depends-on = ["build-pbrt-4-0-0"] }
 upload-pbrt-4-0-0-test = "anaconda upload --user anderslanglands --label test output/*/pbrt-4.0.0-*.conda"
 upload-pbrt-4-0-0 = "anaconda upload --user anderslanglands output/*/pbrt-4.0.0-*.conda"
+build-optix-dev-9-1-0 = "rattler-build build --recipe optix-dev/9.1.0/recipe.yaml --target-platform linux-64 --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native --env-isolation none"

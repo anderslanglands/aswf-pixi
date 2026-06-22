@@ -1,0 +1,148 @@
+context:
+  version: "9.1.0"
+  build_number: 0
+  installer_name: nvidia-optix-sdk-9.1.0-linux64-x86_64.sh
+  download_url: https://developer.nvidia.com/downloads/designworks/optix/secure/9.1.0/nvidia-optix-sdk-9.1.0-linux64-x86_64.sh
+
+package:
+  name: optix-dev
+  version: ${{ version }}
+
+build:
+  number: ${{ build_number }}
+  skip:
+    - if: target_platform != "linux-64"
+      then: true
+  script:
+    - |
+      set -euo pipefail
+
+      work_dir="$SRC_DIR/optix-wrapper"
+      installer="$work_dir/nvidia-optix-sdk-9.1.0-linux64-x86_64.sh"
+      extract_dir="$work_dir/extract"
+
+      cmake -E rm -rf "$work_dir"
+      cmake -E make_directory "$work_dir" "$extract_dir"
+
+      if [ -n "${OPTIX_INSTALLER_PATH:-}" ]; then
+        if [ ! -f "$OPTIX_INSTALLER_PATH" ]; then
+          echo "OPTIX_INSTALLER_PATH does not point at a file: $OPTIX_INSTALLER_PATH" >&2
+          exit 1
+        fi
+        cmake -E copy "$OPTIX_INSTALLER_PATH" "$installer"
+      else
+        curl --location --fail --show-error --retry 3 \
+          --output "$installer" \
+          "https://developer.nvidia.com/downloads/designworks/optix/secure/9.1.0/nvidia-optix-sdk-9.1.0-linux64-x86_64.sh"
+      fi
+
+      if ! head -c 256 "$installer" | grep -Eq '(^#!|Makeself|makeself)'; then
+        echo "Downloaded OptiX installer does not look like a shell installer." >&2
+        echo "The NVIDIA URL commonly redirects to a login page; set OPTIX_INSTALLER_PATH to an authenticated local download." >&2
+        exit 1
+      fi
+
+      chmod +x "$installer"
+
+      if ! sh "$installer" --skip-license --prefix="$extract_dir" --include-subdir; then
+        cmake -E rm -rf "$extract_dir"
+        cmake -E make_directory "$extract_dir"
+        sh "$installer" --noexec --target "$extract_dir"
+      fi
+
+      optix_h="$(find "$extract_dir" -type f -path '*/include/optix.h' -print -quit)"
+      if [ -z "$optix_h" ]; then
+        echo "Could not find include/optix.h after extracting the OptiX installer." >&2
+        exit 1
+      fi
+
+      sdk_root="$(dirname "$(dirname "$optix_h")")"
+
+      cmake -E make_directory \
+        "$PREFIX/include" \
+        "$PREFIX/lib/cmake/OptiX" \
+        "$PREFIX/share/optix"
+
+      cp -a "$sdk_root/include/." "$PREFIX/include/"
+
+      license_file="$(find "$sdk_root" -maxdepth 3 -type f \( -iname '*license*' -o -iname '*eula*' \) -print -quit)"
+      if [ -n "$license_file" ]; then
+        cmake -E copy "$license_file" "$PREFIX/share/optix/LICENSE.txt"
+      else
+        cat > "$PREFIX/share/optix/LICENSE.txt" <<'EOF'
+      This package is a local wrapper around the NVIDIA OptiX SDK installer.
+      Consult the license terms included in the authenticated NVIDIA OptiX SDK distribution.
+      EOF
+      fi
+
+      cat > "$PREFIX/lib/cmake/OptiX/OptiXConfig.cmake" <<'EOF'
+      include_guard()
+
+      get_filename_component(_optix_prefix "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
+      set(OptiX_ROOT "${_optix_prefix}")
+      set(OPTIX_ROOT_DIR "${_optix_prefix}")
+      set(OptiX_INCLUDE_DIR "${_optix_prefix}/include")
+      set(OPTIX_INCLUDE_DIR "${OptiX_INCLUDE_DIR}")
+      set(OPTIX_INCLUDES "${OptiX_INCLUDE_DIR}")
+      set(OptiX_VERSION "9.1.0")
+      set(OptiX_FOUND TRUE)
+
+      if(NOT TARGET OptiX::OptiX)
+        add_library(OptiX::OptiX INTERFACE IMPORTED)
+        set_target_properties(OptiX::OptiX PROPERTIES
+          INTERFACE_INCLUDE_DIRECTORIES "${OptiX_INCLUDE_DIR}"
+        )
+      endif()
+      EOF
+
+      cat > "$PREFIX/lib/cmake/OptiX/OptiXConfigVersion.cmake" <<'EOF'
+      set(PACKAGE_VERSION "9.1.0")
+      if(PACKAGE_FIND_VERSION VERSION_EQUAL PACKAGE_VERSION)
+        set(PACKAGE_VERSION_EXACT TRUE)
+        set(PACKAGE_VERSION_COMPATIBLE TRUE)
+      elseif(PACKAGE_FIND_VERSION VERSION_LESS PACKAGE_VERSION)
+        set(PACKAGE_VERSION_COMPATIBLE TRUE)
+      else()
+        set(PACKAGE_VERSION_COMPATIBLE FALSE)
+      endif()
+      EOF
+
+requirements:
+  build:
+    - cmake
+    - curl
+  run:
+    - cuda-driver-dev
+
+tests:
+  - package_contents:
+      include:
+        - optix.h
+        - optix_function_table_definition.h
+        - optix_stubs.h
+      files:
+        exists:
+          - lib/cmake/OptiX/OptiXConfig.cmake
+          - lib/cmake/OptiX/OptiXConfigVersion.cmake
+  - script:
+      - python tests/check_optix.py
+      - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+      - cmake --build build
+      - ./build/optix_consumer
+    files:
+      recipe:
+        - tests/CMakeLists.txt
+        - tests/check_optix.py
+        - tests/optix_consumer.cpp
+    requirements:
+      run:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - python
+
+about:
+  homepage: https://developer.nvidia.com/rtx/ray-tracing/optix
+  license: LicenseRef-NVIDIA-OptiX-SDK
+  license_file: share/optix/LICENSE.txt
+  summary: Local wrapper package for the NVIDIA OptiX SDK headers.

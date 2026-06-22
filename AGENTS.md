@@ -227,13 +227,19 @@ Mitsuba packaging decisions:
 - Treat CUDA/OptiX variants as part of the default Python package for now. They dynamically load CUDA/OptiX through Dr.Jit at runtime and should not introduce a packaged OptiX SDK/header dependency.
 - The scikit-build path still builds upstream's vendored Embree, OpenEXR, libpng, libjpeg, pugixml, asmjit, and rgb2spec components inside the package; discuss any future unbundling separately.
 
+OptiX SDK packaging decisions:
+
+- Package OptiX SDK 9.1.0 as a local-only Linux `optix-dev` wrapper for testing CUDA/OptiX consumers; do not upload or redistribute it from this repository.
+- The recipe uses NVIDIA's secure installer URL when it is directly accessible, but supports `OPTIX_INSTALLER_PATH` for an already authenticated local `nvidia-optix-sdk-9.1.0-linux64-x86_64.sh` download because the URL can redirect to NVIDIA login.
+- Install only the OptiX headers plus minimal CMake package metadata needed by local consumers. Keep SDK samples, binaries, and broad redistribution out of the package unless Anders explicitly asks.
+
 pbrt packaging decisions:
 
 - Package pbrt 4.0.0 as a single `pbrt` CPU-only application/tool package for now.
 - Use a pinned git commit from `mmp/pbrt-v4` with submodules instead of a tag archive, because upstream does not provide a `4.0.0`/`v4.0.0` tag or GitHub release.
 - Install the command-line tools `pbrt`, `imgtool`, `pspec`, `plytool`, and `cyhair2pbrt`.
 - Do not create `pbrt-lib` or `pbrt-dev` in the first pass because upstream installs only a static internal `pbrt_lib` and does not install headers or CMake package metadata for downstream consumers.
-- Keep CUDA/OptiX GPU support disabled until Anders explicitly asks for a GPU flavor; upstream requires CUDA plus an external OptiX SDK path.
+- Keep CUDA/OptiX GPU support disabled in pbrt for now. The local `optix-dev` wrapper remains available for future testing, but no `pbrt-optix` output is currently enabled.
 - Disable `PBRT_BUILD_NATIVE_EXECUTABLE` for distributable packages so CI runner CPU flags are not baked into published binaries.
 - Build Linux packages with GLFW's X11 backend only; keep Wayland disabled unless Anders asks for Wayland runtime support.
 - Use external `openexr-dev`/`openexr-lib` and zlib where upstream CMake supports them; keep the rest of upstream's required `src/ext` submodules vendored for now.

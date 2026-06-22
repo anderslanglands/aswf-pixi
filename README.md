@@ -268,6 +268,15 @@ Mitsuba 3 is a retargetable forward and inverse renderer with scalar, LLVM, and 
 - `mitsuba-tools`: Console entry point package exposing `mitsuba` on PATH. Depends on the matching `mitsuba-python` package. The native CLI smoke test renders with `llvm_ad_rgb`; scalar rendering is validated through the Python API because the upstream native scalar CLI path does not initialize Dr.Jit LLVM state in this bundled build.
 - `mitsuba`: Default metapackage depending on `mitsuba-python` and `mitsuba-tools`. A C++ `-lib`/`-dev` split is deferred because upstream's supported packaging path is Python-first and does not install CMake package metadata.
 
+## OptiX SDK
+
+Recipe versions:
+- `9.1.0`
+
+The OptiX SDK recipe is a local testing wrapper around NVIDIA's authenticated SDK installer. It is not intended for upload or redistribution.
+
+- `optix-dev`: Linux-only development package installing the OptiX 9.1 headers and a minimal `OptiXConfig.cmake`. The recipe downloads NVIDIA's secure installer when possible, or uses `OPTIX_INSTALLER_PATH=/path/to/nvidia-optix-sdk-9.1.0-linux64-x86_64.sh` for an already authenticated local download.
+
 ## pbrt
 
 Recipe versions:
@@ -275,7 +284,7 @@ Recipe versions:
 
 pbrt is the physically based rendering system described by the PBRT book.
 
-- `pbrt`: CPU-only command-line application package installing `pbrt`, `imgtool`, `pspec`, `plytool`, and `cyhair2pbrt`. CUDA/OptiX GPU support is deferred to a separate flavor decision, and a C++ `-lib`/`-dev` split is deferred because upstream does not install supported downstream development metadata.
+- `pbrt`: CPU-only command-line application package installing `pbrt`, `imgtool`, `pspec`, `plytool`, and `cyhair2pbrt`. CUDA/OptiX GPU support is disabled for now, and a C++ `-lib`/`-dev` split is deferred because upstream does not install supported downstream development metadata.
 
 ## OpenRV
 
