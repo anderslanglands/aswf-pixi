@@ -243,17 +243,18 @@ Mitsuba packaging decisions:
 
 OptiX SDK packaging decisions:
 
-- Package OptiX SDK 9.1.0 as a Linux `optix-dev` download stub for testing CUDA/OptiX consumers. Do not put NVIDIA header files or other `NVIDIA/optix-dev` repository contents in the conda artifact.
-- The package should install only activation/download logic, minimal CMake package metadata, and local explanatory text. On activation it downloads the pinned `NVIDIA/optix-dev` GitHub archive, verifies the checksum, and installs headers into the active environment.
+- Package OptiX SDK 9.1.0 as a Linux and Windows `optix-dev` download stub for testing CUDA/OptiX consumers. Do not put NVIDIA header files or other `NVIDIA/optix-dev` repository contents in the conda artifact.
+- The package should install only activation/download logic, minimal CMake package metadata, and local explanatory text. On activation it downloads the pinned `NVIDIA/optix-dev` GitHub archive, verifies the checksum, and installs headers into the active environment under the platform's normal prefix/library-prefix layout.
 - Keep SDK samples, binaries, and broad redistribution out of the package unless Anders explicitly asks.
 
 pbrt packaging decisions:
 
-- Package pbrt 4.0.0 as a single `pbrt` CPU-only application/tool package for now.
+- Package pbrt 4.0.0 as `pbrt` and `pbrt-optix` application/tool packages.
 - Use a pinned git commit from `mmp/pbrt-v4` with submodules instead of a tag archive, because upstream does not provide a `4.0.0`/`v4.0.0` tag or GitHub release.
-- Install the command-line tools `pbrt`, `imgtool`, `pspec`, `plytool`, and `cyhair2pbrt`.
+- Install the command-line tools `pbrt`, `imgtool`, `pspec`, `plytool`, and `cyhair2pbrt` in both packages.
 - Do not create `pbrt-lib` or `pbrt-dev` in the first pass because upstream installs only a static internal `pbrt_lib` and does not install headers or CMake package metadata for downstream consumers.
-- Keep CUDA/OptiX GPU support disabled in pbrt for now. The local `optix-dev` wrapper remains available for future testing, but no `pbrt-optix` output is currently enabled.
+- Keep the default `pbrt` package CPU-only. Build `pbrt-optix` explicitly with `--variant pbrt_gpu=optix`; it depends on `optix-dev 9.1.*` and CUDA 13.2, supports `linux-64` and `win-64`, and is mutually exclusive with the CPU package because the command names overlap.
+- Pass a fixed `PBRT_GPU_SHADER_MODEL=sm_75` for `pbrt-optix` so package builds do not require running pbrt's CUDA device probing executable on the build host.
 - Disable `PBRT_BUILD_NATIVE_EXECUTABLE` for distributable packages so CI runner CPU flags are not baked into published binaries.
 - Build Linux packages with GLFW's X11 backend only; keep Wayland disabled unless Anders asks for Wayland runtime support.
 - Use external `openexr-dev`/`openexr-lib` and zlib where upstream CMake supports them; keep the rest of upstream's required `src/ext` submodules vendored for now.

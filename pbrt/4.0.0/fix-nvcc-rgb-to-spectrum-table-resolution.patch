@@ -1,0 +1,24 @@
+diff --git a/src/pbrt/util/color.h b/src/pbrt/util/color.h
+index 0c25926..b8f3c37 100644
+--- a/src/pbrt/util/color.h
++++ b/src/pbrt/util/color.h
+@@ -365,13 +365,17 @@ class RGBSigmoidPolynomial {
+     Float c0, c1, c2;
+ };
+
++inline constexpr int RGBToSpectrumTableResolution = 64;
++
+ // RGBToSpectrumTable Definition
+ class RGBToSpectrumTable {
+   public:
+     // RGBToSpectrumTable Public Constants
+-    static constexpr int res = 64;
++    static constexpr int res = RGBToSpectrumTableResolution;
+
+-    using CoefficientArray = float[3][res][res][res][3];
++    using CoefficientArray =
++        float[3][RGBToSpectrumTableResolution][RGBToSpectrumTableResolution]
++             [RGBToSpectrumTableResolution][3];
+
+     // RGBToSpectrumTable Public Methods
+     RGBToSpectrumTable(const float *zNodes, const CoefficientArray *coeffs)

@@ -16,15 +16,15 @@ for entry in paths_data.get("paths", []):
     if path:
         files.add(path)
 
-allowed_payload_names = {"README.txt"}
+allowed_payload_names = {"README.txt", "optix-dev-activate.ps1"}
 for package_file in sorted(files):
     normalized = package_file.replace("\\", "/")
     name = pathlib.PurePosixPath(normalized).name
-    if normalized.startswith("include/"):
+    if normalized.startswith(("include/", "Library/include/")):
         raise SystemExit(f"optix-dev package redistributes include payload: {normalized}")
-    if normalized.startswith("opt/"):
+    if normalized.startswith(("opt/", "Library/opt/")):
         raise SystemExit(f"optix-dev package redistributes opt payload: {normalized}")
-    if normalized.startswith("share/optix-dev/") and name not in allowed_payload_names:
+    if normalized.startswith(("share/optix-dev/", "Library/share/optix-dev/")) and name not in allowed_payload_names:
         raise SystemExit(f"optix-dev package redistributes non-stub share payload: {normalized}")
     if name in {
         "optix.h",

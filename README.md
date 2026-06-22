@@ -287,7 +287,7 @@ Recipe versions:
 
 The OptiX SDK recipe is a download stub around NVIDIA's public `optix-dev` header repository. The conda artifact does not redistribute NVIDIA headers; activation downloads the pinned GitHub archive into the active environment.
 
-- `optix-dev`: Linux-only development stub package installing an activation hook and minimal `OptiXConfig.cmake`. On activation it downloads `NVIDIA/optix-dev` tag `v9.1.0`, verifies the archive checksum, and installs the headers under `$CONDA_PREFIX/opt/optix-dev-9.1.0`.
+- `optix-dev`: Linux and Windows development stub package installing activation hooks and minimal `OptiXConfig.cmake`. On activation it downloads `NVIDIA/optix-dev` tag `v9.1.0`, verifies the archive checksum, and installs the headers under `$CONDA_PREFIX/opt/optix-dev-9.1.0` on Unix or `$CONDA_PREFIX/Library/opt/optix-dev-9.1.0` on Windows.
 
 ## pbrt
 
@@ -296,7 +296,8 @@ Recipe versions:
 
 pbrt is the physically based rendering system described by the PBRT book.
 
-- `pbrt`: CPU-only command-line application package installing `pbrt`, `imgtool`, `pspec`, `plytool`, and `cyhair2pbrt`. CUDA/OptiX GPU support is disabled for now, and a C++ `-lib`/`-dev` split is deferred because upstream does not install supported downstream development metadata.
+- `pbrt`: CPU-only command-line application package installing `pbrt`, `imgtool`, `pspec`, `plytool`, and `cyhair2pbrt`.
+- `pbrt-optix`: Linux and Windows CUDA/OptiX application package built with `optix-dev 9.1.*`, CUDA 13.2, `cuda-nvcc`, and a fixed `PBRT_GPU_SHADER_MODEL=sm_75` so package builds do not require probing a local GPU. It installs the same command names as `pbrt` and is mutually exclusive with the CPU-only package.
 
 ## OpenRV
 

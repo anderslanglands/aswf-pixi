@@ -2,119 +2,297 @@ context:
   version: "4.0.0"
   build_number: 0
   upstream_rev: "5f7a606806a4ac7b939131ded9d7a30ebd02416e"
+  optix_version: "9.1"
+  cuda_version: "13.2"
+  cuda_shader_model: sm_75
 
-package:
+recipe:
   name: pbrt
   version: ${{ version }}
 
 source:
   git: https://github.com/mmp/pbrt-v4.git
   rev: ${{ upstream_rev }}
+  patches:
+    - fix-nvcc-rgb-to-spectrum-table-resolution.patch
   submodules: true
 
 build:
   number: ${{ build_number }}
-  files:
-    - bin/pbrt
-    - bin/imgtool
-    - bin/pspec
-    - bin/plytool
-    - bin/cyhair2pbrt
-    - Library/bin/pbrt.exe
-    - Library/bin/imgtool.exe
-    - Library/bin/pspec.exe
-    - Library/bin/plytool.exe
-    - Library/bin/cyhair2pbrt.exe
-  script:
-    - if: unix
-      then: |
-        cmake -E rm -rf "$SRC_DIR/../build"
 
-        glfw_args=()
-        if [ "$(uname -s)" = "Linux" ]; then
-          glfw_args+=(
-            -DGLFW_BUILD_WAYLAND=OFF
-            -DGLFW_BUILD_X11=ON
-          )
-        fi
+outputs:
+  - staging:
+      name: pbrt-build
+    build:
+      script:
+        - if: unix and pbrt_gpu == "cpu"
+          then: |
+            cmake -E rm -rf "$SRC_DIR/../build"
 
-        cmake $CMAKE_ARGS \
-          -GNinja \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX="$PREFIX" \
-          -DCMAKE_INSTALL_LIBDIR=lib \
-          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-          -DPBRT_BUILD_NATIVE_EXECUTABLE=OFF \
-          -DPBRT_OPTIX_PATH= \
-          -DPBRT_NVML=OFF \
-          -DPBRT_NVTX=OFF \
-          "${glfw_args[@]}" \
-          -B "$SRC_DIR/../build" \
-          -S .
+            glfw_args=()
+            if [ "$(uname -s)" = "Linux" ]; then
+              glfw_args+=(
+                -DGLFW_BUILD_WAYLAND=OFF
+                -DGLFW_BUILD_X11=ON
+              )
+            fi
 
-        cmake --build "$SRC_DIR/../build" --target install --parallel "${CPU_COUNT:-2}"
-      else: |
-        cmake -E rm -rf %SRC_DIR%\..\build
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              "${pbrt_linker_args[@]}" \
+              -DPBRT_BUILD_NATIVE_EXECUTABLE=OFF \
+              -DPBRT_OPTIX_PATH= \
+              -DPBRT_NVML=OFF \
+              -DPBRT_NVTX=OFF \
+              "${glfw_args[@]}" \
+              -B "$SRC_DIR/../build" \
+              -S .
 
-        cmake %CMAKE_ARGS% ^
-          -GNinja ^
-          -DCMAKE_BUILD_TYPE=Release ^
-          -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
-          -DCMAKE_INSTALL_LIBDIR=lib ^
-          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
-          -DPBRT_BUILD_NATIVE_EXECUTABLE=OFF ^
-          -DPBRT_OPTIX_PATH= ^
-          -DPBRT_NVML=OFF ^
-          -DPBRT_NVTX=OFF ^
-          -B %SRC_DIR%\..\build ^
-          -S .
+            cmake --build "$SRC_DIR/../build" --target install --parallel "${CPU_COUNT:-2}"
+        - if: win and pbrt_gpu == "cpu"
+          then: |
+            cmake -E rm -rf %SRC_DIR%\..\build
 
-        cmake --build %SRC_DIR%\..\build --target install --config Release --parallel %CPU_COUNT%
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DPBRT_BUILD_NATIVE_EXECUTABLE=OFF ^
+              -DPBRT_OPTIX_PATH= ^
+              -DPBRT_NVML=OFF ^
+              -DPBRT_NVTX=OFF ^
+              -B %SRC_DIR%\..\build ^
+              -S .
 
-requirements:
-  build:
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
-    - cmake
-    - git
-    - ninja
-  host:
-    - openexr-dev 3.4.*
-    - zlib
-    - if: linux
-      then:
-        - libgl-devel
-        - xorg-libx11
-        - xorg-libxcursor
-        - xorg-libxext
-        - xorg-libxi
-        - xorg-libxinerama
-        - xorg-libxrandr
-        - xorg-libxxf86vm
-        - xorg-xorgproto
-  run:
-    - openexr-lib 3.4.*
-    - zlib
-    - if: linux
-      then:
-        - libgl-devel
-        - xorg-libx11
-        - xorg-libxcursor
-        - xorg-libxext
-        - xorg-libxi
-        - xorg-libxinerama
-        - xorg-libxrandr
-        - xorg-libxxf86vm
+            cmake --build %SRC_DIR%\..\build --target install --config Release --parallel %CPU_COUNT%
+    requirements:
+      build:
+        - if: pbrt_gpu == "cpu"
+          then:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - cmake
+            - git
+            - ninja
+      host:
+        - if: pbrt_gpu == "cpu"
+          then:
+            - openexr-dev 3.4.*
+            - zlib
+            - if: linux
+              then:
+                - libgl-devel
+                - xorg-libx11
+                - xorg-libxcursor
+                - xorg-libxext
+                - xorg-libxi
+                - xorg-libxinerama
+                - xorg-libxrandr
+                - xorg-libxxf86vm
+                - xorg-xorgproto
 
-tests:
-  - script:
-      - python tests/check_tools.py
-    files:
-      recipe:
-        - tests/check_tools.py
+  - staging:
+      name: pbrt-optix-build
+    build:
+      script:
+        - if: unix and pbrt_gpu == "optix" and target_platform == "linux-64"
+          then: |
+            set -euo pipefail
+            cmake -E rm -rf "$SRC_DIR/../build-optix"
+            . "$PREFIX/etc/conda/activate.d/optix-dev.sh"
+            if [ ! -f "$OptiX_ROOT/include/optix.h" ]; then
+              echo "optix-dev activation did not install $OptiX_ROOT/include/optix.h" >&2
+              exit 1
+            fi
+            pbrt_linker_args=()
+            pbrt_host_sysroot="$PREFIX/x86_64-conda-linux-gnu/sysroot"
+            if [ -d "$pbrt_host_sysroot" ]; then
+              pbrt_linker_args+=(
+                "-DCMAKE_EXE_LINKER_FLAGS=${LDFLAGS:-} --sysroot=$pbrt_host_sysroot"
+              )
+            fi
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              "${pbrt_linker_args[@]}" \
+              -DPBRT_BUILD_NATIVE_EXECUTABLE=OFF \
+              -DPBRT_OPTIX_PATH="$OptiX_ROOT" \
+              -DPBRT_GPU_SHADER_MODEL=sm_75 \
+              -DCMAKE_CUDA_ARCHITECTURES=75 \
+              -DPBRT_NVML=OFF \
+              -DPBRT_NVTX=OFF \
+              -DGLFW_BUILD_WAYLAND=OFF \
+              -DGLFW_BUILD_X11=ON \
+              -B "$SRC_DIR/../build-optix" \
+              -S .
+
+            cmake --build "$SRC_DIR/../build-optix" --target install --parallel "${CPU_COUNT:-2}"
+        - if: win and pbrt_gpu == "optix" and target_platform == "win-64"
+          then: |
+            cmake -E rm -rf %SRC_DIR%\..\build-optix
+            call "%PREFIX%\etc\conda\activate.d\optix-dev.bat"
+            if errorlevel 1 exit /b 1
+            if not exist "%OptiX_ROOT%\include\optix.h" (
+              echo optix-dev activation did not install %OptiX_ROOT%\include\optix.h
+              exit /b 1
+            )
+            set "OPTIX_ROOT_FWD=%OptiX_ROOT:\=/%"
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DPBRT_BUILD_NATIVE_EXECUTABLE=OFF ^
+              -DPBRT_OPTIX_PATH="%OPTIX_ROOT_FWD%" ^
+              -DPBRT_GPU_SHADER_MODEL=sm_75 ^
+              -DCMAKE_CUDA_ARCHITECTURES=75 ^
+              -DPBRT_NVML=OFF ^
+              -DPBRT_NVTX=OFF ^
+              -B %SRC_DIR%\..\build-optix ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-optix --target install --config Release --parallel %CPU_COUNT%
+    requirements:
+      build:
+        - if: pbrt_gpu == "optix" and (target_platform == "linux-64" or target_platform == "win-64")
+          then:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - cmake
+            - git
+            - ninja
+      host:
+        - if: pbrt_gpu == "optix" and (target_platform == "linux-64" or target_platform == "win-64")
+          then:
+            - cuda-version ${{ cuda_version }}.*
+            - cuda-driver-dev
+            - cuda-nvcc
+            - openexr-dev 3.4.*
+            - optix-dev ${{ optix_version }}.*
+            - zlib
+            - if: linux
+              then:
+                - libgl-devel
+                - xorg-libx11
+                - xorg-libxcursor
+                - xorg-libxext
+                - xorg-libxi
+                - xorg-libxinerama
+                - xorg-libxrandr
+                - xorg-libxxf86vm
+                - xorg-xorgproto
+
+  - package:
+      name: pbrt
+    inherit: pbrt-build
+    build:
+      skip:
+        - if: pbrt_gpu != "cpu"
+          then: true
+      files:
+        - bin/pbrt
+        - bin/imgtool
+        - bin/pspec
+        - bin/plytool
+        - bin/cyhair2pbrt
+        - Library/bin/pbrt.exe
+        - Library/bin/imgtool.exe
+        - Library/bin/pspec.exe
+        - Library/bin/plytool.exe
+        - Library/bin/cyhair2pbrt.exe
     requirements:
       run:
-        - python
+        - openexr-lib 3.4.*
+        - zlib
+        - if: linux
+          then:
+            - libgl-devel
+            - xorg-libx11
+            - xorg-libxcursor
+            - xorg-libxext
+            - xorg-libxi
+            - xorg-libxinerama
+            - xorg-libxrandr
+            - xorg-libxxf86vm
+      run_constraints:
+        - pbrt-optix <0a0
+    tests:
+      - script:
+          - python tests/check_tools.py
+        files:
+          recipe:
+            - tests/check_tools.py
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: pbrt-optix
+    inherit: pbrt-optix-build
+    build:
+      skip:
+        - if: pbrt_gpu != "optix" or (target_platform != "linux-64" and target_platform != "win-64")
+          then: true
+      files:
+        - bin/pbrt
+        - bin/imgtool
+        - bin/pspec
+        - bin/plytool
+        - bin/cyhair2pbrt
+        - Library/bin/pbrt.exe
+        - Library/bin/imgtool.exe
+        - Library/bin/pspec.exe
+        - Library/bin/plytool.exe
+        - Library/bin/cyhair2pbrt.exe
+    requirements:
+      run:
+        - cuda-version ${{ cuda_version }}.*
+        - cuda-cudart
+        - openexr-lib 3.4.*
+        - optix-dev ${{ optix_version }}.*
+        - zlib
+        - if: linux
+          then:
+            - libgl-devel
+            - xorg-libx11
+            - xorg-libxcursor
+            - xorg-libxext
+            - xorg-libxi
+            - xorg-libxinerama
+            - xorg-libxrandr
+            - xorg-libxxf86vm
+      run_constraints:
+        - pbrt <0a0
+    tests:
+      - script:
+          - if: unix
+            then:
+              - export PBRT_EXPECT_GPU=1
+              - python tests/check_tools.py
+          - if: win
+            then:
+              - set PBRT_EXPECT_GPU=1
+              - python tests\check_tools.py
+        files:
+          recipe:
+            - tests/check_tools.py
+        requirements:
+          run:
+            - cuda-version ${{ cuda_version }}.*
+            - cuda-driver-dev
+            - python
 
 about:
   homepage: https://pbrt.org

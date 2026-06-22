@@ -11,14 +11,18 @@ import sys
 import tempfile
 
 TIMEOUT_SECONDS = 60
-FORBIDDEN_GPU_LINKAGE = (
-    "cudart",
-    "cuda",
-    "nvml",
-    "nvidia-ml",
-    "nvtx",
-    "nvtoolsext",
-    "optix",
+EXPECT_GPU = os.environ.get("PBRT_EXPECT_GPU") == "1"
+GPU_LIBRARY_PATTERNS = tuple(
+    re.compile(pattern)
+    for pattern in (
+        r"^(lib)?cuda(\.so(\..*)?|\.dylib|\.dll)?$",
+        r"^(lib)?cudart(_static)?(\.so(\..*)?|\.a|\.dylib|64(_\d+)?\.dll|\.dll)?$",
+        r"^(lib)?nvidia-ml(\.so(\..*)?|\.dylib|\.dll)?$",
+        r"^nvml\.dll$",
+        r"^(lib)?nvtx.*(\.so(\..*)?|\.dylib|\.dll)?$",
+        r"^nvtoolsext.*(\.dll|\.lib)?$",
+        r"^(lib)?optix.*(\.so(\..*)?|\.dylib|\.dll|\.lib)?$",
+    )
 )
 
 
@@ -38,7 +42,7 @@ def run_command(command: list[str], *, cwd: pathlib.Path | None = None, input: s
     return output
 
 
-def run_tool(command: list[str], expected: str, *, allowed_returncodes: set[int] = {0}) -> None:
+def run_tool(command: list[str], expected: str, *, allowed_returncodes: set[int] = {0}) -> str:
     executable = shutil.which(command[0])
     assert executable, f"{command[0]} was not found on PATH"
 
@@ -55,6 +59,7 @@ def run_tool(command: list[str], expected: str, *, allowed_returncodes: set[int]
         f"{command!r} exited with {completed.returncode}:\n{output}"
     )
     assert expected in output, f"{command!r} output did not contain {expected!r}:\n{output}"
+    return output
 
 
 def pe_import_names(executable: pathlib.Path) -> list[str]:
@@ -124,18 +129,93 @@ def linkage_report(executable: str) -> str:
     return ""
 
 
-def verify_linkage(executable: str, *, requires_openexr: bool = False) -> None:
-    output = linkage_report(executable)
-    if requires_openexr:
-        assert "openexr" in output.lower(), output
+def linked_library_names(report: str) -> list[str]:
+    names: list[str] = []
+    for line in report.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        token = stripped.split()[0]
+        if token == "statically":
+            continue
+        names.append(pathlib.PurePath(token).name.lower())
+    return names
 
-    linked_gpu_libraries = [
-        library for library in FORBIDDEN_GPU_LINKAGE if library in output.lower()
+
+def gpu_linked_libraries(names: list[str]) -> list[str]:
+    return [
+        name
+        for name in names
+        if any(pattern.match(name) for pattern in GPU_LIBRARY_PATTERNS)
     ]
-    assert not linked_gpu_libraries, (
-        f"{executable} links GPU-only libraries in a CPU-only package: "
-        f"{linked_gpu_libraries}\n{output}"
+
+
+def verify_linkage(
+    executable: str,
+    *,
+    requires_openexr: bool = False,
+    allow_gpu: bool = False,
+    requires_gpu: bool = False,
+) -> None:
+    output = linkage_report(executable)
+    libraries = linked_library_names(output)
+    if requires_openexr:
+        assert any("openexr" in library for library in libraries), output
+
+    linked_gpu_libraries = gpu_linked_libraries(libraries)
+    if requires_gpu:
+        assert linked_gpu_libraries, f"{executable} does not appear to link CUDA/OptiX support:\n{output}"
+    if not allow_gpu:
+        assert not linked_gpu_libraries, (
+            f"{executable} links GPU-only libraries in a CPU-only package: "
+            f"{linked_gpu_libraries}\n{output}"
+        )
+
+
+def probe_gpu_entrypoint(pbrt: str, scene: pathlib.Path, image: pathlib.Path, tmp_path: pathlib.Path) -> None:
+    completed = subprocess.run(
+        [pbrt, "--gpu", scene.as_posix()],
+        check=False,
+        cwd=tmp_path,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=TIMEOUT_SECONDS,
     )
+    output = completed.stdout + completed.stderr
+    if completed.returncode == 0:
+        assert image.is_file(), "pbrt --gpu completed without writing the expected EXR output"
+        return
+
+    lower_output = output.lower()
+    compiled_out_markers = (
+        "compiled without",
+        "cuda support is not",
+        "cuda support not",
+        "gpu support is not",
+        "gpu support not",
+        "optix support is not",
+        "optix support not",
+        "not built with",
+        "not compiled with",
+        "unknown option",
+        "unrecognized",
+    )
+    assert not any(marker in lower_output for marker in compiled_out_markers), output
+    driver_path_markers = (
+        "cuda error",
+        "cuda driver",
+        "cuda device",
+        "optix error",
+        "optix initialization",
+        "optix device",
+        "no cuda-capable device",
+        "no device",
+        "driver version",
+    )
+    assert any(
+        marker in lower_output for marker in driver_path_markers
+    ), f"pbrt --gpu failed before reaching an identifiable GPU/driver path:\n{output}"
 
 
 def assert_installed_tool(name: str) -> str:
@@ -176,29 +256,33 @@ def smoke_render(tmp_path: pathlib.Path) -> pathlib.Path:
     imgtool = assert_installed_tool("imgtool")
     pspec = assert_installed_tool("pspec")
     plytool = assert_installed_tool("plytool")
-    for executable in (pbrt, imgtool, pspec, plytool):
-        verify_linkage(executable, requires_openexr=True)
+    verify_linkage(
+        pbrt,
+        requires_openexr=True,
+        allow_gpu=EXPECT_GPU,
+        requires_gpu=EXPECT_GPU,
+    )
+    for executable in (imgtool, pspec, plytool):
+        verify_linkage(executable, requires_openexr=True, allow_gpu=EXPECT_GPU)
 
     image = tmp_path / "smoke.exr"
     scene = tmp_path / "smoke.pbrt"
-    scene.write_text(
-        "\n".join(
-            [
-                'Film "rgb" "integer xresolution" [3] "integer yresolution" [3]',
-                f'    "string filename" "{image.as_posix()}"',
-                'Sampler "independent" "integer pixelsamples" [8]',
-                'Integrator "path" "integer maxdepth" [1]',
-                "LookAt 0 0 0  0 0 1  0 1 0",
-                'Camera "orthographic" "float screenwindow" [-1 1 -1 1]',
-                "WorldBegin",
-                'AreaLightSource "diffuse" "rgb L" [10 0 0] "bool twosided" [true]',
-                'Shape "trianglemesh"',
-                '    "point3 P" [-0.9 -0.9 1  0.9 -0.9 1  0 0.9 1]',
-                '    "integer indices" [0 1 2]',
-            ]
-        ),
-        encoding="utf-8",
+    scene_text = "\n".join(
+        [
+            'Film "rgb" "integer xresolution" [3] "integer yresolution" [3]',
+            f'    "string filename" "{image.as_posix()}"',
+            'Sampler "independent" "integer pixelsamples" [8]',
+            'Integrator "path" "integer maxdepth" [1]',
+            "LookAt 0 0 0  0 0 1  0 1 0",
+            'Camera "orthographic" "float screenwindow" [-1 1 -1 1]',
+            "WorldBegin",
+            'AreaLightSource "diffuse" "rgb L" [10 0 0] "bool twosided" [true]',
+            'Shape "trianglemesh"',
+            '    "point3 P" [-0.9 -0.9 1  0.9 -0.9 1  0 0.9 1]',
+            '    "integer indices" [0 1 2]',
+        ]
     )
+    scene.write_text(scene_text, encoding="utf-8")
 
     run_command([pbrt, scene.as_posix()], cwd=tmp_path)
     assert image.is_file(), "pbrt did not write the expected EXR output"
@@ -222,6 +306,16 @@ def smoke_render(tmp_path: pathlib.Path) -> pathlib.Path:
         "rendered image did not contain distinct foreground/background pixel values: "
         f"{pixels}"
     )
+
+    if EXPECT_GPU:
+        gpu_image = tmp_path / "smoke-gpu.exr"
+        gpu_scene = tmp_path / "smoke-gpu.pbrt"
+        gpu_scene.write_text(
+            scene_text.replace(image.as_posix(), gpu_image.as_posix()),
+            encoding="utf-8",
+        )
+        probe_gpu_entrypoint(pbrt, gpu_scene, gpu_image, tmp_path)
+
     return image
 
 
@@ -288,7 +382,7 @@ def smoke_plytool(tmp_path: pathlib.Path) -> None:
 
 def smoke_cyhair2pbrt(tmp_path: pathlib.Path) -> None:
     cyhair2pbrt = assert_installed_tool("cyhair2pbrt")
-    verify_linkage(cyhair2pbrt)
+    verify_linkage(cyhair2pbrt, allow_gpu=EXPECT_GPU)
 
     hair = tmp_path / "strand.hair"
     converted = tmp_path / "strand.pbrt"
@@ -343,7 +437,11 @@ def smoke_cyhair2pbrt(tmp_path: pathlib.Path) -> None:
 
 
 def main() -> None:
-    run_tool(["pbrt", "--help"], "usage: pbrt")
+    pbrt_help = run_tool(["pbrt", "--help"], "usage: pbrt")
+    if EXPECT_GPU:
+        assert "--gpu" in pbrt_help, "pbrt-optix help output does not expose --gpu"
+    else:
+        assert "--gpu" not in pbrt_help, "CPU-only pbrt help output unexpectedly exposes --gpu"
     run_tool(["imgtool", "help"], "imgtool <command>")
     run_tool(["pspec", "--help"], "usage: pspec")
     run_tool(["plytool", "help"], "usage: plytool")

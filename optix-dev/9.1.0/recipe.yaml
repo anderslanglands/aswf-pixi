@@ -11,221 +11,78 @@ package:
 build:
   number: ${{ build_number }}
   skip:
-    - if: target_platform != "linux-64"
+    - if: target_platform != "linux-64" and target_platform != "win-64"
       then: true
   script:
-    - |
-      set -euo pipefail
-
-      cmake -E make_directory \
-        "$PREFIX/etc/conda/activate.d" \
-        "$PREFIX/lib/cmake/OptiX" \
-        "$PREFIX/share/optix-dev"
-
-      cat > "$PREFIX/etc/conda/activate.d/optix-dev.sh" <<'EOF'
-      #!/usr/bin/env sh
-      # Download NVIDIA OptiX headers on activation. The conda package itself is
-      # intentionally a stub and does not redistribute the optix-dev repository.
-
-      optix_dev_version="9.1.0"
-      optix_dev_tag="v9.1.0"
-      optix_dev_archive_sha256="3a29b2254107fdfbb5e6bbad3ec154dd682149121f61e9c406607ac7b52a6ba6"
-      optix_dev_archive_url="https://github.com/NVIDIA/optix-dev/archive/refs/tags/${optix_dev_tag}.tar.gz"
-      optix_dev_prefix="${CONDA_PREFIX:-${PREFIX:-}}"
-      optix_dev_tmp_root=""
-
-      optix_dev_error() {
-        echo "optix-dev activation: $*" >&2
-        if [ -n "${optix_dev_tmp_root:-}" ] && [ -d "${optix_dev_tmp_root}" ]; then
-          rm -rf "${optix_dev_tmp_root}"
+    - if: unix
+      then: |
+        set -euo pipefail
+        recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+        if [ -z "$recipe_dir" ]; then
+          echo "RECIPE_DIR is not set" >&2
+          exit 1
         fi
-      }
-
-      if [ -z "${optix_dev_prefix}" ]; then
-        optix_dev_error "CONDA_PREFIX is not set"
-        return 1 2>/dev/null || exit 1
-      fi
-
-      optix_dev_root="${optix_dev_prefix}/opt/optix-dev-${optix_dev_version}"
-      optix_dev_include_dir="${optix_dev_root}/include"
-      optix_dev_marker="${optix_dev_root}/.optix-dev-${optix_dev_version}-${optix_dev_archive_sha256}.installed"
-
-      if [ ! -f "${optix_dev_marker}" ] || [ ! -f "${optix_dev_include_dir}/optix.h" ]; then
-        if ! command -v curl >/dev/null 2>&1; then
-          optix_dev_error "curl is required to download ${optix_dev_archive_url}"
-          return 1 2>/dev/null || exit 1
-        fi
-        if ! command -v sha256sum >/dev/null 2>&1; then
-          optix_dev_error "sha256sum is required to verify ${optix_dev_archive_url}"
-          return 1 2>/dev/null || exit 1
-        fi
-        if ! command -v tar >/dev/null 2>&1; then
-          optix_dev_error "tar is required to unpack ${optix_dev_archive_url}"
-          return 1 2>/dev/null || exit 1
-        fi
-        if ! command -v mktemp >/dev/null 2>&1; then
-          optix_dev_error "mktemp is required to unpack ${optix_dev_archive_url}"
-          return 1 2>/dev/null || exit 1
-        fi
-
-        if ! optix_dev_tmp_root="$(mktemp -d "${TMPDIR:-/tmp}/optix-dev.XXXXXX")"; then
-          optix_dev_error "failed to create a temporary directory"
-          return 1 2>/dev/null || exit 1
-        fi
-        optix_dev_archive="${optix_dev_tmp_root}/optix-dev-${optix_dev_version}.tar.gz"
-        optix_dev_extract="${optix_dev_tmp_root}/extract"
-        optix_dev_stage="${optix_dev_tmp_root}/optix-dev-${optix_dev_version}"
-        if ! mkdir -p "${optix_dev_extract}" "${optix_dev_stage}"; then
-          optix_dev_error "failed to create temporary extraction directories"
-          return 1 2>/dev/null || exit 1
-        fi
-
-        echo "optix-dev activation: downloading ${optix_dev_archive_url}" >&2
-        if ! curl --location --fail --show-error --retry 3 --output "${optix_dev_archive}" "${optix_dev_archive_url}"; then
-          optix_dev_error "failed to download ${optix_dev_archive_url}"
-          return 1 2>/dev/null || exit 1
-        fi
-
-        optix_dev_actual_sha256="$(sha256sum "${optix_dev_archive}")"
-        optix_dev_actual_sha256="${optix_dev_actual_sha256%% *}"
-        if [ "${optix_dev_actual_sha256}" != "${optix_dev_archive_sha256}" ]; then
-          optix_dev_error "checksum mismatch for ${optix_dev_archive_url}: expected ${optix_dev_archive_sha256}, got ${optix_dev_actual_sha256}"
-          return 1 2>/dev/null || exit 1
-        fi
-
-        if ! tar -xzf "${optix_dev_archive}" -C "${optix_dev_extract}"; then
-          optix_dev_error "failed to unpack ${optix_dev_archive_url}"
-          return 1 2>/dev/null || exit 1
-        fi
-
-        optix_dev_source_root="${optix_dev_extract}/optix-dev-${optix_dev_version}"
-        if [ ! -f "${optix_dev_source_root}/include/optix.h" ]; then
-          optix_dev_error "downloaded archive does not contain include/optix.h"
-          return 1 2>/dev/null || exit 1
-        fi
-
-        if ! cp -R "${optix_dev_source_root}/include" "${optix_dev_stage}/include"; then
-          optix_dev_error "failed to stage OptiX headers"
-          return 1 2>/dev/null || exit 1
-        fi
-        for optix_dev_doc in LICENSE.txt license_info.txt README.md; do
-          if [ -f "${optix_dev_source_root}/${optix_dev_doc}" ]; then
-            if ! cp "${optix_dev_source_root}/${optix_dev_doc}" "${optix_dev_stage}/${optix_dev_doc}"; then
-              optix_dev_error "failed to stage ${optix_dev_doc}"
-              return 1 2>/dev/null || exit 1
-            fi
-          fi
-        done
-        if ! printf '%s\n' "${optix_dev_archive_sha256}" > "${optix_dev_stage}/.optix-dev-${optix_dev_version}-${optix_dev_archive_sha256}.installed"; then
-          optix_dev_error "failed to write installation marker"
-          return 1 2>/dev/null || exit 1
-        fi
-
-        if ! mkdir -p "$(dirname "${optix_dev_root}")"; then
-          optix_dev_error "failed to create ${optix_dev_root%/*}"
-          return 1 2>/dev/null || exit 1
-        fi
-        if ! rm -rf "${optix_dev_root}"; then
-          optix_dev_error "failed to remove previous ${optix_dev_root}"
-          return 1 2>/dev/null || exit 1
-        fi
-        if ! mv "${optix_dev_stage}" "${optix_dev_root}"; then
-          optix_dev_error "failed to install headers into ${optix_dev_root}"
-          return 1 2>/dev/null || exit 1
-        fi
-        if ! rm -rf "${optix_dev_tmp_root}"; then
-          optix_dev_error "failed to clean ${optix_dev_tmp_root}"
-          return 1 2>/dev/null || exit 1
-        fi
-        optix_dev_tmp_root=""
-      fi
-
-      export OptiX_ROOT="${optix_dev_root}"
-      export OPTIX_ROOT_DIR="${optix_dev_root}"
-      export OptiX_INCLUDE_DIR="${optix_dev_include_dir}"
-      export OPTIX_INCLUDE_DIR="${optix_dev_include_dir}"
-      export OPTIX_INCLUDES="${optix_dev_include_dir}"
-
-      unset optix_dev_version optix_dev_tag optix_dev_archive_sha256 optix_dev_archive_url
-      unset optix_dev_prefix optix_dev_root optix_dev_include_dir optix_dev_marker
-      unset optix_dev_tmp_root optix_dev_archive optix_dev_extract optix_dev_stage
-      unset optix_dev_actual_sha256 optix_dev_source_root optix_dev_doc
-      unset -f optix_dev_error 2>/dev/null || true
-      EOF
-
-      chmod +x "$PREFIX/etc/conda/activate.d/optix-dev.sh"
-
-      cat > "$PREFIX/lib/cmake/OptiX/OptiXConfig.cmake" <<'EOF'
-      include_guard()
-
-      get_filename_component(_optix_prefix "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
-      set(OptiX_ROOT "${_optix_prefix}/opt/optix-dev-9.1.0")
-      set(OPTIX_ROOT_DIR "${OptiX_ROOT}")
-      set(OptiX_INCLUDE_DIR "${OptiX_ROOT}/include")
-      set(OPTIX_INCLUDE_DIR "${OptiX_INCLUDE_DIR}")
-      set(OPTIX_INCLUDES "${OptiX_INCLUDE_DIR}")
-      set(OptiX_VERSION "9.1.0")
-
-      if(NOT EXISTS "${OptiX_INCLUDE_DIR}/optix.h")
-        message(FATAL_ERROR "OptiX headers are not installed in ${OptiX_INCLUDE_DIR}. Activate the conda environment or source ${_optix_prefix}/etc/conda/activate.d/optix-dev.sh to download them from https://github.com/NVIDIA/optix-dev.")
-      endif()
-
-      set(_optix_interface_include_dirs "${OptiX_INCLUDE_DIR}")
-      if(EXISTS "${_optix_prefix}/targets/x86_64-linux/include/cuda.h")
-        list(APPEND _optix_interface_include_dirs "${_optix_prefix}/targets/x86_64-linux/include")
-      elseif(EXISTS "${_optix_prefix}/include/cuda.h")
-        list(APPEND _optix_interface_include_dirs "${_optix_prefix}/include")
-      endif()
-
-      set(OptiX_FOUND TRUE)
-      if(NOT TARGET OptiX::OptiX)
-        add_library(OptiX::OptiX INTERFACE IMPORTED)
-        set_target_properties(OptiX::OptiX PROPERTIES
-          INTERFACE_INCLUDE_DIRECTORIES "${_optix_interface_include_dirs}"
+        cmake \
+          -DOPTIX_STUB_PREFIX="$PREFIX" \
+          -DOPTIX_STUB_LIBRARY_PREFIX="$PREFIX" \
+          -P "$recipe_dir/cmake/install-stub.cmake"
+        chmod +x "$PREFIX/etc/conda/activate.d/optix-dev.sh"
+      else: |
+        set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+        if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+        if "%RECIPE_DIR_VAR%"=="" (
+          echo RECIPE_DIR is not set
+          exit /b 1
         )
-      endif()
-      EOF
-
-      cat > "$PREFIX/lib/cmake/OptiX/OptiXConfigVersion.cmake" <<'EOF'
-      set(PACKAGE_VERSION "9.1.0")
-      if(PACKAGE_FIND_VERSION VERSION_EQUAL PACKAGE_VERSION)
-        set(PACKAGE_VERSION_EXACT TRUE)
-        set(PACKAGE_VERSION_COMPATIBLE TRUE)
-      elseif(PACKAGE_FIND_VERSION VERSION_LESS PACKAGE_VERSION)
-        set(PACKAGE_VERSION_COMPATIBLE TRUE)
-      else()
-        set(PACKAGE_VERSION_COMPATIBLE FALSE)
-      endif()
-      EOF
-
-      cat > "$PREFIX/share/optix-dev/README.txt" <<'EOF'
-      optix-dev is a download stub package. It does not redistribute NVIDIA's
-      optix-dev repository contents. On environment activation, it downloads the
-      requested version from https://github.com/NVIDIA/optix-dev, verifies the
-      archive checksum, and installs the headers into the active environment.
-      EOF
+        set "PREFIX_FWD=%PREFIX:\=/%"
+        set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+        cmake ^
+          -DOPTIX_STUB_PREFIX="%PREFIX_FWD%" ^
+          -DOPTIX_STUB_LIBRARY_PREFIX="%LIBRARY_PREFIX_FWD%" ^
+          -P "%RECIPE_DIR_VAR%\cmake\install-stub.cmake"
 
 requirements:
   build:
     - cmake
   run:
-    - coreutils
     - cuda-cudart-dev
-    - curl
-    - gzip
-    - tar
+    - if: unix
+      then:
+        - coreutils
+        - curl
+        - gzip
+        - tar
+
 
 tests:
   - package_contents:
       files:
         exists:
-          - etc/conda/activate.d/optix-dev.sh
-          - lib/cmake/OptiX/OptiXConfig.cmake
-          - lib/cmake/OptiX/OptiXConfigVersion.cmake
-          - share/optix-dev/README.txt
+          - if: unix
+            then: etc/conda/activate.d/optix-dev.sh
+          - if: win
+            then: etc/conda/activate.d/optix-dev.bat
+          - if: win
+            then: etc/conda/activate.d/optix-dev.ps1
+          - if: unix
+            then: lib/cmake/OptiX/OptiXConfig.cmake
+          - if: unix
+            then: lib/cmake/OptiX/OptiXConfigVersion.cmake
+          - if: unix
+            then: share/optix-dev/README.txt
+          - if: win
+            then: Library/lib/cmake/OptiX/OptiXConfig.cmake
+          - if: win
+            then: Library/lib/cmake/OptiX/OptiXConfigVersion.cmake
+          - if: win
+            then: Library/share/optix-dev/README.txt
+          - if: win
+            then: Library/share/optix-dev/optix-dev-activate.ps1
         not_exists:
           - include/**
           - opt/**
+          - Library/include/**
+          - Library/opt/**
           - share/optix-dev/LICENSE.txt
           - share/optix-dev/license_info.txt
           - share/optix-dev/README.md
@@ -233,19 +90,38 @@ tests:
           - share/optix-dev/*.tgz
           - share/optix-dev/*.zip
           - share/optix-dev/include/**
+          - Library/share/optix-dev/LICENSE.txt
+          - Library/share/optix-dev/license_info.txt
+          - Library/share/optix-dev/README.md
+          - Library/share/optix-dev/*.tar.gz
+          - Library/share/optix-dev/*.tgz
+          - Library/share/optix-dev/*.zip
+          - Library/share/optix-dev/include/**
   - script:
       - python tests/check_stub_payload.py
-      - python tests/check_activation_checksum_failure.py
-      - . "$PREFIX/etc/conda/activate.d/optix-dev.sh"
-      - python tests/check_optix.py
-      - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
-      - cmake --build build
-      - ./build/optix_consumer
+      - if: unix
+        then:
+          - python tests/check_activation_checksum_failure.py
+          - . "$PREFIX/etc/conda/activate.d/optix-dev.sh"
+          - python tests/check_optix.py
+          - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+          - cmake --build build
+          - ./build/optix_consumer
+      - if: win
+        then:
+          - call "%PREFIX%\etc\conda\activate.d\optix-dev.bat"
+          - python tests\check_optix.py
+          - powershell -NoProfile -ExecutionPolicy Bypass -File tests\check_optix_powershell.ps1
+          - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+          - cmake --build build --config Release
+          - build\optix_consumer.exe
     files:
       recipe:
+        - cmake/install-stub.cmake
         - tests/CMakeLists.txt
         - tests/check_activation_checksum_failure.py
         - tests/check_optix.py
+        - tests/check_optix_powershell.ps1
         - tests/check_stub_payload.py
         - tests/optix_consumer.cpp
     requirements:

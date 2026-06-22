@@ -8,5 +8,12 @@ channels = [
 platforms = ["linux-64"]
 channel-priority = "strict"
 
-[dependencies]
+[feature.pbrt.dependencies]
 pbrt = "==4.0.0"
+
+[feature.pbrt-optix.dependencies]
+pbrt-optix = "==4.0.0"
+
+[environments]
+pbrt = ["pbrt"]
+pbrt-optix = ["pbrt-optix"]
