@@ -39,13 +39,34 @@ if ((-not (Test-Path $optixDevMarker -PathType Leaf)) -or (-not (Test-Path (Join
     New-Item -ItemType Directory -Path $optixDevExtract, $optixDevStage -Force | Out-Null
 
     Write-Host "optix-dev activation: downloading $optixDevArchiveUrl"
-    Invoke-WebRequest -Uri $optixDevArchiveUrl -OutFile $optixDevArchive -UseBasicParsing
-    $optixDevActualSha256 = (Get-FileHash -Algorithm SHA256 -Path $optixDevArchive).Hash.ToLowerInvariant()
+    try {
+      [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    }
+    catch {}
+    $optixDevWebClient = [System.Net.WebClient]::new()
+    $optixDevWebClient.Headers.Add("User-Agent", "aswf-pixi-optix-dev-activation")
+    try {
+      $optixDevWebClient.DownloadFile($optixDevArchiveUrl, $optixDevArchive)
+    }
+    finally {
+      $optixDevWebClient.Dispose()
+    }
+
+    $optixDevSha256 = [System.Security.Cryptography.SHA256]::Create()
+    $optixDevStream = [System.IO.File]::OpenRead($optixDevArchive)
+    try {
+      $optixDevActualSha256 = [System.BitConverter]::ToString($optixDevSha256.ComputeHash($optixDevStream)).Replace("-", "").ToLowerInvariant()
+    }
+    finally {
+      $optixDevStream.Dispose()
+      $optixDevSha256.Dispose()
+    }
     if ($optixDevActualSha256 -ne $optixDevArchiveSha256) {
       throw "checksum mismatch for ${optixDevArchiveUrl}: expected ${optixDevArchiveSha256}, got ${optixDevActualSha256}"
     }
 
-    Expand-Archive -LiteralPath $optixDevArchive -DestinationPath $optixDevExtract -Force
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($optixDevArchive, $optixDevExtract)
 
     $optixDevSourceRoot = Join-Path $optixDevExtract "optix-dev-$optixDevVersion"
     if (-not (Test-Path (Join-Path $optixDevSourceRoot "include\optix.h") -PathType Leaf)) {
