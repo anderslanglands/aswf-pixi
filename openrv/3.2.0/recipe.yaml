@@ -51,6 +51,11 @@ build:
         qt_root="$PREFIX"
         openrv_prefix="$PREFIX/opt/openrv"
         qtpaths_symlink=""
+        cmake_osx_architectures_args=()
+
+        if [ "$(uname -s)" = "Darwin" ]; then
+          cmake_osx_architectures_args=(-DCMAKE_OSX_ARCHITECTURES="$(uname -m)")
+        fi
 
         if [ ! -e "$PREFIX/bin/qtpaths" ]; then
           for qtpaths_candidate in \
@@ -90,6 +95,7 @@ build:
         PY
 
         cmake $CMAKE_ARGS \
+          "${cmake_osx_architectures_args[@]}" \
           -GNinja \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX="$openrv_prefix" \
@@ -311,6 +317,7 @@ requirements:
         - unzip
     - if: win
       then:
+        - winflexbison
         - m2-base
         - m2-make
         - m2-patch
