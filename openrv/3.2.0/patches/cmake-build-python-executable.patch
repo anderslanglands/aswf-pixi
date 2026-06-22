@@ -1,0 +1,104 @@
+diff --git a/cmake/dependencies/ocio.cmake b/cmake/dependencies/ocio.cmake
+--- a/cmake/dependencies/ocio.cmake
++++ b/cmake/dependencies/ocio.cmake
+@@ -8,6 +8,8 @@
+ RV_CREATE_STANDARD_DEPS_VARIABLES("RV_DEPS_OCIO" "${RV_DEPS_OCIO_VERSION}" "make" "")
+ RV_SHOW_STANDARD_DEPS_VARIABLES()
+ 
++FIND_PACKAGE(Python3 REQUIRED COMPONENTS Interpreter)
++
+ # The folder OCIO is building its own dependencies
+ SET(RV_DEPS_OCIO_DIST_DIR
+     ${_build_dir}/ext/dist
+@@ -261,6 +263,6 @@ ELSE() # Windows
+     INSTALL_DIR ${_install_dir}
+     DEPENDS Boost::headers RV_DEPS_PYTHON3 Imath::Imath ZLIB::ZLIB EXPAT::EXPAT
+-    PATCH_COMMAND python3 ${_pyopencolorio_patch_script_path} ${_pyopencolorio_cmakelists_path}
++    PATCH_COMMAND "${Python3_EXECUTABLE}" ${_pyopencolorio_patch_script_path} ${_pyopencolorio_cmakelists_path}
+     CONFIGURE_COMMAND ${CMAKE_COMMAND} ${_configure_options}
+     BUILD_COMMAND ${CMAKE_COMMAND} ${_ocio_build_options}
+     INSTALL_COMMAND ${_cmake_install_command}
+diff --git a/cmake/dependencies/openssl.cmake b/cmake/dependencies/openssl.cmake
+--- a/cmake/dependencies/openssl.cmake
++++ b/cmake/dependencies/openssl.cmake
+@@ -101,10 +101,12 @@ ELSE()
+   SET(_download_hash
+       ${RV_DEPS_OPENSSL_HASH}
+   )
+ 
++  FIND_PACKAGE(Python3 REQUIRED COMPONENTS Interpreter)
++
+   SET(_make_command_script
+       "${PROJECT_SOURCE_DIR}/src/build/make_openssl.py"
+   )
+   SET(_make_command
+-      python3 "${_make_command_script}"
++      "${Python3_EXECUTABLE}" "${_make_command_script}"
+   )
+diff --git a/cmake/dependencies/python3.cmake b/cmake/dependencies/python3.cmake
+--- a/cmake/dependencies/python3.cmake
++++ b/cmake/dependencies/python3.cmake
+@@ -4,6 +4,8 @@
+ # SPDX-License-Identifier: Apache-2.0
+ #
+ 
++FIND_PACKAGE(Python3 REQUIRED COMPONENTS Interpreter)
++
+ SET(_python3_target
+     "RV_DEPS_PYTHON3"
+ )
+@@ -89,7 +91,7 @@ SET(_python3_make_command_script
+     "${PROJECT_SOURCE_DIR}/src/build/make_python.py"
+ )
+ SET(_python3_make_command
+-    python3 "${_python3_make_command_script}"
++    "${Python3_EXECUTABLE}" "${_python3_make_command_script}"
+ )
+ LIST(APPEND _python3_make_command "--variant")
+ LIST(APPEND _python3_make_command ${CMAKE_BUILD_TYPE})
+@@ -121,7 +123,7 @@ IF(RV_VFX_PLATFORM STREQUAL CY2023)
+       "${PROJECT_SOURCE_DIR}/src/build/make_pyside.py"
+   )
+   SET(_pyside_make_command
+-      python3 "${_pyside_make_command_script}"
++      "${Python3_EXECUTABLE}" "${_pyside_make_command_script}"
+   )
+ 
+   LIST(APPEND _pyside_make_command "--variant")
+@@ -149,7 +151,7 @@ ELSEIF(RV_VFX_PLATFORM STRGREATER_EQUAL CY2024)
+       "${PROJECT_SOURCE_DIR}/src/build/make_pyside6.py"
+   )
+   SET(_pyside_make_command
+-      python3 "${_pyside_make_command_script}"
++      "${Python3_EXECUTABLE}" "${_pyside_make_command_script}"
+   )
+ 
+   LIST(APPEND _pyside_make_command "--variant")
+@@ -500,6 +502,6 @@ ADD_CUSTOM_COMMAND(
+   COMMENT "Testing Python distribution"
+   OUTPUT ${${_python3_target}-test-flag}
+-  COMMAND python3 "${_test_python_script}" --python-home "${_install_dir}" --variant "${CMAKE_BUILD_TYPE}"
++  COMMAND "${Python3_EXECUTABLE}" "${_test_python_script}" --python-home "${_install_dir}" --variant "${CMAKE_BUILD_TYPE}"
+   COMMAND cmake -E touch ${${_python3_target}-test-flag}
+   DEPENDS ${${_python3_target}-requirements-flag} ${_test_python_script}
+ )
+diff --git a/src/lib/app/RvCommon/CMakeLists.txt b/src/lib/app/RvCommon/CMakeLists.txt
+--- a/src/lib/app/RvCommon/CMakeLists.txt
++++ b/src/lib/app/RvCommon/CMakeLists.txt
+@@ -6,6 +6,7 @@
+ 
+ INCLUDE(cxx_defaults)
+ INCLUDE(rv_quote_file)
++FIND_PACKAGE(Python3 REQUIRED COMPONENTS Interpreter)
+ 
+ SET(_target
+     "RvCommon"
+@@ -323,7 +324,7 @@ STRING(REPLACE ";" "," _versions_str "${_versions_list}")
+ 
+ ADD_CUSTOM_COMMAND(
+   OUTPUT ${_about_rv_cpp}
+-  COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/generate_about_rv.py ${_about_rv_cpp} "${_compiler_name}" "${_vfx_platform_str}" "${_platform_name}"
++  COMMAND "${Python3_EXECUTABLE}" ${CMAKE_CURRENT_SOURCE_DIR}/generate_about_rv.py ${_about_rv_cpp} "${_compiler_name}" "${_vfx_platform_str}" "${_platform_name}"
+           "${_arch_name}" "${RV_UI_APPLICATION_NAME}" "${_versions_str}" "${RV_GIT_COMMIT_SHORT_HASH}"
+   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/generate_about_rv.py
+   COMMENT "Generating about_rv.cpp with build information"

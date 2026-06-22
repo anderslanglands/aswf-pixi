@@ -1,0 +1,13 @@
+diff --git a/cmake/dependencies/imgui.cmake b/cmake/dependencies/imgui.cmake
+--- a/cmake/dependencies/imgui.cmake
++++ b/cmake/dependencies/imgui.cmake
+@@ -130,7 +130,7 @@ EXTERNALPROJECT_ADD(
+     ${_patch_command_for_imgui}
+   CONFIGURE_COMMAND ${CMAKE_COMMAND} ${_configure_options} -DFIND_QT_VERSION=${_find_qt_version} -DCMAKE_PREFIX_PATH=${_qt_location}/lib/cmake
+   BUILD_COMMAND ${_cmake_build_command}
+   INSTALL_COMMAND ${_cmake_install_command}
+-  BUILD_BYPRODUCTS ${_libpath}
++  BUILD_BYPRODUCTS ${_byproducts}
+   BUILD_ALWAYS FALSE
+   USES_TERMINAL_BUILD TRUE
+   DEPENDS implot_download imgui_backend_qt_download imgui_node_editor_download

@@ -20,12 +20,20 @@ source:
     - patches/optional-osmesa.patch
     - patches/optional-qtbonjour.patch
     - patches/openssl-install-libdir-lib.patch
+    - patches/openssl-windows-implib-byproducts.patch
+    - patches/standard-lib-windows-implib-byproduct.patch
+    - patches/openjph-windows-import-library-name.patch
+    - patches/imgui-windows-implib-byproduct.patch
+    - patches/ocio-windows-implib-byproduct.patch
     - patches/aja-macos-sdk-version.patch
-    - patches/aja-windows-implib-byproduct.patch
+    - patches/tiff-windows-implib-byproduct.patch
     - patches/glew-build-python.patch
+    - patches/quote-file-python3-executable.patch
     - patches/minizip-gcc15-pointer-types.patch
     - patches/python-zlib-build-paths.patch
     - patches/python-detect-openssl-libdir.patch
+    - patches/python-zlib-runtime-paths.patch
+    - patches/cmake-build-python-executable.patch
     - patches/python-pip-index-env.patch
     - patches/python-avoid-pip-self-install.patch
     - patches/python-wheel-safe-runtime-deps.patch
@@ -233,6 +241,7 @@ build:
         set "OPENRV_PREFIX_FWD=%OPENRV_PREFIX:\=/%"
         set "CL=/utf-8 %CL%"
         set "CXXFLAGS=%CXXFLAGS% /utf-8"
+        set "PATH=%BUILD_PREFIX%;%PATH%"
         if "%CPU_COUNT%"=="" set "CPU_COUNT=2"
         set "QT_PLUGIN_PATH=%LIBRARY_PREFIX%\lib\qt6\plugins;%QT_PLUGIN_PATH%"
         set "QT_QPA_PLATFORM_PLUGIN_PATH=%LIBRARY_PREFIX%\lib\qt6\plugins\platforms;%QT_QPA_PLATFORM_PLUGIN_PATH%"

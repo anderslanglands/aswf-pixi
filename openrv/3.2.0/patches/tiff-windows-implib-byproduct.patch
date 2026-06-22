@@ -1,0 +1,25 @@
+diff --git a/cmake/dependencies/tiff.cmake b/cmake/dependencies/tiff.cmake
+--- a/cmake/dependencies/tiff.cmake
++++ b/cmake/dependencies/tiff.cmake
+@@ -35,7 +35,11 @@ ELSE()
+   # Windows: TIFF produces tiff.dll/tiffd.dll (not libtiff.dll). Debug uses "d" postfix.
+   RV_MAKE_STANDARD_LIB_NAME("tiff" "${_version}" "SHARED" "d")
+ ENDIF()
+-# ByProducts note: Windows will only have the DLL in _byproducts, this is fine since both .lib and .dll will be updated together.
++
++SET(_tiff_byproducts ${_libpath})
++IF(RV_TARGET_WINDOWS)
++  LIST(APPEND _tiff_byproducts ${_implibpath})
++ENDIF()
+ 
+ IF(RV_TARGET_WINDOWS)
+   GET_TARGET_PROPERTY(zlib_library ZLIB::ZLIB IMPORTED_IMPLIB)
+@@ -79,7 +83,7 @@ EXTERNALPROJECT_ADD(
+   INSTALL_COMMAND ${_cmake_install_command}
+   BUILD_IN_SOURCE FALSE
+   BUILD_ALWAYS FALSE
+-  BUILD_BYPRODUCTS ${_libpath}
++  BUILD_BYPRODUCTS ${_tiff_byproducts}
+   USES_TERMINAL_BUILD TRUE
+ )
+ 

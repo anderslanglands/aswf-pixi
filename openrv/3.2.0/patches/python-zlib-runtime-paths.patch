@@ -1,0 +1,82 @@
+diff --git a/src/build/make_python.py b/src/build/make_python.py
+--- a/src/build/make_python.py
++++ b/src/build/make_python.py
+@@ -44,6 +44,17 @@ def get_dependency_lib_dir(root: str) -> str:
+     return os.path.join(root, LIB_DIR or "lib")
+ 
+ 
++def get_zlib_lib_dirs() -> List[str]:
++    if not ZLIB_OUTPUT_DIR:
++        return []
++
++    zlib_lib_dirs = [get_dependency_lib_dir(ZLIB_OUTPUT_DIR)]
++    fallback_lib_dir = os.path.join(ZLIB_OUTPUT_DIR, "lib")
++    if fallback_lib_dir not in zlib_lib_dirs:
++        zlib_lib_dirs.append(fallback_lib_dir)
++    return zlib_lib_dirs
++
++
+ def get_sitecustomize_content() -> str:
+     """
+     Load and return the sitecustomize.py content.
+@@ -177,5 +188,16 @@ def patch_python_distribution(python_home: str) -> None:
+             for lib_path in openssl_libs:
+                 print(f"Copying {lib_path} to the python home")
+                 shutil.copy(lib_path, os.path.join(python_home, "libs"))
++
++    if ZLIB_OUTPUT_DIR and platform.system() == "Darwin":
++        python_lib_dir = os.path.join(python_home, "lib")
++        copied_zlib_libs = set()
++        for zlib_lib_dir in get_zlib_lib_dirs():
++            for lib_path in glob.glob(os.path.join(zlib_lib_dir, "libz*.dylib*")):
++                lib_name = os.path.basename(lib_path)
++                if lib_name not in copied_zlib_libs:
++                    print(f"Copying {lib_path} to the python home")
++                    shutil.copyfile(lib_path, os.path.join(python_lib_dir, lib_name))
++                    copied_zlib_libs.add(lib_name)
+ 
+     python_interpreter_args = get_python_interpreter_args(python_home, VARIANT)
+@@ -222,6 +243,11 @@ def add_path_to_env_var(env, envvar: str, paths: list) -> None:
+     env[envvar] = current_value
+ 
+ 
++def add_zlib_runtime_paths(env) -> None:
++    if platform.system() == "Darwin":
++        add_path_to_env_var(env, "DYLD_LIBRARY_PATH", get_zlib_lib_dirs())
++
++
+ def configure() -> None:
+     """
+     Run the configure step of the build. It builds the makefile required to build Python with the path correctly set.
+@@ -317,6 +343,7 @@ def configure() -> None:
+         subprocess_env = {**os.environ}
+         if platform.system() == "Darwin":
+             add_path_to_env_var(subprocess_env, "PKG_CONFIG_PATH", PKG_CONFIG_PATH)
++            add_zlib_runtime_paths(subprocess_env)
+ 
+         print(f"Executing {configure_args} from {SOURCE_DIR}")
+ 
+@@ -390,6 +417,7 @@ def build() -> None:
+         subprocess_env = {**os.environ}
+         if OPENSSL_OUTPUT_DIR:
+             subprocess_env["LC_RPATH"] = os.path.join(OPENSSL_OUTPUT_DIR, LIB_DIR)
++        add_zlib_runtime_paths(subprocess_env)
+ 
+         subprocess.run(
+             make_args,
+@@ -441,6 +469,7 @@ def install_python_vfx2023() -> None:
+         subprocess_env = {**os.environ}
+         if OPENSSL_OUTPUT_DIR:
+             subprocess_env["LC_RPATH"] = os.path.join(OPENSSL_OUTPUT_DIR, "lib")
++        add_zlib_runtime_paths(subprocess_env)
+         subprocess.run(
+             make_args,
+             cwd=SOURCE_DIR,
+@@ -563,6 +592,7 @@ def install_python_vfx2024() -> None:
+         subprocess_env = {**os.environ}
+         if OPENSSL_OUTPUT_DIR:
+             subprocess_env["LC_RPATH"] = os.path.join(OPENSSL_OUTPUT_DIR, "lib")
++        add_zlib_runtime_paths(subprocess_env)
+         subprocess.run(
+             make_args,
+             cwd=SOURCE_DIR,
