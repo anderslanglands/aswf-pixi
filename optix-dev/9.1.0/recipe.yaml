@@ -112,9 +112,8 @@ tests:
           - call "%PREFIX%\etc\conda\activate.d\optix-dev.bat"
           - python tests\check_optix.py
           - powershell -NoProfile -ExecutionPolicy Bypass -File tests\check_optix_powershell.ps1
-          - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
-          - cmake --build build --config Release
-          - build\optix_consumer.exe
+          - python tests\run_windows_consumer_test.py
+          - powershell -NoProfile -Command "Start-Sleep -Seconds 10"
     files:
       recipe:
         - cmake/install-stub.cmake
@@ -124,6 +123,7 @@ tests:
         - tests/check_optix_powershell.ps1
         - tests/check_stub_payload.py
         - tests/optix_consumer.cpp
+        - tests/run_windows_consumer_test.py
     requirements:
       run:
         - ${{ compiler('cxx') }}
