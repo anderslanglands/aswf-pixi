@@ -112,6 +112,7 @@ outputs:
             set CMAKE_GENERATOR=Ninja
             set CMAKE_GENERATOR_PLATFORM=
             set CMAKE_GENERATOR_TOOLSET=
+            set "MITSUBA_VARIANTS=${{ non_cuda_variants }}"
             python -m pip install ./ext/nanobind ^
               --verbose ^
               --no-deps ^
@@ -126,7 +127,7 @@ outputs:
               -DPython_FIND_REGISTRY=NEVER ^
               -DPython3_FIND_REGISTRY=NEVER ^
               -DDRJIT_ENABLE_LLVM=ON ^
-              -DDRJIT_ENABLE_CUDA=ON ^
+              -DDRJIT_ENABLE_CUDA=OFF ^
               -DDRJIT_ENABLE_AUTODIFF=ON ^
               -DDRJIT_ENABLE_PYTHON=ON ^
               -DDRJIT_ENABLE_TESTS=OFF ^
@@ -145,7 +146,7 @@ outputs:
               --verbose ^
               --no-deps ^
               --no-build-isolation ^
-              --config-settings=cmake.args="-DMI_DEFAULT_VARIANTS=${{ variants }}" ^
+              --config-settings=cmake.args="-DMI_DEFAULT_VARIANTS=%MITSUBA_VARIANTS%" ^
               --config-settings=cmake.args="-DMI_DRJIT_CMAKE_DIR=%SP_DIR%/share/cmake/drjit"
             if errorlevel 1 exit /b 1
             python -c "import os; from pathlib import Path; metas=list(Path(os.environ['SP_DIR']).glob('mitsuba-*.dist-info/METADATA')); assert metas; [p.write_text(''.join(line for line in p.read_text().splitlines(True) if not line.startswith('Requires-Dist: drjit'))) for p in metas]"

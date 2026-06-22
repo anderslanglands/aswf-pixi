@@ -26,7 +26,7 @@ CUDA_EXPECTED_VARIANTS = {
 
 def expected_variants() -> set[str]:
     variants = set(BASE_EXPECTED_VARIANTS)
-    if sys.platform != "darwin":
+    if sys.platform.startswith("linux"):
         variants.update(CUDA_EXPECTED_VARIANTS)
     return variants
 
