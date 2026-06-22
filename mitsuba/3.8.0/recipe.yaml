@@ -2,6 +2,7 @@ context:
   version: "3.8.0"
   build_number: 0
   variants: "scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized"
+  non_cuda_variants: "scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized"
   drjit_version: "1.3.1"
   llvm_major: "22"
 
@@ -25,6 +26,12 @@ outputs:
         - if: unix
           then: |
             export CMAKE_GENERATOR=Ninja
+            MITSUBA_VARIANTS="${{ variants }}"
+            DRJIT_ENABLE_CUDA=ON
+            if [ "$(uname)" = "Darwin" ]; then
+              MITSUBA_VARIANTS="${{ non_cuda_variants }}"
+              DRJIT_ENABLE_CUDA=OFF
+            fi
             python -m pip install ./ext/nanobind \
               --verbose \
               --no-deps \
@@ -38,7 +45,7 @@ outputs:
               -DPython_FIND_REGISTRY=NEVER \
               -DPython3_FIND_REGISTRY=NEVER \
               -DDRJIT_ENABLE_LLVM=ON \
-              -DDRJIT_ENABLE_CUDA=ON \
+              -DDRJIT_ENABLE_CUDA="$DRJIT_ENABLE_CUDA" \
               -DDRJIT_ENABLE_AUTODIFF=ON \
               -DDRJIT_ENABLE_PYTHON=ON \
               -DDRJIT_ENABLE_TESTS=OFF \
@@ -53,7 +60,7 @@ outputs:
               --verbose \
               --no-deps \
               --no-build-isolation \
-              --config-settings=cmake.args="-DMI_DEFAULT_VARIANTS=${{ variants }}" \
+              --config-settings=cmake.args="-DMI_DEFAULT_VARIANTS=$MITSUBA_VARIANTS" \
               --config-settings=cmake.args="-DMI_DRJIT_CMAKE_DIR=$SP_DIR/share/cmake/drjit"
             python -c "import os; from pathlib import Path; metas=list(Path(os.environ['SP_DIR']).glob('mitsuba-*.dist-info/METADATA')); assert metas; [p.write_text(''.join(line for line in p.read_text().splitlines(True) if not line.startswith('Requires-Dist: drjit'))) for p in metas]"
             python -m pip uninstall -y nanobind
@@ -68,6 +75,10 @@ outputs:
                 export DRJIT_LIBLLVM_PATH="$CONDA_PREFIX/lib/libLLVM-${{ llvm_major }}.so"
             elif [ -f "$CONDA_PREFIX/lib/libLLVM.so" ]; then
                 export DRJIT_LIBLLVM_PATH="$CONDA_PREFIX/lib/libLLVM.so"
+            elif [ -f "$CONDA_PREFIX/lib/libLLVM-${{ llvm_major }}.dylib" ]; then
+                export DRJIT_LIBLLVM_PATH="$CONDA_PREFIX/lib/libLLVM-${{ llvm_major }}.dylib"
+            elif [ -f "$CONDA_PREFIX/lib/libLLVM.dylib" ]; then
+                export DRJIT_LIBLLVM_PATH="$CONDA_PREFIX/lib/libLLVM.dylib"
             fi
             EOF
             cat > "$PREFIX/etc/conda/deactivate.d/mitsuba-drjit-llvm.sh" <<"EOF"
@@ -88,6 +99,10 @@ outputs:
                     export DRJIT_LIBLLVM_PATH="$_prefix/lib/libLLVM-${{ llvm_major }}.so"
                 elif [ -f "$_prefix/lib/libLLVM.so" ]; then
                     export DRJIT_LIBLLVM_PATH="$_prefix/lib/libLLVM.so"
+                elif [ -f "$_prefix/lib/libLLVM-${{ llvm_major }}.dylib" ]; then
+                    export DRJIT_LIBLLVM_PATH="$_prefix/lib/libLLVM-${{ llvm_major }}.dylib"
+                elif [ -f "$_prefix/lib/libLLVM.dylib" ]; then
+                    export DRJIT_LIBLLVM_PATH="$_prefix/lib/libLLVM.dylib"
                 fi
             fi
             exec "$_prefix/bin/python" -c 'import sys; from mitsuba.cli import _main; sys.argv[0] = "mitsuba"; raise SystemExit(_main())' "$@"
@@ -95,6 +110,8 @@ outputs:
             chmod +x "$PREFIX/bin/mitsuba"
           else: |
             set CMAKE_GENERATOR=Ninja
+            set CMAKE_GENERATOR_PLATFORM=
+            set CMAKE_GENERATOR_TOOLSET=
             python -m pip install ./ext/nanobind ^
               --verbose ^
               --no-deps ^
