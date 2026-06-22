@@ -1,14 +1,21 @@
 context:
   version: "1.39.5"
   build_number: 0
+  slang_rhi_rev: d1ae6a9d78830922431983247308b102f0448124
 
 recipe:
   name: materialx
   version: ${{ version }}
 
 source:
-  url: https://github.com/AcademySoftwareFoundation/MaterialX/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: c0d739b70a36f6f72888a0e8e66db5c83ae87c40737cc9b51c108166804f3a3b
+  - git: https://github.com/AcademySoftwareFoundation/MaterialX.git
+    rev: 7b64921ef1d42f2d57871e9d2c43dc11f041f26b
+    submodules: true
+    patches:
+      - patches/fix-render-slang-gcc15.patch
+  - git: https://github.com/shader-slang/slang-rhi.git
+    rev: ${{ slang_rhi_rev }}
+    target_directory: slang-rhi
 
 build:
   number: ${{ build_number }}
@@ -35,9 +42,10 @@ outputs:
               -DMATERIALX_BUILD_TESTS=OFF \
               -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF \
               -DMATERIALX_BUILD_GEN_GLSL=ON \
-              -DMATERIALX_BUILD_GEN_OSL=OFF \
-              -DMATERIALX_BUILD_GEN_MDL=OFF \
+              -DMATERIALX_BUILD_GEN_OSL=ON \
+              -DMATERIALX_BUILD_GEN_MDL=ON \
               -DMATERIALX_BUILD_GEN_MSL=ON \
+              -DMATERIALX_BUILD_GEN_SLANG=ON \
               -DMATERIALX_BUILD_RENDER=OFF \
               -DMATERIALX_BUILD_RENDER_PLATFORMS=OFF \
               -DMATERIALX_BUILD_OIIO=OFF \
@@ -72,9 +80,10 @@ outputs:
               -DMATERIALX_BUILD_TESTS=OFF ^
               -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF ^
               -DMATERIALX_BUILD_GEN_GLSL=ON ^
-              -DMATERIALX_BUILD_GEN_OSL=OFF ^
-              -DMATERIALX_BUILD_GEN_MDL=OFF ^
+              -DMATERIALX_BUILD_GEN_OSL=ON ^
+              -DMATERIALX_BUILD_GEN_MDL=ON ^
               -DMATERIALX_BUILD_GEN_MSL=ON ^
+              -DMATERIALX_BUILD_GEN_SLANG=ON ^
               -DMATERIALX_BUILD_RENDER=OFF ^
               -DMATERIALX_BUILD_RENDER_PLATFORMS=OFF ^
               -DMATERIALX_BUILD_OIIO=OFF ^
@@ -123,9 +132,10 @@ outputs:
               -DMATERIALX_BUILD_TESTS=OFF \
               -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF \
               -DMATERIALX_BUILD_GEN_GLSL=ON \
-              -DMATERIALX_BUILD_GEN_OSL=OFF \
-              -DMATERIALX_BUILD_GEN_MDL=OFF \
+              -DMATERIALX_BUILD_GEN_OSL=ON \
+              -DMATERIALX_BUILD_GEN_MDL=ON \
               -DMATERIALX_BUILD_GEN_MSL=ON \
+              -DMATERIALX_BUILD_GEN_SLANG=ON \
               -DMATERIALX_BUILD_RENDER=OFF \
               -DMATERIALX_BUILD_RENDER_PLATFORMS=OFF \
               -DMATERIALX_BUILD_OIIO=OFF \
@@ -162,9 +172,10 @@ outputs:
               -DMATERIALX_BUILD_TESTS=OFF ^
               -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF ^
               -DMATERIALX_BUILD_GEN_GLSL=ON ^
-              -DMATERIALX_BUILD_GEN_OSL=OFF ^
-              -DMATERIALX_BUILD_GEN_MDL=OFF ^
+              -DMATERIALX_BUILD_GEN_OSL=ON ^
+              -DMATERIALX_BUILD_GEN_MDL=ON ^
               -DMATERIALX_BUILD_GEN_MSL=ON ^
+              -DMATERIALX_BUILD_GEN_SLANG=ON ^
               -DMATERIALX_BUILD_RENDER=OFF ^
               -DMATERIALX_BUILD_RENDER_PLATFORMS=OFF ^
               -DMATERIALX_BUILD_OIIO=OFF ^
@@ -194,6 +205,468 @@ outputs:
         - pybind11
         - setuptools
         - wheel
+
+
+  - staging:
+      name: materialx-render-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-render
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DMATERIALX_BUILD_SHARED_LIBS=ON \
+              -DMATERIALX_BUILD_PYTHON=OFF \
+              -DMATERIALX_BUILD_VIEWER=OFF \
+              -DMATERIALX_BUILD_GRAPH_EDITOR=OFF \
+              -DMATERIALX_BUILD_DOCS=OFF \
+              -DMATERIALX_BUILD_TESTS=OFF \
+              -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF \
+              -DMATERIALX_BUILD_GEN_GLSL=ON \
+              -DMATERIALX_BUILD_GEN_OSL=OFF \
+              -DMATERIALX_BUILD_GEN_MDL=OFF \
+              -DMATERIALX_BUILD_GEN_MSL=ON \
+              -DMATERIALX_BUILD_GEN_SLANG=OFF \
+              -DMATERIALX_BUILD_RENDER=ON \
+              -DMATERIALX_BUILD_RENDER_PLATFORMS=ON \
+              -DMATERIALX_BUILD_OIIO=OFF \
+              -DMATERIALX_INSTALL_RESOURCES=ON \
+              -DMATERIALX_WARNINGS_AS_ERRORS=OFF \
+              -B $SRC_DIR/../build-render \
+              -S .
+
+            cmake --build $SRC_DIR/../build-render --target install
+
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake \
+              -DMATERIALX_CONFIG_DIR="$PREFIX/lib/cmake/MaterialX" \
+              -DMATERIALX_OPTIONAL_TARGET_SET=render \
+              -P "$recipe_dir/cmake/write-optional-targets.cmake"
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-render
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DMATERIALX_BUILD_SHARED_LIBS=ON ^
+              -DMATERIALX_BUILD_PYTHON=OFF ^
+              -DMATERIALX_BUILD_VIEWER=OFF ^
+              -DMATERIALX_BUILD_GRAPH_EDITOR=OFF ^
+              -DMATERIALX_BUILD_DOCS=OFF ^
+              -DMATERIALX_BUILD_TESTS=OFF ^
+              -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF ^
+              -DMATERIALX_BUILD_GEN_GLSL=ON ^
+              -DMATERIALX_BUILD_GEN_OSL=OFF ^
+              -DMATERIALX_BUILD_GEN_MDL=OFF ^
+              -DMATERIALX_BUILD_GEN_MSL=ON ^
+              -DMATERIALX_BUILD_GEN_SLANG=OFF ^
+              -DMATERIALX_BUILD_RENDER=ON ^
+              -DMATERIALX_BUILD_RENDER_PLATFORMS=ON ^
+              -DMATERIALX_BUILD_OIIO=OFF ^
+              -DMATERIALX_INSTALL_RESOURCES=ON ^
+              -DMATERIALX_WARNINGS_AS_ERRORS=OFF ^
+              -B %SRC_DIR%\..\build-render ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-render --target install --config Release
+
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake ^
+              -DMATERIALX_CONFIG_DIR="%LIBRARY_LIB%\cmake\MaterialX" ^
+              -DMATERIALX_OPTIONAL_TARGET_SET=render ^
+              -P "%RECIPE_DIR_VAR%\cmake\write-optional-targets.cmake"
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+      host:
+        - if: linux
+          then: libgl-devel
+        - if: linux
+          then: xorg-libx11
+        - if: linux
+          then: xorg-libxt
+        - if: linux
+          then: xorg-xorgproto
+
+  - staging:
+      name: materialx-render-osl-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-render-osl
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DMATERIALX_BUILD_SHARED_LIBS=ON \
+              -DMATERIALX_BUILD_PYTHON=OFF \
+              -DMATERIALX_BUILD_VIEWER=OFF \
+              -DMATERIALX_BUILD_GRAPH_EDITOR=OFF \
+              -DMATERIALX_BUILD_DOCS=OFF \
+              -DMATERIALX_BUILD_TESTS=OFF \
+              -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF \
+              -DMATERIALX_BUILD_GEN_GLSL=ON \
+              -DMATERIALX_BUILD_GEN_OSL=ON \
+              -DMATERIALX_BUILD_GEN_MDL=OFF \
+              -DMATERIALX_BUILD_GEN_MSL=ON \
+              -DMATERIALX_BUILD_GEN_SLANG=OFF \
+              -DMATERIALX_BUILD_RENDER=ON \
+              -DMATERIALX_BUILD_RENDER_PLATFORMS=ON \
+              -DMATERIALX_BUILD_OSOS=ON \
+              -DMATERIALX_OSL_BINARY_OSLC="$PREFIX/bin/oslc" \
+              -DMATERIALX_OSL_INCLUDE_PATH="$PREFIX/include" \
+              -DMATERIALX_BUILD_OIIO=OFF \
+              -DMATERIALX_INSTALL_RESOURCES=OFF \
+              -DMATERIALX_WARNINGS_AS_ERRORS=OFF \
+              -B $SRC_DIR/../build-render-osl \
+              -S .
+
+            cmake --build $SRC_DIR/../build-render-osl --target install
+
+            export LD_LIBRARY_PATH="$PREFIX/lib:${LD_LIBRARY_PATH:-}"
+            cmake -E make_directory "$PREFIX/libraries/targets/genoslnetwork/osos"
+            cmake -E make_directory "$PREFIX/libraries/targets/genoslnetwork"
+            "$PREFIX/bin/MaterialXGenOsl_LibsToOso" \
+              --path "$PREFIX" \
+              --outputOsoPath "$PREFIX/libraries/targets/genoslnetwork/osos" \
+              --outputMtlxPath "$PREFIX/libraries/targets/genoslnetwork" \
+              --oslCompilerPath "$PREFIX/bin/oslc" \
+              --oslIncludePath "$PREFIX/include" \
+              --libraryRelativeOsoPath libraries/targets/genoslnetwork/osos
+
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake \
+              -DMATERIALX_CONFIG_DIR="$PREFIX/lib/cmake/MaterialX" \
+              -DMATERIALX_OPTIONAL_TARGET_SET=render-osl \
+              -P "$recipe_dir/cmake/write-optional-targets.cmake"
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-render-osl
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DMATERIALX_BUILD_SHARED_LIBS=ON ^
+              -DMATERIALX_BUILD_PYTHON=OFF ^
+              -DMATERIALX_BUILD_VIEWER=OFF ^
+              -DMATERIALX_BUILD_GRAPH_EDITOR=OFF ^
+              -DMATERIALX_BUILD_DOCS=OFF ^
+              -DMATERIALX_BUILD_TESTS=OFF ^
+              -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF ^
+              -DMATERIALX_BUILD_GEN_GLSL=ON ^
+              -DMATERIALX_BUILD_GEN_OSL=ON ^
+              -DMATERIALX_BUILD_GEN_MDL=OFF ^
+              -DMATERIALX_BUILD_GEN_MSL=ON ^
+              -DMATERIALX_BUILD_GEN_SLANG=OFF ^
+              -DMATERIALX_BUILD_RENDER=ON ^
+              -DMATERIALX_BUILD_RENDER_PLATFORMS=ON ^
+              -DMATERIALX_BUILD_OSOS=ON ^
+              -DMATERIALX_OSL_BINARY_OSLC="%LIBRARY_BIN%\oslc.exe" ^
+              -DMATERIALX_OSL_INCLUDE_PATH="%LIBRARY_INC%" ^
+              -DMATERIALX_BUILD_OIIO=OFF ^
+              -DMATERIALX_INSTALL_RESOURCES=OFF ^
+              -DMATERIALX_WARNINGS_AS_ERRORS=OFF ^
+              -B %SRC_DIR%\..\build-render-osl ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-render-osl --target install --config Release
+
+            set "PATH=%LIBRARY_BIN%;%PATH%"
+            cmake -E make_directory "%LIBRARY_PREFIX%\libraries\targets\genoslnetwork\osos"
+            cmake -E make_directory "%LIBRARY_PREFIX%\libraries\targets\genoslnetwork"
+            "%LIBRARY_BIN%\MaterialXGenOsl_LibsToOso.exe" ^
+              --path "%LIBRARY_PREFIX%" ^
+              --outputOsoPath "%LIBRARY_PREFIX%\libraries\targets\genoslnetwork\osos" ^
+              --outputMtlxPath "%LIBRARY_PREFIX%\libraries\targets\genoslnetwork" ^
+              --oslCompilerPath "%LIBRARY_BIN%\oslc.exe" ^
+              --oslIncludePath "%LIBRARY_INC%" ^
+              --libraryRelativeOsoPath libraries/targets/genoslnetwork/osos
+
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake ^
+              -DMATERIALX_CONFIG_DIR="%LIBRARY_LIB%\cmake\MaterialX" ^
+              -DMATERIALX_OPTIONAL_TARGET_SET=render-osl ^
+              -P "%RECIPE_DIR_VAR%\cmake\write-optional-targets.cmake"
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+      host:
+        - openshadinglanguage-dev 1.15.*
+        - openimageio-dev 3.1.*
+        - if: linux
+          then: libgl-devel
+        - if: linux
+          then: xorg-libx11
+        - if: linux
+          then: xorg-libxt
+        - if: linux
+          then: xorg-xorgproto
+
+  - staging:
+      name: materialx-render-slang-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-render-slang
+            export CXXFLAGS="${CXXFLAGS:-} -Wno-error=shadow"
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DMATERIALX_BUILD_SHARED_LIBS=ON \
+              -DMATERIALX_BUILD_PYTHON=OFF \
+              -DMATERIALX_BUILD_VIEWER=OFF \
+              -DMATERIALX_BUILD_GRAPH_EDITOR=OFF \
+              -DMATERIALX_BUILD_DOCS=OFF \
+              -DMATERIALX_BUILD_TESTS=OFF \
+              -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF \
+              -DMATERIALX_BUILD_GEN_GLSL=ON \
+              -DMATERIALX_BUILD_GEN_OSL=OFF \
+              -DMATERIALX_BUILD_GEN_MDL=OFF \
+              -DMATERIALX_BUILD_GEN_MSL=ON \
+              -DMATERIALX_BUILD_GEN_SLANG=ON \
+              -DMATERIALX_BUILD_RENDER=ON \
+              -DMATERIALX_BUILD_RENDER_PLATFORMS=ON \
+              -DMATERIALX_SLANG_RHI_SOURCE_DIR="$SRC_DIR/slang-rhi" \
+              -DSLANG_RHI_FETCH_SLANG=OFF \
+              -DSLANG_RHI_SLANG_INCLUDE_DIR="$PREFIX/include" \
+              -DSLANG_RHI_SLANG_BINARY_DIR="$PREFIX" \
+              -DSLANG_RHI_BUILD_SHARED=OFF \
+              -DSLANG_RHI_BUILD_TESTS=OFF \
+              -DSLANG_RHI_BUILD_TESTS_WITH_GLFW=OFF \
+              -DSLANG_RHI_BUILD_EXAMPLES=OFF \
+              -DSLANG_RHI_ENABLE_D3D11=OFF \
+              -DSLANG_RHI_ENABLE_D3D12=OFF \
+              -DSLANG_RHI_ENABLE_VULKAN=OFF \
+              -DSLANG_RHI_ENABLE_METAL=OFF \
+              -DSLANG_RHI_ENABLE_CUDA=OFF \
+              -DSLANG_RHI_ENABLE_OPTIX=OFF \
+              -DSLANG_RHI_ENABLE_WGPU=OFF \
+              -DSLANG_RHI_ENABLE_AFTERMATH=OFF \
+              -DMATERIALX_BUILD_OIIO=OFF \
+              -DMATERIALX_INSTALL_RESOURCES=OFF \
+              -DMATERIALX_WARNINGS_AS_ERRORS=OFF \
+              -B $SRC_DIR/../build-render-slang \
+              -S .
+
+            cmake --build $SRC_DIR/../build-render-slang --target install
+
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cmake \
+              -DMATERIALX_BUILD_DIR="$SRC_DIR/../build-render-slang" \
+              -DMATERIALX_SOURCE_DIR="$SRC_DIR" \
+              -DMATERIALX_INSTALL_PREFIX="$PREFIX" \
+              -P "$recipe_dir/cmake/install-render-slang.cmake"
+            cmake \
+              -DMATERIALX_CONFIG_DIR="$PREFIX/lib/cmake/MaterialX" \
+              -DMATERIALX_OPTIONAL_TARGET_SET=render-slang \
+              -P "$recipe_dir/cmake/write-optional-targets.cmake"
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-render-slang
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DMATERIALX_BUILD_SHARED_LIBS=ON ^
+              -DMATERIALX_BUILD_PYTHON=OFF ^
+              -DMATERIALX_BUILD_VIEWER=OFF ^
+              -DMATERIALX_BUILD_GRAPH_EDITOR=OFF ^
+              -DMATERIALX_BUILD_DOCS=OFF ^
+              -DMATERIALX_BUILD_TESTS=OFF ^
+              -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF ^
+              -DMATERIALX_BUILD_GEN_GLSL=ON ^
+              -DMATERIALX_BUILD_GEN_OSL=OFF ^
+              -DMATERIALX_BUILD_GEN_MDL=OFF ^
+              -DMATERIALX_BUILD_GEN_MSL=ON ^
+              -DMATERIALX_BUILD_GEN_SLANG=ON ^
+              -DMATERIALX_BUILD_RENDER=ON ^
+              -DMATERIALX_BUILD_RENDER_PLATFORMS=ON ^
+              -DMATERIALX_SLANG_RHI_SOURCE_DIR="%SRC_DIR%\slang-rhi" ^
+              -DSLANG_RHI_FETCH_SLANG=OFF ^
+              -DSLANG_RHI_SLANG_INCLUDE_DIR="%LIBRARY_INC%" ^
+              -DSLANG_RHI_SLANG_BINARY_DIR="%LIBRARY_PREFIX%" ^
+              -DSLANG_RHI_BUILD_SHARED=OFF ^
+              -DSLANG_RHI_BUILD_TESTS=OFF ^
+              -DSLANG_RHI_BUILD_TESTS_WITH_GLFW=OFF ^
+              -DSLANG_RHI_BUILD_EXAMPLES=OFF ^
+              -DSLANG_RHI_ENABLE_D3D11=OFF ^
+              -DSLANG_RHI_ENABLE_D3D12=OFF ^
+              -DSLANG_RHI_ENABLE_VULKAN=OFF ^
+              -DSLANG_RHI_ENABLE_METAL=OFF ^
+              -DSLANG_RHI_ENABLE_CUDA=OFF ^
+              -DSLANG_RHI_ENABLE_OPTIX=OFF ^
+              -DSLANG_RHI_ENABLE_WGPU=OFF ^
+              -DSLANG_RHI_ENABLE_AFTERMATH=OFF ^
+              -DMATERIALX_BUILD_OIIO=OFF ^
+              -DMATERIALX_INSTALL_RESOURCES=OFF ^
+              -DMATERIALX_WARNINGS_AS_ERRORS=OFF ^
+              -B %SRC_DIR%\..\build-render-slang ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-render-slang --target install --config Release
+
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            cmake ^
+              -DMATERIALX_BUILD_DIR="%SRC_DIR%\..\build-render-slang" ^
+              -DMATERIALX_SOURCE_DIR="%SRC_DIR%" ^
+              -DMATERIALX_INSTALL_PREFIX="%LIBRARY_PREFIX%" ^
+              -P "%RECIPE_DIR_VAR%\cmake\install-render-slang.cmake"
+            cmake ^
+              -DMATERIALX_CONFIG_DIR="%LIBRARY_LIB%\cmake\MaterialX" ^
+              -DMATERIALX_OPTIONAL_TARGET_SET=render-slang ^
+              -P "%RECIPE_DIR_VAR%\cmake\write-optional-targets.cmake"
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+      host:
+        - shader-slang-dev 2026.11.*
+        - if: linux
+          then: libgl-devel
+        - if: linux
+          then: xorg-libx11
+        - if: linux
+          then: xorg-libxt
+        - if: linux
+          then: xorg-xorgproto
+
+  - staging:
+      name: materialx-guitools-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-guitools
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DMATERIALX_BUILD_SHARED_LIBS=ON \
+              -DMATERIALX_BUILD_PYTHON=OFF \
+              -DMATERIALX_BUILD_VIEWER=ON \
+              -DMATERIALX_BUILD_GRAPH_EDITOR=ON \
+              -DMATERIALX_BUILD_DOCS=OFF \
+              -DMATERIALX_BUILD_TESTS=OFF \
+              -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF \
+              -DMATERIALX_BUILD_GEN_GLSL=ON \
+              -DMATERIALX_BUILD_GEN_OSL=ON \
+              -DMATERIALX_BUILD_GEN_MDL=ON \
+              -DMATERIALX_BUILD_GEN_MSL=ON \
+              -DMATERIALX_BUILD_GEN_SLANG=ON \
+              -DMATERIALX_BUILD_RENDER=ON \
+              -DMATERIALX_BUILD_RENDER_PLATFORMS=ON \
+              -DMATERIALX_BUILD_OIIO=OFF \
+              -DMATERIALX_INSTALL_RESOURCES=OFF \
+              -DMATERIALX_WARNINGS_AS_ERRORS=OFF \
+              -B $SRC_DIR/../build-guitools \
+              -S .
+
+            cmake --build $SRC_DIR/../build-guitools --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-guitools
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DMATERIALX_BUILD_SHARED_LIBS=ON ^
+              -DMATERIALX_BUILD_PYTHON=OFF ^
+              -DMATERIALX_BUILD_VIEWER=ON ^
+              -DMATERIALX_BUILD_GRAPH_EDITOR=ON ^
+              -DMATERIALX_BUILD_DOCS=OFF ^
+              -DMATERIALX_BUILD_TESTS=OFF ^
+              -DMATERIALX_BUILD_BENCHMARK_TESTS=OFF ^
+              -DMATERIALX_BUILD_GEN_GLSL=ON ^
+              -DMATERIALX_BUILD_GEN_OSL=ON ^
+              -DMATERIALX_BUILD_GEN_MDL=ON ^
+              -DMATERIALX_BUILD_GEN_MSL=ON ^
+              -DMATERIALX_BUILD_GEN_SLANG=ON ^
+              -DMATERIALX_BUILD_RENDER=ON ^
+              -DMATERIALX_BUILD_RENDER_PLATFORMS=ON ^
+              -DMATERIALX_BUILD_OIIO=OFF ^
+              -DMATERIALX_INSTALL_RESOURCES=OFF ^
+              -DMATERIALX_WARNINGS_AS_ERRORS=OFF ^
+              -B %SRC_DIR%\..\build-guitools ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-guitools --target install --config Release
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+      host:
+        - if: linux
+          then: libgl-devel
+        - if: linux
+          then: xorg-libx11
+        - if: linux
+          then: xorg-libxt
+        - if: linux
+          then: xorg-libxcursor
+        - if: linux
+          then: xorg-libxext
+        - if: linux
+          then: xorg-libxi
+        - if: linux
+          then: xorg-libxinerama
+        - if: linux
+          then: xorg-libxrandr
+        - if: linux
+          then: xorg-libxxf86vm
+        - if: linux
+          then: xorg-xorgproto
 
   - package:
       name: materialx-lib
@@ -266,6 +739,9 @@ outputs:
           include:
             - MaterialXCore/Document.h
             - MaterialXCore/Util.h
+            - MaterialXGenOsl/OslShaderGenerator.h
+            - MaterialXGenMdl/MdlShaderGenerator.h
+            - MaterialXGenSlang/SlangShaderGenerator.h
           files:
             not_exists:
               - include/MaterialXRender/TextureBaker.h
@@ -303,6 +779,291 @@ outputs:
             - cmake
             - ninja
 
+
+  - package:
+      name: materialx-render
+    inherit:
+      from: materialx-render-build
+      run_exports: false
+    build:
+      files:
+        - lib/libMaterialXRender.so*
+        - lib/libMaterialXRenderGlsl.so*
+        - lib/libMaterialXRenderHw.so*
+        - lib/libMaterialXRenderMsl.so*
+        - lib/libMaterialXRender*.dylib*
+        - include/MaterialXRender/**
+        - include/MaterialXRenderGlsl/**
+        - include/MaterialXRenderHw/**
+        - include/MaterialXRenderMsl/**
+        - lib/cmake/MaterialX/MaterialXRenderOptionalTargets.cmake
+        - resources/**
+        - Library/bin/MaterialXRender.dll
+        - Library/bin/MaterialXRenderGlsl.dll
+        - Library/bin/MaterialXRenderHw.dll
+        - Library/bin/MaterialXRenderMsl.dll
+        - Library/include/MaterialXRender/**
+        - Library/include/MaterialXRenderGlsl/**
+        - Library/include/MaterialXRenderHw/**
+        - Library/include/MaterialXRenderMsl/**
+        - Library/lib/MaterialXRender.lib
+        - Library/lib/MaterialXRenderGlsl.lib
+        - Library/lib/MaterialXRenderHw.lib
+        - Library/lib/MaterialXRenderMsl.lib
+        - Library/lib/cmake/MaterialX/MaterialXRenderOptionalTargets.cmake
+        - Library/resources/**
+    requirements:
+      run:
+        - ${{ pin_subpackage('materialx-dev', exact=True) }}
+        - if: linux
+          then: libgl-devel
+        - if: linux
+          then: xorg-libx11
+        - if: linux
+          then: xorg-libxt
+        - if: linux
+          then: xorg-xorgproto
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('materialx-lib', upper_bound='x.x') }}
+          - ${{ pin_subpackage('materialx-render', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - MaterialXRender/Image.h
+            - MaterialXRenderGlsl/GlslRenderer.h
+          files:
+            not_exists:
+              - lib/libMaterialXRenderOsl.so
+              - lib/libMaterialXRenderSlang.so
+              - Library/bin/MaterialXRenderOsl.dll
+              - Library/bin/MaterialXRenderSlang.dll
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/MaterialX/MaterialXRenderOptionalTargets.cmake"
+              - cmake -S tests -B build-render -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build-render --target materialx_render_consumer
+              - ./build-render/materialx_render_consumer
+          - if: osx
+            then:
+              - test -f "$PREFIX/include/MaterialXRenderMsl/MslRenderer.h"
+              - test -f "$PREFIX/lib/libMaterialXRenderMsl.dylib"
+              - cmake --build build-render --target materialx_render_msl_consumer
+              - ./build-render/materialx_render_msl_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\MaterialX\MaterialXRenderOptionalTargets.cmake" exit /b 1
+              - cmake -S tests -B build-render -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build-render --config Release --target materialx_render_consumer
+              - build-render\materialx_render_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/materialx_consumer.cpp
+            - tests/materialx_render_consumer.cpp
+            - tests/materialx_render_msl_consumer.mm
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: materialx-render-osl
+    inherit:
+      from: materialx-render-osl-build
+      run_exports: false
+    build:
+      files:
+        - lib/libMaterialXRenderOsl.so*
+        - lib/libMaterialXRenderOsl.dylib*
+        - include/MaterialXRenderOsl/**
+        - bin/MaterialXGenOsl_LibsToOso
+        - lib/cmake/MaterialX/MaterialXRenderOslOptionalTargets.cmake
+        - libraries/targets/genoslnetwork/**
+        - Library/bin/MaterialXRenderOsl.dll
+        - Library/bin/MaterialXGenOsl_LibsToOso.exe
+        - Library/include/MaterialXRenderOsl/**
+        - Library/lib/MaterialXRenderOsl.lib
+        - Library/lib/cmake/MaterialX/MaterialXRenderOslOptionalTargets.cmake
+        - Library/libraries/targets/genoslnetwork/**
+    requirements:
+      run:
+        - ${{ pin_subpackage('materialx-render', exact=True) }}
+        - openshadinglanguage 1.15.*
+        - openimageio 3.1.*
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('materialx-render-osl', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - MaterialXRenderOsl/OslRenderer.h
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/MaterialX/MaterialXRenderOslOptionalTargets.cmake"
+              - test -x "$PREFIX/bin/MaterialXGenOsl_LibsToOso"
+              - python -c "import os; from pathlib import Path; prefix = Path(os.environ.get('LIBRARY_PREFIX') or os.environ['PREFIX']); osos = list((prefix / 'libraries' / 'targets' / 'genoslnetwork' / 'osos').glob('*.oso')); assert osos, 'missing generated OSL OSO files'"
+              - cmake -S tests -B build-render-osl -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build-render-osl --target materialx_render_osl_consumer
+              - ./build-render-osl/materialx_render_osl_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\MaterialX\MaterialXRenderOslOptionalTargets.cmake" exit /b 1
+              - if not exist "%LIBRARY_BIN%\MaterialXGenOsl_LibsToOso.exe" exit /b 1
+              - python -c "import os; from pathlib import Path; prefix = Path(os.environ.get('LIBRARY_PREFIX') or os.environ['PREFIX']); osos = list((prefix / 'libraries' / 'targets' / 'genoslnetwork' / 'osos').glob('*.oso')); assert osos, 'missing generated OSL OSO files'"
+              - cmake -S tests -B build-render-osl -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build-render-osl --config Release --target materialx_render_osl_consumer
+              - build-render-osl\materialx_render_osl_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/materialx_consumer.cpp
+            - tests/materialx_render_consumer.cpp
+            - tests/materialx_render_osl_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - python
+
+  - package:
+      name: materialx-render-mdl
+    requirements:
+      run:
+        - ${{ pin_subpackage('materialx-dev', exact=True) }}
+        - mdl-sdk 2026.0.*
+    tests:
+      - script:
+          - if: unix
+            then:
+              - cmake -S tests -B build-mdl -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build-mdl --target materialx_consumer
+              - ./build-mdl/materialx_consumer
+              - mdlc --help
+          - if: win
+            then:
+              - cmake -S tests -B build-mdl -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build-mdl --config Release --target materialx_consumer
+              - build-mdl\materialx_consumer.exe
+              - mdlc.exe --help
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/materialx_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: materialx-render-slang
+    inherit:
+      from: materialx-render-slang-build
+      run_exports: false
+    build:
+      files:
+        - lib/libMaterialXRenderSlang.so*
+        - lib/libMaterialXRenderSlang.dylib*
+        - include/MaterialXRenderSlang/**
+        - include/slang-rhi*.h
+        - include/slang-user-config.h
+        - include/slang-rhi/**
+        - lib/cmake/MaterialX/MaterialXRenderSlangOptionalTargets.cmake
+        - Library/bin/MaterialXRenderSlang.dll
+        - Library/include/MaterialXRenderSlang/**
+        - Library/include/slang-rhi*.h
+        - Library/include/slang-user-config.h
+        - Library/include/slang-rhi/**
+        - Library/lib/MaterialXRenderSlang.lib
+        - Library/lib/cmake/MaterialX/MaterialXRenderSlangOptionalTargets.cmake
+    requirements:
+      run:
+        - ${{ pin_subpackage('materialx-render', exact=True) }}
+        - shader-slang-dev 2026.11.*
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('materialx-render-slang', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - MaterialXRenderSlang/SlangRenderer.h
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/MaterialX/MaterialXRenderSlangOptionalTargets.cmake"
+              - cmake -S tests -B build-render-slang -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build-render-slang --target materialx_render_slang_consumer
+              - ./build-render-slang/materialx_render_slang_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\MaterialX\MaterialXRenderSlangOptionalTargets.cmake" exit /b 1
+              - cmake -S tests -B build-render-slang -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build-render-slang --config Release --target materialx_render_slang_consumer
+              - build-render-slang\materialx_render_slang_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/materialx_consumer.cpp
+            - tests/materialx_render_consumer.cpp
+            - tests/materialx_render_slang_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: materialx-guitools
+    inherit:
+      from: materialx-guitools-build
+      run_exports: false
+    build:
+      files:
+        - bin/MaterialXView
+        - bin/MaterialXGraphEditor
+        - Library/bin/MaterialXView.exe
+        - Library/bin/MaterialXGraphEditor.exe
+    requirements:
+      run:
+        - ${{ pin_subpackage('materialx-render', exact=True) }}
+        - if: linux
+          then: libgl-devel
+        - if: linux
+          then: xorg-libx11
+        - if: linux
+          then: xorg-libxt
+        - if: linux
+          then: xorg-libxcursor
+        - if: linux
+          then: xorg-libxext
+        - if: linux
+          then: xorg-libxi
+        - if: linux
+          then: xorg-libxinerama
+        - if: linux
+          then: xorg-libxrandr
+        - if: linux
+          then: xorg-libxxf86vm
+    tests:
+      - script:
+          - if: unix
+            then:
+              - test -x "$PREFIX/bin/MaterialXView"
+              - test -x "$PREFIX/bin/MaterialXGraphEditor"
+              - '"$PREFIX/bin/MaterialXView" --help'
+              - '"$PREFIX/bin/MaterialXGraphEditor" --help'
+          - if: win
+            then:
+              - if not exist "%LIBRARY_BIN%\MaterialXView.exe" exit /b 1
+              - if not exist "%LIBRARY_BIN%\MaterialXGraphEditor.exe" exit /b 1
+              - '"%LIBRARY_BIN%\MaterialXView.exe" --help'
+              - '"%LIBRARY_BIN%\MaterialXGraphEditor.exe" --help'
+
   - package:
       name: materialx-python
     inherit: materialx-python-build
@@ -331,7 +1092,8 @@ outputs:
             then:
               - if not exist "%LIBRARY_PREFIX%\libraries\stdlib\stdlib_defs.mtlx" exit /b 1
           - python -c "import MaterialX as mx, os; from pathlib import Path; prefix = Path(os.environ.get('LIBRARY_PREFIX') or os.environ['PREFIX']); doc = mx.createDocument(); loaded = mx.loadLibraries([str(prefix / 'libraries')], mx.FileSearchPath(str(prefix)), doc); assert mx.getVersionString() == '${{ version }}'; assert loaded; assert doc.getNodeDefs()"
-          - python -c "import importlib.util; modules = ('MaterialX.PyMaterialXRender', 'MaterialX.PyMaterialXRenderGlsl', 'MaterialX.PyMaterialXRenderMsl', 'MaterialX.PyMaterialXRenderOsl'); found = [module for module in modules if importlib.util.find_spec(module) is not None]; assert not found, found"
+          - python -c "import MaterialX.PyMaterialXGenGlsl as gg, MaterialX.PyMaterialXGenMsl as gm, MaterialX.PyMaterialXGenOsl as go, MaterialX.PyMaterialXGenMdl as gd, MaterialX.PyMaterialXGenSlang as gs; generators = (gg.GlslShaderGenerator.create(), gm.MslShaderGenerator.create(), go.OslShaderGenerator.create(), gd.MdlShaderGenerator.create(), gs.SlangShaderGenerator.create()); assert all(generators); assert [g.getTarget() for g in generators] == ['genglsl', 'genmsl', 'genosl', 'genmdl', 'genslang']"
+          - python -c "import importlib.util; modules = ('MaterialX.PyMaterialXRender', 'MaterialX.PyMaterialXRenderGlsl', 'MaterialX.PyMaterialXRenderMsl', 'MaterialX.PyMaterialXRenderOsl', 'MaterialX.PyMaterialXRenderSlang'); found = [module for module in modules if importlib.util.find_spec(module) is not None]; assert not found, found"
           - python -c "import MaterialX, pathlib; assert not (pathlib.Path(MaterialX.__file__).parent / '_scripts').exists()"
         requirements:
           run:
@@ -381,7 +1143,8 @@ outputs:
             then:
               - if not exist "%LIBRARY_PREFIX%\libraries\stdlib\stdlib_defs.mtlx" exit /b 1
           - python -c "import MaterialX as mx, os; from pathlib import Path; prefix = Path(os.environ.get('LIBRARY_PREFIX') or os.environ['PREFIX']); doc = mx.createDocument(); loaded = mx.loadLibraries([str(prefix / 'libraries')], mx.FileSearchPath(str(prefix)), doc); assert mx.getVersionString() == '${{ version }}'; assert loaded; assert doc.getNodeDefs()"
-          - python -c "import importlib.util; modules = ('MaterialX.PyMaterialXRender', 'MaterialX.PyMaterialXRenderGlsl', 'MaterialX.PyMaterialXRenderMsl', 'MaterialX.PyMaterialXRenderOsl'); found = [module for module in modules if importlib.util.find_spec(module) is not None]; assert not found, found"
+          - python -c "import MaterialX.PyMaterialXGenGlsl as gg, MaterialX.PyMaterialXGenMsl as gm, MaterialX.PyMaterialXGenOsl as go, MaterialX.PyMaterialXGenMdl as gd, MaterialX.PyMaterialXGenSlang as gs; generators = (gg.GlslShaderGenerator.create(), gm.MslShaderGenerator.create(), go.OslShaderGenerator.create(), gd.MdlShaderGenerator.create(), gs.SlangShaderGenerator.create()); assert all(generators); assert [g.getTarget() for g in generators] == ['genglsl', 'genmsl', 'genosl', 'genmdl', 'genslang']"
+          - python -c "import importlib.util; modules = ('MaterialX.PyMaterialXRender', 'MaterialX.PyMaterialXRenderGlsl', 'MaterialX.PyMaterialXRenderMsl', 'MaterialX.PyMaterialXRenderOsl', 'MaterialX.PyMaterialXRenderSlang'); found = [module for module in modules if importlib.util.find_spec(module) is not None]; assert not found, found"
         requirements:
           run:
             - python

@@ -73,12 +73,16 @@ Local package preflight:
 
 MaterialX packaging decisions:
 
-- Package MaterialX 1.39.4 as `materialx-lib`, `materialx-dev`, `materialx-python`, and a compatibility/default `materialx` metapackage.
-- The `materialx` metapackage should depend on `materialx-lib`, `materialx-dev`, and `materialx-python` so downstream consumers can depend on `materialx` for the complete default C++ and Python surface.
+- Package MaterialX 1.39.5 as `materialx-lib`, `materialx-dev`, `materialx-render`, `materialx-render-osl`, `materialx-render-mdl`, `materialx-render-slang`, `materialx-guitools`, `materialx-python`, and a compatibility/default `materialx` metapackage.
+- The `materialx` metapackage should depend on `materialx-lib`, `materialx-dev`, and `materialx-python` so downstream consumers can depend on `materialx` for the complete default base C++ and Python surface without render, renderer SDKs, OpenGL/X11, or GUI dependencies.
+- Bundle all generator targets in the base packages: GLSL, MSL, OSL, MDL, and Slang generators are dependency-free in upstream MaterialX and should be available from `materialx-lib`/`materialx-dev`/`materialx-python`.
+- Keep render and renderer-specific dependencies opt-in: `materialx-render` carries core/platform render targets, `materialx-render-osl` carries OSL render plus OSO generation support and depends on OpenShadingLanguage/OpenImageIO, `materialx-render-mdl` is a convenience dependency package because upstream 1.39.5 has no installed `MaterialXRenderMdl` target, and `materialx-render-slang` carries Slang render support.
+- `materialx-render-slang` depends on the separate `shader-slang-dev 2026.11` package for the Slang SDK and CMake target, while the MaterialX recipe fetches the matching `shader-slang/slang-rhi` source at the pinned Slang submodule revision and packages the public RHI headers needed by downstream consumers.
+- Build `materialx-guitools` from a git checkout with submodules, not the release tarball, because MaterialX 1.39.5's release tarball omits the NanoGUI, ImGui, and ImGuiNodeEditor submodule payloads required by the viewer and graph editor.
 - Build `materialx-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
 - Keep `materialx-python` co-installable with `materialx`/`materialx-dev`; the old `materialx` vs `materialx-python` conflict only existed because pixi-recipes used two monolithic packages with overlapping files.
-- Keep viewer, graph editor, and render modules disabled until Anders explicitly asks for GUI/render/OpenGL/X11 packages.
-- Do not carry the old MaterialX `add-cstdint.patch` into 1.39.4 unless a build proves it is still needed; upstream 1.39.4 release notes mention a GCC 15 missing-header fix.
+- Do not carry the old MaterialX `add-cstdint.patch` into 1.39.4 or newer unless a build proves it is still needed; upstream 1.39.4 release notes mention a GCC 15 missing-header fix.
+- Carry the narrow MaterialX 1.39.5 `fix-render-slang-gcc15.patch` until upstream fixes the exported `MaterialXRenderSlang/SlangBlit.h` extra qualifications, missing `<cstring>` includes in the Slang renderer implementation/exported header, and the `MaterialXRenderSlang` target links on `MaterialXRenderHw`/`MaterialXGenSlang`.
 - MaterialX generator headers use C++17 library features such as `std::string_view`; downstream CMake consumer tests should request `cxx_std_17` for now. This is an upstream CMake export ergonomics gap: if we later want linked MaterialX targets to propagate that requirement automatically, discuss an upstream fix or a narrow recipe patch adding interface compile features.
 
 OpenEXR packaging decisions:

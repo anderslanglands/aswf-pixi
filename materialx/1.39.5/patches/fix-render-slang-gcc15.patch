@@ -1,0 +1,73 @@
+diff --git a/source/MaterialXRenderSlang/CMakeLists.txt b/source/MaterialXRenderSlang/CMakeLists.txt
+--- a/source/MaterialXRenderSlang/CMakeLists.txt
++++ b/source/MaterialXRenderSlang/CMakeLists.txt
+@@ -9,3 +9,5 @@ mx_add_library(MaterialXRenderSlang
+     MTLX_MODULES
+         MaterialXRender
++        MaterialXRenderHw
++        MaterialXGenSlang
+     EXPORT_DEFINE
+diff --git a/source/MaterialXRenderSlang/SlangBlit.h b/source/MaterialXRenderSlang/SlangBlit.h
+--- a/source/MaterialXRenderSlang/SlangBlit.h
++++ b/source/MaterialXRenderSlang/SlangBlit.h
+@@ -37,4 +37,4 @@ class SlangBlit
+   private:
+-    rhi::ComPtr<rhi::IRenderPipeline> SlangBlit::getPipeline(rhi::Format dstFormat);
+-
++    rhi::ComPtr<rhi::IRenderPipeline> getPipeline(rhi::Format dstFormat);
++
+   private:
+@@ -46,5 +46,5 @@ class SlangBlit
+     std::map<rhi::Format, rhi::ComPtr<rhi::IRenderPipeline>> _pipelineCache;
+-
+-    rhi::ComPtr<rhi::IShaderProgram> SlangBlit::getProgram();
+-
++
++    rhi::ComPtr<rhi::IShaderProgram> getProgram();
++
+     static const std::string BLIT_CODE;
+diff --git a/source/MaterialXRenderSlang/SlangFramebuffer.cpp b/source/MaterialXRenderSlang/SlangFramebuffer.cpp
+--- a/source/MaterialXRenderSlang/SlangFramebuffer.cpp
++++ b/source/MaterialXRenderSlang/SlangFramebuffer.cpp
+@@ -8,5 +8,6 @@
+ #include <MaterialXRenderSlang/SlangContext.h>
+ #include <MaterialXRender/ShaderRenderer.h>
+-
++#include <cstring>
++
+ MATERIALX_NAMESPACE_BEGIN
+ SlangFramebuffer::SlangFramebuffer(SlangContextPtr context,
+diff --git a/source/MaterialXRenderSlang/SlangRhi.h b/source/MaterialXRenderSlang/SlangRhi.h
+--- a/source/MaterialXRenderSlang/SlangRhi.h
++++ b/source/MaterialXRenderSlang/SlangRhi.h
+@@ -10,7 +10,7 @@
+ /// Wraps the slang-rhi include with the necessary warning pragmas.
+ /// Provides convenience classes (e.g., lifetime management), and aliases.
+-
+-
++#include <cstring>
++
+ #include <MaterialXRenderSlang/Export.h>
+-
++
+ #ifdef _MSC_VER
+diff --git a/source/MaterialXRenderSlang/SlangProgram.cpp b/source/MaterialXRenderSlang/SlangProgram.cpp
+--- a/source/MaterialXRenderSlang/SlangProgram.cpp
++++ b/source/MaterialXRenderSlang/SlangProgram.cpp
+@@ -16,4 +16,5 @@
+ #include <MaterialXGenHw/HwShaderGenerator.h>
+ #include <MaterialXGenShader/Util.h>
+-
++#include <cstring>
++
+ #include <iostream>
+diff --git a/source/MaterialXRenderSlang/SlangTextureHandler.cpp b/source/MaterialXRenderSlang/SlangTextureHandler.cpp
+--- a/source/MaterialXRenderSlang/SlangTextureHandler.cpp
++++ b/source/MaterialXRenderSlang/SlangTextureHandler.cpp
+@@ -10,4 +10,5 @@
+ #include <MaterialXRender/ShaderRenderer.h>
+-
++#include <cstring>
++
+ #include <iostream>
+ #include <cassert>

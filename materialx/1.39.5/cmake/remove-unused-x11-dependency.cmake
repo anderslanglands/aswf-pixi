@@ -19,7 +19,22 @@ if(UNIX AND NOT APPLE)
 endif()
 ]=])
 
-string(REPLACE "${_unused_x11_dependency}" "" _materialx_config_patched "${_materialx_config}")
+string(REPLACE "${_unused_x11_dependency}" "" _materialx_config_without_unused_x11 "${_materialx_config}")
+
+set(_targets_include [=[include("${CMAKE_CURRENT_LIST_DIR}/MaterialXTargets.cmake")]=])
+set(_optional_targets_include [=[include("${CMAKE_CURRENT_LIST_DIR}/MaterialXTargets.cmake")
+
+file(GLOB _materialx_optional_target_files "${CMAKE_CURRENT_LIST_DIR}/MaterialX*OptionalTargets.cmake")
+foreach(_materialx_optional_target_file IN LISTS _materialx_optional_target_files)
+    include("${_materialx_optional_target_file}")
+endforeach()
+unset(_materialx_optional_target_file)
+unset(_materialx_optional_target_files)]=])
+string(REPLACE "${_targets_include}" "${_optional_targets_include}" _materialx_config_patched "${_materialx_config_without_unused_x11}")
+if(_materialx_config_patched STREQUAL _materialx_config_without_unused_x11)
+    message(FATAL_ERROR "MaterialX target include was not found in ${MATERIALX_CONFIG_FILE}")
+endif()
+
 file(WRITE "${MATERIALX_CONFIG_FILE}" "${_materialx_config_patched}")
 
 get_filename_component(_materialx_config_dir "${MATERIALX_CONFIG_FILE}" DIRECTORY)
