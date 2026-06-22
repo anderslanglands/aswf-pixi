@@ -79,6 +79,11 @@ if ((-not (Test-Path $optixDevMarker -PathType Leaf)) -or (-not (Test-Path (Join
       if (Test-Path $sourceDoc -PathType Leaf) { Copy-Item -Path $sourceDoc -Destination (Join-Path $optixDevStage $optixDevDoc) }
     }
     Set-Content -Path (Join-Path $optixDevStage ".optix-dev-$optixDevVersion-$optixDevArchiveSha256.installed") -Value $optixDevArchiveSha256 -NoNewline
+    foreach ($optixDevItem in @(Get-Item -LiteralPath $optixDevStage -Force) + @(Get-ChildItem -LiteralPath $optixDevStage -Recurse -Force)) {
+      if ($optixDevItem.Attributes -band [IO.FileAttributes]::ReadOnly) {
+        $optixDevItem.Attributes = $optixDevItem.Attributes -bxor [IO.FileAttributes]::ReadOnly
+      }
+    }
 
     New-Item -ItemType Directory -Path (Split-Path -Parent $optixDevRoot) -Force | Out-Null
     if (Test-Path $optixDevRoot) { Remove-Item -Recurse -Force $optixDevRoot }
