@@ -75,7 +75,7 @@ def main() -> None:
     if "Mitsuba" not in help_result.stdout:
         raise SystemExit("mitsuba --help did not print the expected help text")
 
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory(dir=Path.cwd()) as tmpdir:
         tmp = Path(tmpdir)
         scene = tmp / "scene.xml"
         output = tmp / "render.exr"
@@ -83,6 +83,8 @@ def main() -> None:
         run_checked(["mitsuba", "-m", "llvm_ad_rgb", "-o", str(output), str(scene)])
         if not output.is_file() or output.stat().st_size == 0:
             raise SystemExit("mitsuba CLI did not produce a non-empty render output")
+        if output.read_bytes()[:4] != b"\x76\x2f\x31\x01":
+            raise SystemExit("mitsuba CLI did not produce an OpenEXR render output")
 
 
 if __name__ == "__main__":

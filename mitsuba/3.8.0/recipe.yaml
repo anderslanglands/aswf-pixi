@@ -26,6 +26,7 @@ outputs:
         - if: unix
           then: |
             export CMAKE_GENERATOR=Ninja
+            git -c core.longpaths=true submodule update --init --recursive
             MITSUBA_VARIANTS="${{ variants }}"
             DRJIT_ENABLE_CUDA=ON
             if [ "$(uname)" = "Darwin" ]; then
@@ -73,7 +74,8 @@ outputs:
               --no-deps \
               --no-build-isolation \
               --config-settings=cmake.args="-DMI_DEFAULT_VARIANTS=$MITSUBA_VARIANTS" \
-              --config-settings=cmake.args="-DMI_DRJIT_CMAKE_DIR=$SP_DIR/share/cmake/drjit"
+              --config-settings=cmake.args="-DMI_DRJIT_CMAKE_DIR=$SP_DIR/share/cmake/drjit" \
+              --config-settings=cmake.args="-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
             python -c "import os; from pathlib import Path; metas=list(Path(os.environ['SP_DIR']).glob('mitsuba-*.dist-info/METADATA')); assert metas; [p.write_text(''.join(line for line in p.read_text().splitlines(True) if not line.startswith('Requires-Dist: drjit'))) for p in metas]"
             python -m pip uninstall -y nanobind
             mkdir -p "$PREFIX/etc/conda/activate.d" "$PREFIX/etc/conda/deactivate.d"
@@ -124,6 +126,8 @@ outputs:
             set CMAKE_GENERATOR=Ninja
             set CMAKE_GENERATOR_PLATFORM=
             set CMAKE_GENERATOR_TOOLSET=
+            git -c core.longpaths=true submodule update --init --recursive
+            if errorlevel 1 exit /b 1
             set "MITSUBA_VARIANTS=${{ non_cuda_variants }}"
             if exist "%PREFIX%\Library\bin\LLVM-C.dll" set "DRJIT_LIBLLVM_PATH=%PREFIX%\Library\bin\LLVM-C.dll"
             if exist "%PREFIX%\Library\bin\LLVM.dll" set "DRJIT_LIBLLVM_PATH=%PREFIX%\Library\bin\LLVM.dll"
@@ -165,7 +169,8 @@ outputs:
               --no-deps ^
               --no-build-isolation ^
               --config-settings=cmake.args="-DMI_DEFAULT_VARIANTS=%MITSUBA_VARIANTS%" ^
-              --config-settings=cmake.args="-DMI_DRJIT_CMAKE_DIR=%SP_DIR%/share/cmake/drjit"
+              --config-settings=cmake.args="-DMI_DRJIT_CMAKE_DIR=%SP_DIR%/share/cmake/drjit" ^
+              --config-settings=cmake.args="-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
             if errorlevel 1 exit /b 1
             python -c "import os; from pathlib import Path; metas=list(Path(os.environ['SP_DIR']).glob('mitsuba-*.dist-info/METADATA')); assert metas; [p.write_text(''.join(line for line in p.read_text().splitlines(True) if not line.startswith('Requires-Dist: drjit'))) for p in metas]"
             if errorlevel 1 exit /b 1
@@ -181,6 +186,8 @@ outputs:
               echo ^)
               echo if exist "%%CONDA_PREFIX%%\Library\bin\LLVM-C.dll" set "DRJIT_LIBLLVM_PATH=%%CONDA_PREFIX%%\Library\bin\LLVM-C.dll"
               echo if exist "%%CONDA_PREFIX%%\Library\bin\LLVM.dll" set "DRJIT_LIBLLVM_PATH=%%CONDA_PREFIX%%\Library\bin\LLVM.dll"
+              echo set "CONDA_BACKUP_MITSUBA_DLL_PATH=%%PATH%%"
+              echo set "PATH=%%CONDA_PREFIX%%\Lib\site-packages\mitsuba;%%CONDA_PREFIX%%\Lib\site-packages\drjit;%%PATH%%"
             ) > "%PREFIX%\etc\conda\activate.d\mitsuba-drjit-llvm.bat"
             (
               echo if defined CONDA_BACKUP_DRJIT_LIBLLVM_PATH ^(
@@ -189,14 +196,21 @@ outputs:
               echo ^) else ^(
               echo   set "DRJIT_LIBLLVM_PATH="
               echo ^)
+              echo if defined CONDA_BACKUP_MITSUBA_DLL_PATH ^(
+              echo   set "PATH=%%CONDA_BACKUP_MITSUBA_DLL_PATH%%"
+              echo   set "CONDA_BACKUP_MITSUBA_DLL_PATH="
+              echo ^)
             ) > "%PREFIX%\etc\conda\deactivate.d\mitsuba-drjit-llvm.bat"
             (
               echo if ^(Test-Path Env:DRJIT_LIBLLVM_PATH^) { $env:CONDA_BACKUP_DRJIT_LIBLLVM_PATH = $env:DRJIT_LIBLLVM_PATH } else { Remove-Item Env:CONDA_BACKUP_DRJIT_LIBLLVM_PATH -ErrorAction SilentlyContinue }
               echo if ^(Test-Path "$env:CONDA_PREFIX\Library\bin\LLVM-C.dll"^) { $env:DRJIT_LIBLLVM_PATH = "$env:CONDA_PREFIX\Library\bin\LLVM-C.dll" }
               echo if ^(Test-Path "$env:CONDA_PREFIX\Library\bin\LLVM.dll"^) { $env:DRJIT_LIBLLVM_PATH = "$env:CONDA_PREFIX\Library\bin\LLVM.dll" }
+              echo $env:CONDA_BACKUP_MITSUBA_DLL_PATH = $env:PATH
+              echo $env:PATH = "$env:CONDA_PREFIX\Lib\site-packages\mitsuba;$env:CONDA_PREFIX\Lib\site-packages\drjit;$env:PATH"
             ) > "%PREFIX%\etc\conda\activate.d\mitsuba-drjit-llvm.ps1"
             (
               echo if ^(Test-Path Env:CONDA_BACKUP_DRJIT_LIBLLVM_PATH^) { $env:DRJIT_LIBLLVM_PATH = $env:CONDA_BACKUP_DRJIT_LIBLLVM_PATH; Remove-Item Env:CONDA_BACKUP_DRJIT_LIBLLVM_PATH -ErrorAction SilentlyContinue } else { Remove-Item Env:DRJIT_LIBLLVM_PATH -ErrorAction SilentlyContinue }
+              echo if ^(Test-Path Env:CONDA_BACKUP_MITSUBA_DLL_PATH^) { $env:PATH = $env:CONDA_BACKUP_MITSUBA_DLL_PATH; Remove-Item Env:CONDA_BACKUP_MITSUBA_DLL_PATH -ErrorAction SilentlyContinue }
             ) > "%PREFIX%\etc\conda\deactivate.d\mitsuba-drjit-llvm.ps1"
     requirements:
       build:
