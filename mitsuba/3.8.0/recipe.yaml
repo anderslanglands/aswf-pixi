@@ -210,7 +210,10 @@ outputs:
         - pip
         - scikit-build-core
         - hatch-fancy-pypi-readme
-        - libllvm${{ llvm_major }}
+        - if: win
+          then: libllvm-c${{ llvm_major }}
+        - if: unix
+          then: libllvm${{ llvm_major }}
         - typing_extensions >=4.12
         - zlib
 
@@ -233,7 +236,10 @@ outputs:
     requirements:
       run:
         - python
-        - libllvm${{ llvm_major }}
+        - if: win
+          then: libllvm-c${{ llvm_major }}
+        - if: unix
+          then: libllvm${{ llvm_major }}
         - typing_extensions >=4.12
         - zlib
       run_constraints:
