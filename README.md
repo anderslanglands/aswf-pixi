@@ -285,9 +285,9 @@ Mitsuba 3 is a retargetable forward and inverse renderer with scalar, LLVM, and 
 Recipe versions:
 - `9.1.0`
 
-The OptiX SDK recipe is a local testing wrapper around NVIDIA's authenticated SDK installer. It is not intended for upload or redistribution.
+The OptiX SDK recipe is a download stub around NVIDIA's public `optix-dev` header repository. The conda artifact does not redistribute NVIDIA headers; activation downloads the pinned GitHub archive into the active environment.
 
-- `optix-dev`: Linux-only development package installing the OptiX 9.1 headers and a minimal `OptiXConfig.cmake`. The recipe downloads NVIDIA's secure installer when possible, or uses `OPTIX_INSTALLER_PATH=/path/to/nvidia-optix-sdk-9.1.0-linux64-x86_64.sh` for an already authenticated local download.
+- `optix-dev`: Linux-only development stub package installing an activation hook and minimal `OptiXConfig.cmake`. On activation it downloads `NVIDIA/optix-dev` tag `v9.1.0`, verifies the archive checksum, and installs the headers under `$CONDA_PREFIX/opt/optix-dev-9.1.0`.
 
 ## pbrt
 

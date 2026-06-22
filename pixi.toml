@@ -83,4 +83,4 @@ build-shader-slang-2026-11 = "rattler-build build --recipe shader-slang/2026.11/
 build-shader-slang = { depends-on = ["build-shader-slang-2026-11"] }
 upload-shader-slang-2026-11-test = "anaconda upload --user anderslanglands --label test output/*/shader-slang-lib-2026.11-*.conda output/*/shader-slang-dev-2026.11-*.conda output/*/shader-slang-tools-2026.11-*.conda output/*/shader-slang-2026.11-*.conda"
 upload-shader-slang-2026-11 = "anaconda upload --user anderslanglands output/*/shader-slang-lib-2026.11-*.conda output/*/shader-slang-dev-2026.11-*.conda output/*/shader-slang-tools-2026.11-*.conda output/*/shader-slang-2026.11-*.conda"
-build-optix-dev-9-1-0 = "rattler-build build --recipe optix-dev/9.1.0/recipe.yaml --target-platform linux-64 --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native --env-isolation none"
+build-optix-dev-9-1-0 = "rattler-build build --recipe optix-dev/9.1.0/recipe.yaml --target-platform linux-64 --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native"

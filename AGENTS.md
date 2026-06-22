@@ -243,9 +243,9 @@ Mitsuba packaging decisions:
 
 OptiX SDK packaging decisions:
 
-- Package OptiX SDK 9.1.0 as a local-only Linux `optix-dev` wrapper for testing CUDA/OptiX consumers; do not upload or redistribute it from this repository.
-- The recipe uses NVIDIA's secure installer URL when it is directly accessible, but supports `OPTIX_INSTALLER_PATH` for an already authenticated local `nvidia-optix-sdk-9.1.0-linux64-x86_64.sh` download because the URL can redirect to NVIDIA login.
-- Install only the OptiX headers plus minimal CMake package metadata needed by local consumers. Keep SDK samples, binaries, and broad redistribution out of the package unless Anders explicitly asks.
+- Package OptiX SDK 9.1.0 as a Linux `optix-dev` download stub for testing CUDA/OptiX consumers. Do not put NVIDIA header files or other `NVIDIA/optix-dev` repository contents in the conda artifact.
+- The package should install only activation/download logic, minimal CMake package metadata, and local explanatory text. On activation it downloads the pinned `NVIDIA/optix-dev` GitHub archive, verifies the checksum, and installs headers into the active environment.
+- Keep SDK samples, binaries, and broad redistribution out of the package unless Anders explicitly asks.
 
 pbrt packaging decisions:
 
