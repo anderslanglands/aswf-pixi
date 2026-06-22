@@ -183,6 +183,72 @@ outputs:
             ["imath-lib", "imath-dev", "imath"],
         )
 
+    def test_recipe_package_names_read_top_level_package_recipe(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            recipe = Path(tmp_raw) / "app" / "1.0.0"
+            recipe.mkdir(parents=True)
+            (recipe / "recipe.yaml").write_text(
+                """context:
+  version: 1.0.0
+
+package:
+  name: app
+  version: ${{ version }}
+""",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(resolve_build_numbers.recipe_package_names(recipe), ["app"])
+
+    def test_recipe_package_names_prefer_outputs_over_top_level_package(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            recipe = Path(tmp_raw) / "split-app" / "1.0.0"
+            recipe.mkdir(parents=True)
+            (recipe / "recipe.yaml").write_text(
+                """context:
+  version: 1.0.0
+
+package:
+  name: split-app
+  version: ${{ version }}
+
+outputs:
+  - package:
+      name: split-app-lib
+  - package:
+      name: split-app
+""",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                resolve_build_numbers.recipe_package_names(recipe),
+                ["split-app-lib", "split-app"],
+            )
+
+    def test_empty_publish_build_number_resolves_real_openrv_recipe(self) -> None:
+        fetched_urls: list[str] = []
+
+        def fake_fetch(url: str) -> list[dict[str, object]]:
+            fetched_urls.append(url)
+            return []
+
+        recipe = ROOT / "openrv" / "3.2.0"
+        self.assertEqual(
+            resolve_build_numbers.resolve_build_numbers(
+                [recipe],
+                ["linux-64"],
+                "default-label",
+                "",
+                fake_fetch,
+            ),
+            {recipe.as_posix(): "0"},
+        )
+        self.assertEqual(
+            fetched_urls,
+            ["https://api.anaconda.org/package/anderslanglands/openrv/files"],
+        )
+
     def test_fetch_package_files_accepts_list_and_dict_payloads(self) -> None:
         class FakeResponse:
             def __init__(self, payload: object) -> None:

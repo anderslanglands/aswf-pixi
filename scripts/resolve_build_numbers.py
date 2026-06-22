@@ -37,8 +37,10 @@ def recipe_package_names(recipe: Path) -> list[str]:
     recipe_file = recipe / "recipe.yaml"
     lines = recipe_file.read_text(encoding="utf-8").splitlines()
     recipe_name: str | None = None
+    top_level_package_name: str | None = None
     package_names: list[str] = []
     in_recipe = False
+    in_package = False
     in_outputs = False
     current_output_kind: str | None = None
 
@@ -52,6 +54,7 @@ def recipe_package_names(recipe: Path) -> list[str]:
         if indent == 0:
             key = line.split(":", 1)[0]
             in_recipe = key == "recipe"
+            in_package = key == "package"
             in_outputs = key == "outputs"
             current_output_kind = None
             continue
@@ -60,6 +63,12 @@ def recipe_package_names(recipe: Path) -> list[str]:
             name = parse_name_value(line)
             if name:
                 recipe_name = name
+            continue
+
+        if in_package and indent == 2:
+            name = parse_name_value(line)
+            if name:
+                top_level_package_name = name
             continue
 
         if not in_outputs:
@@ -77,6 +86,8 @@ def recipe_package_names(recipe: Path) -> list[str]:
 
     if package_names:
         return list(dict.fromkeys(package_names))
+    if top_level_package_name:
+        return [top_level_package_name]
     if recipe_name:
         return [recipe_name]
     raise SystemExit(f"Could not find package name(s) in {recipe_file}.")
