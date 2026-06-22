@@ -38,9 +38,56 @@ class CiMatrixTests(unittest.TestCase):
             finally:
                 os.chdir(cwd)
 
+    def test_parse_recipes_expands_bare_package_selector(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            for version in ["1.0.0", "1.1.0"]:
+                recipe = tmp / "foo" / version
+                recipe.mkdir(parents=True)
+                (recipe / "recipe.yaml").write_text(f"recipe:\n  name: foo\n  version: {version}\n", encoding="utf-8")
+            (tmp / "foo" / "notes").mkdir()
+
+            cwd = Path.cwd()
+            try:
+                os.chdir(tmp)
+                self.assertEqual(
+                    ci_matrix.parse_recipes("foo"),
+                    [Path("foo/1.0.0"), Path("foo/1.1.0")],
+                )
+            finally:
+                os.chdir(cwd)
+
     def test_parse_recipes_rejects_unsupported_wildcard_shape(self) -> None:
         with self.assertRaisesRegex(SystemExit, r"must look like package/\*"):
             ci_matrix.parse_recipes("foo/1.*")
+
+    def test_parse_recipes_rejects_bare_package_without_version_recipes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            (tmp / "foo" / "notes").mkdir(parents=True)
+
+            cwd = Path.cwd()
+            try:
+                os.chdir(tmp)
+                with self.assertRaisesRegex(SystemExit, r"should look like package/version"):
+                    ci_matrix.parse_recipes("foo")
+            finally:
+                os.chdir(cwd)
+
+    def test_parse_recipes_rejects_deeper_explicit_recipe_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            recipe = tmp / "foo" / "1.0.0" / "extra"
+            recipe.mkdir(parents=True)
+            (recipe / "recipe.yaml").write_text("recipe:\n  name: foo\n  version: 1.0.0\n", encoding="utf-8")
+
+            cwd = Path.cwd()
+            try:
+                os.chdir(tmp)
+                with self.assertRaisesRegex(SystemExit, r"should look like package/version"):
+                    ci_matrix.parse_recipes("foo/1.0.0/extra")
+            finally:
+                os.chdir(cwd)
 
     def test_ci_matrix_cli_expands_wildcard_recipe_selector(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
@@ -75,6 +122,75 @@ class CiMatrixTests(unittest.TestCase):
                 ["foo/1.0.0", "foo/1.1.0"],
             )
             self.assertEqual([item["build_number"] for item in matrix["include"]], ["4", "4"])
+
+    def test_ci_matrix_cli_expands_bare_package_recipe_selector(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            for version in ["1.0.0", "1.1.0"]:
+                recipe = tmp / "foo" / version
+                recipe.mkdir(parents=True)
+                (recipe / "recipe.yaml").write_text(f"recipe:\n  name: foo\n  version: {version}\n", encoding="utf-8")
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "ci_matrix.py"),
+                    "--recipes",
+                    "foo",
+                    "--platforms",
+                    "linux-64",
+                    "--build-number",
+                    "4",
+                    "--publish-target",
+                    "default-label",
+                ],
+                cwd=tmp,
+                check=True,
+                stdout=subprocess.PIPE,
+                text=True,
+            )
+
+            matrix = json.loads(completed.stdout)
+            self.assertEqual(
+                [item["recipe"] for item in matrix["include"]],
+                ["foo/1.0.0", "foo/1.1.0"],
+            )
+            self.assertEqual([item["build_number"] for item in matrix["include"]], ["4", "4"])
+
+    def test_ci_matrix_cli_expands_bare_package_with_resolved_build_numbers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            for version in ["1.0.0", "1.1.0"]:
+                recipe = tmp / "foo" / version
+                recipe.mkdir(parents=True)
+                (recipe / "recipe.yaml").write_text(f"recipe:\n  name: foo\n  version: {version}\n", encoding="utf-8")
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "ci_matrix.py"),
+                    "--recipes",
+                    "foo",
+                    "--platforms",
+                    "linux-64",
+                    "--build-number",
+                    "",
+                    "--publish-target",
+                    "default-label",
+                    "--resolved-build-numbers",
+                    '{"foo/1.0.0": "5", "foo/1.1.0": "6"}',
+                ],
+                cwd=tmp,
+                check=True,
+                stdout=subprocess.PIPE,
+                text=True,
+            )
+
+            matrix = json.loads(completed.stdout)
+            self.assertEqual(
+                [(item["recipe"], item["build_number"]) for item in matrix["include"]],
+                [("foo/1.0.0", "5"), ("foo/1.1.0", "6")],
+            )
 
     def test_build_packages_workflow_defaults_to_default_label(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "build-packages.yml").read_text(encoding="utf-8")
@@ -380,6 +496,35 @@ outputs:
                     str(ROOT / "scripts" / "resolve_build_numbers.py"),
                     "--recipes",
                     "foo/*",
+                    "--platforms",
+                    "linux-64",
+                    "--target",
+                    "default-label",
+                    "--build-number",
+                    "7",
+                ],
+                cwd=tmp,
+                check=True,
+                stdout=subprocess.PIPE,
+                text=True,
+            )
+
+            self.assertEqual(json.loads(completed.stdout), {"foo/1.0.0": "7", "foo/1.1.0": "7"})
+
+    def test_resolve_build_numbers_cli_expands_bare_package_recipe_selector(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            for version in ["1.0.0", "1.1.0"]:
+                recipe = tmp / "foo" / version
+                recipe.mkdir(parents=True)
+                (recipe / "recipe.yaml").write_text(f"recipe:\n  name: foo\n  version: {version}\n", encoding="utf-8")
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "resolve_build_numbers.py"),
+                    "--recipes",
+                    "foo",
                     "--platforms",
                     "linux-64",
                     "--target",
