@@ -200,6 +200,18 @@ SeExpr is an embeddable expression evaluation engine for graphics applications.
 - `seexpr-tools`: Non-GUI command-line utilities, currently upstream's `eval` and `listVar` tools under `share/SeExpr2/utils`. Depends on the matching `seexpr-lib`.
 - `seexpr`: Default metapackage for C++ consumers. Depends on the matching `seexpr-lib` and `seexpr-dev`; tools, Python bindings, Qt editor/UI, LLVM backend, docs, and demos are not included by default.
 
+## Shader Slang
+
+Recipe versions:
+- `2026.11`
+
+Shader Slang is a shading language and compiler for real-time graphics, with code generation for APIs such as Vulkan, Direct3D, Metal, CUDA, and CPU-oriented workflows.
+
+- `shader-slang-lib`: Shared Slang runtime/compiler libraries, runtime-loaded Slang modules, and installed standard modules. Uses conda-forge `glslang` for SPIR-V output; DXIL/DXC and slang-LLVM support are disabled in this first source-built package.
+- `shader-slang-dev`: C++ headers, CMake package files, pkg-config metadata on Unix, and Windows import libraries. Depends on the matching `shader-slang-lib` and `shader-slang-tools` because upstream's installed CMake target set exports `slangc`.
+- `shader-slang-tools`: Headless command-line tools: `slang`, `slangc`, `slangd`, and `slangi`. Depends on the matching `shader-slang-lib`.
+- `shader-slang`: Default metapackage for compiler and C++ consumers. Depends on the matching runtime, development surface, and tools.
+
 ## OpenImageIO
 
 Recipe versions:

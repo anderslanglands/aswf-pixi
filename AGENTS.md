@@ -169,6 +169,20 @@ SeExpr packaging decisions:
 - Upstream 3.0.1 installs legacy variable-based CMake metadata named `seexpr2-config.cmake`; validate development packages with that CMake package config and direct library discovery rather than pkg-config.
 - Upstream 3.0.1 builds a static `SeExpr2.lib` on Windows rather than a DLL; keep the Windows runtime package static-only unless Anders decides carrying a shared-library patch is worth it.
 
+Shader Slang packaging decisions:
+
+- Package Shader Slang 2026.11 as `shader-slang-lib`, `shader-slang-dev`, `shader-slang-tools`, and a compatibility/default `shader-slang` metapackage.
+- Use the `shader-slang` package name rather than `slang`, because conda-forge already uses `slang` for the unrelated S-Lang library.
+- The `shader-slang` metapackage should depend on the C++ runtime, development surface, and headless tools.
+- Package `shader-slang-tools` with `slang`, `slangc`, `slangd`, and `slangi`.
+- `shader-slang-dev` should depend on the matching runtime and tools because upstream's installed CMake target set exports `slangc` and sets `SLANG_EXECUTABLE`.
+- Build from the `v2026.11` git source with submodules so upstream CMake detects the intended version from `git describe`.
+- Keep DXIL/DXC support disabled in the first package. Upstream's DXC path may download prebuilt DXC or clone/build DXC plus LLVM/Clang during configure; add DXIL support later only after deciding how to package DXC reproducibly.
+- Keep slang-LLVM support disabled in the first package. This omits direct CPU-native LLVM/JIT/object-code workflows but avoids fetching the upstream `slang-llvm` binary or linking against a fragile dynamic system LLVM.
+- Build the optional `slang-glslang` wrapper against conda-forge `glslang`/`spirv-tools`/`spirv-headers`; Slang uses this runtime-loaded module for SPIR-V output, so do not disable it unless the package intentionally drops SPIR-V coverage.
+- Keep GFX, slang-rhi, tests, examples, replayer, CUDA, OptiX, NVAPI, Aftermath, Xlib, Dawn, Tint, and SPIRV-Tools mimalloc disabled unless Anders explicitly asks for those surfaces.
+- Validate tools by compiling a tiny compute shader to GLSL and SPIR-V, and validate development packages through upstream's CMake config and `slang::slang` target rather than pkg-config.
+
 OpenImageIO packaging decisions:
 
 - Package OpenImageIO 2.5.19.1, 3.0.19.1, and 3.1.14.0 as `openimageio-lib`, `openimageio-dev`, `openimageio-tools`, `openimageio-python`, individual optional format plugin packages, and a compatibility/default `openimageio` metapackage.
