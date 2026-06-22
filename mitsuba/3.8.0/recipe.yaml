@@ -32,6 +32,18 @@ outputs:
               MITSUBA_VARIANTS="${{ non_cuda_variants }}"
               DRJIT_ENABLE_CUDA=OFF
             fi
+            if [ -f "$PREFIX/lib/libLLVM-${{ llvm_major }}.so" ]; then
+              export DRJIT_LIBLLVM_PATH="$PREFIX/lib/libLLVM-${{ llvm_major }}.so"
+            elif [ -f "$PREFIX/lib/libLLVM.so" ]; then
+              export DRJIT_LIBLLVM_PATH="$PREFIX/lib/libLLVM.so"
+            elif [ -f "$PREFIX/lib/libLLVM-${{ llvm_major }}.dylib" ]; then
+              export DRJIT_LIBLLVM_PATH="$PREFIX/lib/libLLVM-${{ llvm_major }}.dylib"
+            elif [ -f "$PREFIX/lib/libLLVM.dylib" ]; then
+              export DRJIT_LIBLLVM_PATH="$PREFIX/lib/libLLVM.dylib"
+            else
+              echo "Could not find libLLVM in $PREFIX/lib" >&2
+              exit 1
+            fi
             python -m pip install ./ext/nanobind \
               --verbose \
               --no-deps \
@@ -113,6 +125,12 @@ outputs:
             set CMAKE_GENERATOR_PLATFORM=
             set CMAKE_GENERATOR_TOOLSET=
             set "MITSUBA_VARIANTS=${{ non_cuda_variants }}"
+            if exist "%PREFIX%\Library\bin\LLVM-C.dll" set "DRJIT_LIBLLVM_PATH=%PREFIX%\Library\bin\LLVM-C.dll"
+            if exist "%PREFIX%\Library\bin\LLVM.dll" set "DRJIT_LIBLLVM_PATH=%PREFIX%\Library\bin\LLVM.dll"
+            if not defined DRJIT_LIBLLVM_PATH (
+              echo Could not find LLVM-C.dll or LLVM.dll in "%PREFIX%\Library\bin"
+              exit /b 1
+            )
             python -m pip install ./ext/nanobind ^
               --verbose ^
               --no-deps ^
@@ -192,6 +210,7 @@ outputs:
         - pip
         - scikit-build-core
         - hatch-fancy-pypi-readme
+        - libllvm${{ llvm_major }}
         - typing_extensions >=4.12
         - zlib
 
