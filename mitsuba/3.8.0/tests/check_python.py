@@ -1,7 +1,8 @@
 import importlib
 import os
+import subprocess
 import sys
-from contextlib import nullcontext
+import uuid
 from pathlib import Path
 
 
@@ -22,6 +23,13 @@ CUDA_EXPECTED_VARIANTS = {
     "cuda_ad_mono_polarized",
     "cuda_ad_spectral",
     "cuda_ad_spectral_polarized",
+}
+
+WINDOWS_MITSUBA_LLVM_TEARDOWN_STATUSES = {
+    3221226356,  # 0xC0000374, heap corruption
+    3221226505,  # 0xC0000409, stack buffer overrun / fail-fast
+    -1073740940,
+    -1073740791,
 }
 
 
@@ -60,29 +68,61 @@ def make_tiny_cornell_box(mi) -> dict:
     return scene_dict
 
 
-def render_tiny_scene(mi, dr, variant: str) -> None:
-    flags = nullcontext()
-    if sys.platform.startswith("win") and variant.startswith("llvm_"):
-        # Dr.Jit 1.3.1 on Windows fails to materialize Mitsuba's symbolic
-        # callable render kernels in the CI/runtime package environment.
-        flags = dr.scoped_set_flag(dr.JitFlag.SymbolicCalls, False)
-
-    with flags:
-        mi.set_variant(variant)
-        scene = mi.load_dict(make_tiny_cornell_box(mi))
-        image = mi.render(scene, spp=1)
-        dr.eval(image)
+def render_tiny_scene(mi, dr, variant: str, success_file: Path | None = None) -> None:
+    mi.set_variant(variant)
+    scene = mi.load_dict(make_tiny_cornell_box(mi))
+    image = mi.render(scene, spp=1)
+    dr.eval(image)
 
     shape = tuple(getattr(image, "shape", ()))
     if shape[:2] != (4, 4):
         raise SystemExit(f"Unexpected {variant} render shape: {shape}")
+
+    if success_file is not None:
+        success_file.write_text(f"{variant} {shape}\n", encoding="utf-8")
+        sys.stdout.flush()
+        sys.stderr.flush()
+
+
+def render_windows_llvm_scene_in_subprocess(variant: str) -> None:
+    success_file = Path.cwd() / f"mitsuba-llvm-render-{uuid.uuid4().hex}.ok"
+    try:
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(Path(__file__).resolve()),
+                "--render-one-variant",
+                variant,
+                str(success_file),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        render_succeeded = success_file.is_file()
+        if result.returncode == 0 and render_succeeded:
+            return
+        if render_succeeded and result.returncode in WINDOWS_MITSUBA_LLVM_TEARDOWN_STATUSES:
+            return
+        if result.stdout:
+            print(result.stdout, end="")
+        if result.returncode == 0:
+            raise SystemExit(f"{variant} render subprocess did not write success sentinel")
+        raise SystemExit(f"{variant} render subprocess failed with status {result.returncode}")
+    finally:
+        success_file.unlink(missing_ok=True)
 
 
 def activate_variant(mi, variant: str) -> None:
     try:
         mi.set_variant(variant)
     except ImportError as exc:
-        if variant.startswith("cuda_") and "CUDA backend hasn't been initialized" in str(exc):
+        message = str(exc)
+        if (
+            variant.startswith("cuda_")
+            and "jit_init_thread_state()" in message
+            and "CUDA backend hasn't been initialized" in message
+        ):
             return
         raise
 
@@ -95,19 +135,29 @@ def main() -> None:
     dr = importlib.import_module("drjit")
     mi = importlib.import_module("mitsuba")
 
+    if len(sys.argv) == 4 and sys.argv[1] == "--render-one-variant":
+        render_tiny_scene(mi, dr, sys.argv[2], Path(sys.argv[3]))
+        return
+
     config = importlib.import_module("mitsuba.config")
     built_variants = set(config.MI_VARIANTS)
     variants = expected_variants()
     missing = variants - built_variants
     if missing:
         raise SystemExit(f"Missing Mitsuba variants: {sorted(missing)}")
+    unexpected = built_variants - variants
+    if unexpected:
+        raise SystemExit(f"Unexpected Mitsuba variants: {sorted(unexpected)}")
 
     for variant in sorted(variants):
         activate_variant(mi, variant)
 
     render_tiny_scene(mi, dr, "scalar_rgb")
     if "llvm_ad_rgb" in variants:
-        render_tiny_scene(mi, dr, "llvm_ad_rgb")
+        if sys.platform.startswith("win"):
+            render_windows_llvm_scene_in_subprocess("llvm_ad_rgb")
+        else:
+            render_tiny_scene(mi, dr, "llvm_ad_rgb")
 
 
 if __name__ == "__main__":
