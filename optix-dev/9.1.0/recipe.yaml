@@ -98,9 +98,9 @@ tests:
           - Library/share/optix-dev/*.zip
           - Library/share/optix-dev/include/**
   - script:
-      - python tests/check_stub_payload.py
       - if: unix
         then:
+          - python tests/check_stub_payload.py
           - python tests/check_activation_checksum_failure.py
           - . "$PREFIX/etc/conda/activate.d/optix-dev.sh"
           - python tests/check_optix.py
@@ -109,10 +109,11 @@ tests:
           - ./build/optix_consumer
       - if: win
         then:
+          - powershell -NoProfile -ExecutionPolicy Bypass -File tests\check_windows_stub_payload.ps1
           - call "%PREFIX%\etc\conda\activate.d\optix-dev.bat"
-          - python tests\check_optix.py
+          - powershell -NoProfile -ExecutionPolicy Bypass -File tests\check_optix_batch_env.ps1
           - powershell -NoProfile -ExecutionPolicy Bypass -File tests\check_optix_powershell.ps1
-          - python tests\run_windows_consumer_test.py
+          - powershell -NoProfile -ExecutionPolicy Bypass -File tests\run_windows_consumer_test.ps1
           - powershell -NoProfile -Command "Start-Sleep -Seconds 10"
     files:
       recipe:
@@ -120,16 +121,20 @@ tests:
         - tests/CMakeLists.txt
         - tests/check_activation_checksum_failure.py
         - tests/check_optix.py
+        - tests/check_optix_batch_env.ps1
         - tests/check_optix_powershell.ps1
         - tests/check_stub_payload.py
+        - tests/check_windows_stub_payload.ps1
         - tests/optix_consumer.cpp
-        - tests/run_windows_consumer_test.py
+        - tests/run_windows_consumer_test.ps1
     requirements:
       run:
         - ${{ compiler('cxx') }}
         - cmake
         - ninja
-        - python
+        - if: unix
+          then:
+            - python
 
 about:
   homepage: https://github.com/NVIDIA/optix-dev

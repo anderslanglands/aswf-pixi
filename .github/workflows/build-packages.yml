@@ -79,12 +79,28 @@ jobs:
           pixi-version: v0.69.0
           cache: true
 
+      - name: Set package output directory
+        id: package-output
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          if [[ "$PLATFORM" == "win-64" ]]; then
+            output_dir="$(cygpath -m "$RUNNER_TEMP")/rattler-output"
+          else
+            output_dir="output"
+          fi
+          rm -rf "$output_dir"
+          mkdir -p "$output_dir"
+          echo "dir=${output_dir}" >> "$GITHUB_OUTPUT"
+
       - name: Build package
         shell: bash
         env:
           RECIPE: ${{ matrix.recipe }}
           PLATFORM: ${{ matrix.platform }}
           BUILD_NUMBER: ${{ matrix.build_number }}
+          OUTPUT_DIR: ${{ steps.package-output.outputs.dir }}
         run: |
           args=(
             rattler-build build
@@ -93,7 +109,7 @@ jobs:
             --channel https://conda.anaconda.org/anderslanglands
             --channel conda-forge
             --channel-priority strict
-            --output-dir output
+            --output-dir "$OUTPUT_DIR"
             --package-format conda
             --test native
           )
@@ -115,12 +131,13 @@ jobs:
           RECIPE: ${{ matrix.recipe }}
           PLATFORM: ${{ matrix.platform }}
           BUILD_NUMBER: ${{ matrix.build_number }}
+          OUTPUT_DIR: ${{ steps.package-output.outputs.dir }}
         run: |
           pixi run python scripts/collect_artifacts.py \
             --recipe "$RECIPE" \
             --platform "$PLATFORM" \
-            --output-dir output \
-            --manifest output/manifest.json \
+            --output-dir "$OUTPUT_DIR" \
+            --manifest "$OUTPUT_DIR/manifest.json" \
             --build-number "$BUILD_NUMBER"
 
       - name: Upload GitHub artifact
@@ -128,8 +145,8 @@ jobs:
         with:
           name: ${{ matrix.artifact }}
           path: |
-            output/manifest.json
-            output/${{ matrix.platform }}/*.conda
+            ${{ steps.package-output.outputs.dir }}/manifest.json
+            ${{ steps.package-output.outputs.dir }}/${{ matrix.platform }}/*.conda
           if-no-files-found: error
 
   publish:
