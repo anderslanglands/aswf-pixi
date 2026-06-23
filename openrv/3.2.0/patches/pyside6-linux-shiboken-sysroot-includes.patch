@@ -1,0 +1,32 @@
+diff --git a/src/build/make_pyside6.py b/src/build/make_pyside6.py
+--- a/src/build/make_pyside6.py
++++ b/src/build/make_pyside6.py
+@@ -187,2 +187,28 @@ def prepare() -> None:
++    if system == "Linux":
++        pyside_modules_path = os.path.join(
++            SOURCE_DIR,
++            "sources",
++            "pyside6",
++            "cmake",
++            "Macros",
++            "PySideModules.cmake",
++        )
++        with open(pyside_modules_path) as pyside_modules:
++            pyside_modules_contents = pyside_modules.read()
++
++        old_include_dirs = (
++            "    if(module_ADDITIONAL_INCLUDE_DIRS)\n"
++            "        list(APPEND shiboken_include_dir_list ${${module_ADDITIONAL_INCLUDE_DIRS}})\n"
++            "    endif()\n\n"
++        )
++        new_include_dirs = old_include_dirs + (
++            "    if(SHIBOKEN_FORCE_PROCESS_SYSTEM_INCLUDE_PATHS)\n"
++            "        list(APPEND shiboken_include_dir_list ${SHIBOKEN_FORCE_PROCESS_SYSTEM_INCLUDE_PATHS})\n"
++            "    endif()\n\n"
++        )
++        if old_include_dirs in pyside_modules_contents and new_include_dirs not in pyside_modules_contents:
++            with open(pyside_modules_path, "w") as pyside_modules:
++                pyside_modules.write(pyside_modules_contents.replace(old_include_dirs, new_include_dirs))
++
+     if system == "Windows":
+         build_info_path = os.path.join(SOURCE_DIR, "build_scripts", "build_info_collector.py")

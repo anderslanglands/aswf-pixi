@@ -41,6 +41,7 @@ source:
     - patches/cmake-build-python-executable.patch
     - patches/python-pip-index-env.patch
     - patches/pyside6-windows-short-build-paths.patch
+    - patches/pyside6-linux-shiboken-sysroot-includes.patch
     - patches/py-interp-windows-qt-plugin-path.patch
     - patches/signalspy-qt6-msvc-access.patch
     - patches/python-avoid-pip-self-install.patch
@@ -369,6 +370,7 @@ requirements:
         - libgl-devel
         - libglvnd-devel
         - libglu
+        - mesa-libgl-devel-cos7-x86_64
         - libudev
         - xorg-libx11
   run:

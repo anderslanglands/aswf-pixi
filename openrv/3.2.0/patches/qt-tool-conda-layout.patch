@@ -2,7 +2,7 @@ diff --git a/src/build/make_pyside6.py b/src/build/make_pyside6.py
 index fd95ee53..41058cdc 100644
 --- a/src/build/make_pyside6.py
 +++ b/src/build/make_pyside6.py
-@@ -212,24 +212,55 @@ def remove_broken_shortcuts(python_home: str) -> None:
+@@ -212,24 +212,61 @@ def remove_broken_shortcuts(python_home: str) -> None:
                  print(f"Keeping {filepath}...")
  
  
@@ -53,8 +53,14 @@ index fd95ee53..41058cdc 100644
      ]
  
 +    if platform.system() == "Linux":
++        shiboken_extra_include_paths = [os.path.join(QT_OUTPUT_DIR, "include")]
++        linux_sysroot_include = os.path.join(
++            QT_OUTPUT_DIR, "x86_64-conda-linux-gnu", "sysroot", "usr", "include"
++        )
++        if os.path.isdir(linux_sysroot_include):
++            shiboken_extra_include_paths.append(linux_sysroot_include)
 +        pyside_build_args.append(
-+            f"--shiboken-extra-include-paths={os.path.join(QT_OUTPUT_DIR, 'include')}"
++            f"--shiboken-extra-include-paths={','.join(shiboken_extra_include_paths)}"
 +        )
 +
      if OPENSSL_OUTPUT_DIR:

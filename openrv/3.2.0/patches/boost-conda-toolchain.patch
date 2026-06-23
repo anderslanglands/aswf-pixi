@@ -2,15 +2,25 @@ diff --git i/cmake/dependencies/boost.cmake w/cmake/dependencies/boost.cmake
 index e1929cb..e6528af 100644
 --- i/cmake/dependencies/boost.cmake
 +++ w/cmake/dependencies/boost.cmake
-@@ -160,6 +160,40 @@ LIST(
+@@ -160,6 +160,50 @@ LIST(
  SET(__boost_arch__
      x86
  )
 +SET(_boost_toolset
 +    ${_toolset}
 +)
++SET(_boost_bootstrap_toolset
++    ${_toolset}
++)
++IF(RV_TARGET_WINDOWS
++   AND _toolset STREQUAL "msvc-14.3"
++)
++  SET(_boost_bootstrap_toolset
++      vc143
++  )
++ENDIF()
 +SET(_boost_configure_command
-+    ${_bootstrap_command} --with-toolset=${_toolset} --with-python=${_boost_python_bin}
++    ${_bootstrap_command} --with-toolset=${_boost_bootstrap_toolset} --with-python=${_boost_python_bin}
 +)
 +IF(RV_TARGET_LINUX
 +   AND CMAKE_CXX_COMPILER
@@ -43,7 +53,7 @@ index e1929cb..e6528af 100644
  IF(APPLE)
    IF(RV_TARGET_APPLE_ARM64)
      SET(__boost_arch__
-@@ -178,12 +212,12 @@ EXTERNALPROJECT_ADD(
+@@ -178,12 +222,12 @@ EXTERNALPROJECT_ADD(
    INSTALL_DIR ${_install_dir}
    URL ${_download_url}
    URL_MD5 ${_download_hash}

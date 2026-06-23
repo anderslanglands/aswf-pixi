@@ -2,7 +2,7 @@ diff --git i/cmake/dependencies/ffmpeg.cmake w/cmake/dependencies/ffmpeg.cmake
 index 7f949bd..1686237 100644
 --- i/cmake/dependencies/ffmpeg.cmake
 +++ w/cmake/dependencies/ffmpeg.cmake
-@@ -323,6 +323,250 @@ ENDIF()
+@@ -323,6 +323,255 @@ ENDIF()
  LIST(JOIN _ffmpeg_pkg_config_path ":" _ffmpeg_pkg_config_path)
  
  SEPARATE_ARGUMENTS(RV_FFMPEG_PATCH_COMMAND_STEP)
@@ -148,6 +148,7 @@ index 7f949bd..1686237 100644
 +_CONDARV_FFMPEG_OBJ_DIRS := $(sort $(dir $(_CONDARV_FFMPEG_OBJS)))
 +_CONDARV_FFMPEG_C_OBJS := $(sort $(patsubst %.c,%.o,$(wildcard $(_CONDARV_FFMPEG_OBJS:.o=.c))))
 +_CONDARV_FFMPEG_CXX_OBJS := $(sort $(patsubst %.cpp,%.o,$(wildcard $(_CONDARV_FFMPEG_OBJS:.o=.cpp))))
++_CONDARV_FFMPEG_M_OBJS := $(sort $(patsubst %.m,%.o,$(wildcard $(_CONDARV_FFMPEG_OBJS:.o=.m))))
 +_CONDARV_FFMPEG_S_OBJS := $(sort $(patsubst %.S,%.o,$(wildcard $(_CONDARV_FFMPEG_OBJS:.o=.S))))
 +_CONDARV_FFMPEG_ASM_OBJS := $(sort $(patsubst %.asm,%.o,$(wildcard $(_CONDARV_FFMPEG_OBJS:.o=.asm))))
 +
@@ -158,6 +159,10 @@ index 7f949bd..1686237 100644
 +ifneq ($(strip $(_CONDARV_FFMPEG_CXX_OBJS)),)
 +$(_CONDARV_FFMPEG_CXX_OBJS): %.o: %.cpp | $(_CONDARV_FFMPEG_OBJ_DIRS)
 +	$(CXX) -I. -I$(SRC_LINK)/ $(CPPFLAGS) $(CFLAGS) $(CXXFLAGS) $(CXX_DEPFLAGS) $(CXX_C) $(CXX_O) $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<)
++endif
++ifneq ($(strip $(_CONDARV_FFMPEG_M_OBJS)),)
++$(_CONDARV_FFMPEG_M_OBJS): %.o: %.m | $(_CONDARV_FFMPEG_OBJ_DIRS)
++	$(OBJCC) -I. -I$(SRC_LINK)/ $(OBJCCFLAGS) $(OBJCC_DEPFLAGS) $(OBJCC_C) $(OBJCC_O) $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<)
 +endif
 +ifneq ($(strip $(_CONDARV_FFMPEG_S_OBJS)),)
 +$(_CONDARV_FFMPEG_S_OBJS): %.o: %.S | $(_CONDARV_FFMPEG_OBJ_DIRS)
@@ -253,7 +258,7 @@ index 7f949bd..1686237 100644
  
  EXTERNALPROJECT_ADD(
    ${_target}
-@@ -334,11 +578,10 @@ EXTERNALPROJECT_ADD(
+@@ -334,11 +583,10 @@ EXTERNALPROJECT_ADD(
    URL ${_download_url}
    URL_MD5 ${_download_hash}
    SOURCE_DIR ${RV_DEPS_BASE_DIR}/${_target}/src
