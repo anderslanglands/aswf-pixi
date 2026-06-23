@@ -1,0 +1,53 @@
+diff --git i/src/build/utils.py w/src/build/utils.py
+index 79683ad..361bb5f 100644
+--- i/src/build/utils.py
++++ w/src/build/utils.py
+@@ -15,9 +15,19 @@ import shutil
+ import subprocess
+ import sys
+ 
+-from py7zr import SevenZipFile, exceptions
+ from typing import List
+ from zipfile import ZipFile
+ 
+ 
++def _find_7zip() -> str:
++    for candidate in ("7zz", "7z", "7za"):
++        seven_zip = shutil.which(candidate)
++        if seven_zip:
++            return seven_zip
++
++    raise RuntimeError(
++        "Could not find a 7zip executable. Install the 7zip build requirement."
++    )
++
++
+ def _windows_zip_impl(input_folder: str, output_zip: str) -> None:
+     """
+     Windows implementation of the zip function.
+@@ -151,8 +161,10 @@ def extract_7z_archive(input_7z: str, output_folder: str) -> None:
+     """
+     print(f"Extracting {input_7z} into {output_folder}")
+ 
+-    with SevenZipFile(input_7z, "r") as z:
+-        z.extractall(output_folder)
++    extract_args = [_find_7zip(), "x", input_7z, f"-o{output_folder}", "-y"]
++
++    print(f"Executing {extract_args}")
++    subprocess.run(extract_args).check_returncode()
+ 
+ 
+ def verify_7z_archive(input_7z: str) -> bool or None:
+@@ -163,8 +175,7 @@ def verify_7z_archive(input_7z: str) -> bool or None:
+     :param input_zip: Path to the 7z file to uncompress
+     """
+     print(f"Verifying {input_7z}")
+-    try:
+-        with SevenZipFile(input_7z, "r") as z:
+-            return z.test()
+-    except exceptions.Bad7zFile:
+-        return None
++    test_args = [_find_7zip(), "t", input_7z]
++
++    print(f"Executing {test_args}")
++    return subprocess.run(test_args).returncode == 0

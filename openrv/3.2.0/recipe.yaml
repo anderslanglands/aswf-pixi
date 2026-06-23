@@ -40,6 +40,7 @@ source:
     - patches/python-disable-macos-pgo.patch
     - patches/cmake-build-python-executable.patch
     - patches/python-pip-index-env.patch
+    - patches/pyside-use-system-7zip.patch
     - patches/pyside6-windows-short-build-paths.patch
     - patches/pyside6-linux-shiboken-sysroot-includes.patch
     - patches/py-interp-windows-qt-plugin-path.patch
@@ -319,9 +320,9 @@ requirements:
     - cmake >=3.31,<4
     - git
     - ninja
-    - python
+    - python >=3.13,<3.14
     - requests
-    - py7zr
+    - 7zip
     - setuptools
     - wheel
     - pip

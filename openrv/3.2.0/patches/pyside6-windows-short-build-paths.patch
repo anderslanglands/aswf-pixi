@@ -28,7 +28,7 @@ diff --git a/src/build/make_pyside6.py b/src/build/make_pyside6.py
 +        if platform.system() == "Windows":
 +            qt_bin_dir = os.path.join(QT_OUTPUT_DIR, "bin")
 +            validation_env["PYSIDE_QT_BIN_DIR"] = qt_bin_dir
-+            validation_env["PATH"] = os.path.pathsep.join(
++            validation_env["PATH"] = os.pathsep.join(
 +                [qt_bin_dir, os.path.join(tmp_python_home, "bin"), validation_env.get("PATH", "")]
 +            )
 +
@@ -36,7 +36,7 @@ diff --git a/src/build/make_pyside6.py b/src/build/make_pyside6.py
      finally:
          print(f"Moving {tmp_python_home} to {python_home}")
          shutil.move(tmp_python_home, python_home)
-@@ -173,6 +173,43 @@ def prepare() -> None:
+@@ -173,6 +173,151 @@ def prepare() -> None:
 
                  cmakelist.write(new_line)
 
@@ -188,15 +188,14 @@ diff --git a/src/build/make_pyside6.py b/src/build/make_pyside6.py
 
  def remove_broken_shortcuts(python_home: str) -> None:
      """
-@@ -260,6 +278,7 @@ def build() -> None:
-         pyside_build_args.append(
-             f"--shiboken-extra-include-paths={os.path.join(QT_OUTPUT_DIR, 'include')}"
-         )
+@@ -218,5 +363,6 @@ def build() -> None:
+     Run the build step of the build. It compile every target of the project.
+     """
+     python_home = PYTHON_OUTPUT_DIR
 +    pyside_env = os.environ.copy()
+     python_interpreter_args = get_python_interpreter_args(python_home, VARIANT)
 
-     if OPENSSL_OUTPUT_DIR:
-         pyside_build_args.append(f"--openssl={os.path.join(OPENSSL_OUTPUT_DIR, 'bin')}")
-@@ -267,12 +286,16 @@ def build() -> None:
+@@ -267,12 +413,19 @@ def build() -> None:
      if platform.system() == "Windows":
          # Add the debug switch to match build type but only on Windows
          # (on other platforms, PySide6 is built in release)
