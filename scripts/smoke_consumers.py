@@ -5,13 +5,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 
 CHANNELS = {
+    "local-artifacts": [],
     "test-label": [
         "https://conda.anaconda.org/anderslanglands/label/test",
         "https://conda.anaconda.org/anderslanglands",
@@ -24,19 +28,34 @@ CHANNELS = {
 }
 
 EXPECTED_SOURCE = {
+    "local-artifacts": None,
     "test-label": "https://conda.anaconda.org/anderslanglands/label/test",
     "default-label": "https://conda.anaconda.org/anderslanglands",
 }
+
+
+def local_channel_uri(path: str) -> str:
+    return Path(path).resolve().as_uri()
+
+
+def channels_for_target(target: str, local_channel: str | None) -> list[str]:
+    if target == "local-artifacts":
+        if not local_channel:
+            raise SystemExit("--local-channel is required with --target local-artifacts.")
+        return [local_channel_uri(local_channel), "conda-forge"]
+    if local_channel:
+        raise SystemExit("--local-channel is only valid with --target local-artifacts.")
+    return CHANNELS[target]
 
 
 def write_manifest(
     path: Path,
     package: dict[str, object],
     platform: str,
-    target: str,
+    channels: list[str],
     run_cmake_consumer: bool,
 ) -> None:
-    channels = "\n".join(f'  "{channel}",' for channel in CHANNELS[target])
+    channel_lines = "\n".join(f'  "{channel}",' for channel in channels)
     extra_deps = ""
     if run_cmake_consumer:
         extra_deps = '\ncmake = ">=3.20"\nninja = "*"\nc-compiler = "*"\ncxx-compiler = "*"'
@@ -45,7 +64,7 @@ def write_manifest(
         f"""[workspace]
 name = "{package['name']}-{package['version']}-{platform}-smoke"
 channels = [
-{channels}
+{channel_lines}
 ]
 platforms = ["{platform}"]
 channel-priority = "strict"
@@ -57,8 +76,11 @@ channel-priority = "strict"
     )
 
 
-def pixi(*args: str) -> None:
-    subprocess.run(["pixi", *args], check=True)
+def pixi(*args: str, env: dict[str, str] | None = None) -> None:
+    subprocess_env = None
+    if env is not None:
+        subprocess_env = {**os.environ, **env}
+    subprocess.run(["pixi", *args], check=True, env=subprocess_env)
 
 
 def pixi_json(*args: str) -> object:
@@ -66,11 +88,26 @@ def pixi_json(*args: str) -> object:
     return json.loads(completed.stdout)
 
 
+def remove_tree_best_effort(path: Path) -> None:
+    last_error: OSError | None = None
+    for attempt in range(8):
+        try:
+            shutil.rmtree(path)
+            return
+        except FileNotFoundError:
+            return
+        except OSError as exc:
+            last_error = exc
+            time.sleep(min(0.25 * (2**attempt), 2.0))
+    print(f"Warning: failed to remove temporary smoke directory {path}: {last_error}", file=sys.stderr)
+
+
 def check_installed_package(
     manifest: Path,
     package: dict[str, object],
     *,
     target: str,
+    local_channel: str | None,
 ) -> None:
     installed_packages = pixi_json(
         "list",
@@ -84,17 +121,30 @@ def check_installed_package(
         raise SystemExit(f"Expected one installed {package['name']} package, found {len(matches)}.")
 
     installed = matches[0]
-    checks = {
+    checks: dict[str, object] = {
         "version": package["version"],
         "build": package["build"],
         "subdir": package["subdir"],
         "file_name": package["file_name"],
-        "source": EXPECTED_SOURCE[target],
     }
     for key, expected in checks.items():
         if installed.get(key) != expected:
             raise SystemExit(
                 f"Installed {package['name']} {key} was {installed.get(key)!r}, expected {expected!r}."
+            )
+
+    source = installed.get("source")
+    expected_source = EXPECTED_SOURCE[target]
+    if expected_source is not None and source != expected_source:
+        raise SystemExit(f"Installed {package['name']} source was {source!r}, expected {expected_source!r}.")
+    if target == "local-artifacts":
+        expected_prefix = local_channel_uri(str(local_channel)).rstrip("/")
+        expected_package = Path(str(local_channel)) / str(package["path"])
+        if not expected_package.is_file():
+            raise SystemExit(f"Manifest-listed local package does not exist: {expected_package}")
+        if not isinstance(source, str) or not source.rstrip("/").startswith(expected_prefix):
+            raise SystemExit(
+                f"Installed {package['name']} source was {source!r}, expected local channel {expected_prefix!r}."
             )
 
 
@@ -178,6 +228,66 @@ def run_cmake_consumer(manifest: Path, recipe: Path, root_package: str, package:
     )
 
 
+def run_optix_dev_windows_checks(manifest: Path, recipe: Path) -> None:
+    tests = recipe.resolve() / "tests"
+    prefix = manifest.parent / ".pixi" / "envs" / "default"
+    if not prefix.is_dir():
+        raise SystemExit(f"Expected pixi environment prefix does not exist: {prefix}")
+    script_env = {
+        "CONDA_PREFIX": str(prefix),
+        "PREFIX": str(prefix),
+        "LIBRARY_PREFIX": str(prefix / "Library"),
+    }
+    powershell_args = [
+        "powershell",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+    ]
+    pixi(
+        "run",
+        "--manifest-path",
+        str(manifest),
+        *powershell_args,
+        str(tests / "check_windows_stub_payload.ps1"),
+        env=script_env,
+    )
+    batch_check = tests / "check_optix_batch_env.ps1"
+    batch_wrapper = manifest.parent / "check-optix-batch-env.bat"
+    batch_wrapper.write_text(
+        "\n".join(
+            [
+                "@echo off",
+                'call "%PREFIX%\\etc\\conda\\activate.d\\optix-dev.bat"',
+                "if errorlevel 1 exit /b %errorlevel%",
+                f'powershell -NoProfile -ExecutionPolicy Bypass -File "{batch_check}"',
+                "if errorlevel 1 exit /b %errorlevel%",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    pixi(
+        "run",
+        "--manifest-path",
+        str(manifest),
+        "cmd",
+        "/d",
+        "/c",
+        str(batch_wrapper),
+        env=script_env,
+    )
+    pixi(
+        "run",
+        "--manifest-path",
+        str(manifest),
+        *powershell_args,
+        str(tests / "check_optix_powershell.ps1"),
+        env=script_env,
+    )
+
+
 def load_artifact_manifest(path: Path, recipe: Path, platform: str) -> dict[str, object]:
     manifest = json.loads(path.read_text(encoding="utf-8"))
     if manifest["recipe"] != recipe.as_posix():
@@ -194,6 +304,7 @@ def main() -> None:
     parser.add_argument("--recipe", required=True)
     parser.add_argument("--platform", required=True)
     parser.add_argument("--target", choices=sorted(CHANNELS), required=True)
+    parser.add_argument("--local-channel")
     parser.add_argument("--artifact-manifest", required=True)
     args = parser.parse_args()
 
@@ -203,16 +314,21 @@ def main() -> None:
 
     artifact_manifest = load_artifact_manifest(Path(args.artifact_manifest), recipe, args.platform)
     root_package = recipe.parts[-2]
+    channels = channels_for_target(args.target, args.local_channel)
     for package in artifact_manifest["packages"]:
-        with tempfile.TemporaryDirectory(prefix=f"{package['name']}-{package['version']}-smoke-") as tmp_raw:
-            tmp = Path(tmp_raw)
+        tmp = Path(tempfile.mkdtemp(prefix=f"{package['name']}-{package['version']}-smoke-"))
+        try:
             run_consumer = package_needs_consumer_test(root_package, package, recipe)
             manifest = tmp / "pixi.toml"
-            write_manifest(manifest, package, args.platform, args.target, run_consumer)
+            write_manifest(manifest, package, args.platform, channels, run_consumer)
             pixi("install", "--manifest-path", str(manifest))
-            check_installed_package(manifest, package, target=args.target)
+            check_installed_package(manifest, package, target=args.target, local_channel=args.local_channel)
+            if root_package == "optix-dev" and package["name"] == "optix-dev" and args.platform == "win-64":
+                run_optix_dev_windows_checks(manifest, recipe)
             if run_consumer:
                 run_cmake_consumer(manifest, recipe, root_package, package, tmp)
+        finally:
+            remove_tree_best_effort(tmp)
 
     print(
         f"Smoke-tested {len(artifact_manifest['packages'])} package(s) from "

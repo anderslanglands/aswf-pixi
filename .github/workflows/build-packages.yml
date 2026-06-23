@@ -102,6 +102,11 @@ jobs:
           BUILD_NUMBER: ${{ matrix.build_number }}
           OUTPUT_DIR: ${{ steps.package-output.outputs.dir }}
         run: |
+          test_mode=native
+          if [[ "$RECIPE" == "optix-dev/9.1.0" && "$PLATFORM" == "win-64" ]]; then
+            test_mode=skip
+          fi
+
           args=(
             rattler-build build
             --recipe "$RECIPE/recipe.yaml"
@@ -111,7 +116,7 @@ jobs:
             --channel-priority strict
             --output-dir "$OUTPUT_DIR"
             --package-format conda
-            --test native
+            --test "$test_mode"
           )
 
           if [[ -n "$BUILD_NUMBER" ]]; then
@@ -133,12 +138,27 @@ jobs:
           BUILD_NUMBER: ${{ matrix.build_number }}
           OUTPUT_DIR: ${{ steps.package-output.outputs.dir }}
         run: |
-          pixi run python scripts/collect_artifacts.py \
+          pixi run -- python scripts/collect_artifacts.py \
             --recipe "$RECIPE" \
             --platform "$PLATFORM" \
             --output-dir "$OUTPUT_DIR" \
             --manifest "$OUTPUT_DIR/manifest.json" \
             --build-number "$BUILD_NUMBER"
+
+      - name: Smoke test local Windows OptiX package
+        if: ${{ matrix.recipe == 'optix-dev/9.1.0' && matrix.platform == 'win-64' }}
+        shell: bash
+        env:
+          RECIPE: ${{ matrix.recipe }}
+          PLATFORM: ${{ matrix.platform }}
+          OUTPUT_DIR: ${{ steps.package-output.outputs.dir }}
+        run: |
+          pixi run -- python scripts/smoke_consumers.py \
+            --recipe "$RECIPE" \
+            --platform "$PLATFORM" \
+            --target local-artifacts \
+            --local-channel "$OUTPUT_DIR" \
+            --artifact-manifest "$OUTPUT_DIR/manifest.json"
 
       - name: Upload GitHub artifact
         uses: actions/upload-artifact@v6
@@ -177,7 +197,7 @@ jobs:
       - name: Publish packages
         env:
           PUBLISH_TARGET: ${{ inputs.publish_target }}
-        run: pixi run python scripts/publish_packages.py --target "$PUBLISH_TARGET" --root artifacts
+        run: pixi run -- python scripts/publish_packages.py --target "$PUBLISH_TARGET" --root artifacts
 
   smoke:
     name: Evaluate smoke for ${{ matrix.recipe }} (${{ matrix.platform }}, ${{ inputs.publish_target }}, smoke=${{ inputs.run_smoke_tests }})
@@ -213,7 +233,7 @@ jobs:
           PUBLISH_TARGET: ${{ inputs.publish_target }}
           ARTIFACT_MANIFEST: artifacts/${{ matrix.artifact }}/manifest.json
         run: |
-          pixi run python scripts/smoke_consumers.py \
+          pixi run -- python scripts/smoke_consumers.py \
             --recipe "$RECIPE" \
             --platform "$PLATFORM" \
             --target "$PUBLISH_TARGET" \

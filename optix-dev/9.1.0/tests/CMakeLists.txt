@@ -6,3 +6,6 @@ find_package(OptiX 9.1 CONFIG REQUIRED)
 add_executable(optix_consumer optix_consumer.cpp)
 target_link_libraries(optix_consumer PRIVATE OptiX::OptiX)
 target_compile_features(optix_consumer PRIVATE cxx_std_17)
+
+enable_testing()
+add_test(NAME optix_consumer COMMAND optix_consumer)
