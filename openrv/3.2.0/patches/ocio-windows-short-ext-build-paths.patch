@@ -1,0 +1,40 @@
+﻿diff --git a/cmake/dependencies/ocio.cmake b/cmake/dependencies/ocio.cmake
+--- a/cmake/dependencies/ocio.cmake
++++ b/cmake/dependencies/ocio.cmake
+@@ -185,6 +185,26 @@ ELSE() # Windows
+   IF(EXISTS ${_backup_pyopencolorio_cmakelists_path})
+     FILE(REMOVE ${_backup_pyopencolorio_cmakelists_path})
+   ENDIF()
++  SET(_ocio_short_ext_build_paths_script
++      ${CMAKE_BINARY_DIR}/RV_DEPS_OCIO_short_ext_build_paths.cmake
++  )
++  FILE(
++    WRITE
++    "${_ocio_short_ext_build_paths_script}"
++    [=[
++file(GLOB _ocio_install_modules "${OCIO_SOURCE_DIR}/share/cmake/modules/install/Install*.cmake")
++foreach(_ocio_install_module IN LISTS _ocio_install_modules)
++  file(READ "${_ocio_install_module}" _ocio_install_module_text)
++  string(REPLACE [[set(_EXT_BUILD_ROOT "${PROJECT_BINARY_DIR}/ext/build")]]
++                 [[set(_EXT_BUILD_ROOT "${PROJECT_BINARY_DIR}/../../ocio-ext-build")]]
++                 _ocio_install_module_text "${_ocio_install_module_text}")
++  string(REPLACE [[set(FETCHCONTENT_BASE_DIR "${CMAKE_BINARY_DIR}/ext/build/sse2neon")]]
++                 [[set(FETCHCONTENT_BASE_DIR "${CMAKE_BINARY_DIR}/../../ocio-ext-build/sse2neon")]]
++                 _ocio_install_module_text "${_ocio_install_module_text}")
++  file(WRITE "${_ocio_install_module}" "${_ocio_install_module_text}")
++endforeach()
++]=]
++  )
+
+   # Some options are not multi-platform so we start clean.
+   SET(_configure_options
+@@ -252,7 +274,8 @@ ELSE() # Windows
+     BINARY_DIR ${_build_dir}
+     INSTALL_DIR ${_install_dir}
+     DEPENDS Boost::headers RV_DEPS_PYTHON3 Imath::Imath ZLIB::ZLIB EXPAT::EXPAT
+-    PATCH_COMMAND "${Python3_EXECUTABLE}" ${_pyopencolorio_patch_script_path} ${_pyopencolorio_cmakelists_path}
++    PATCH_COMMAND "${Python3_EXECUTABLE}" ${_pyopencolorio_patch_script_path} ${_pyopencolorio_cmakelists_path}
++    COMMAND ${CMAKE_COMMAND} "-DOCIO_SOURCE_DIR=${_source_dir}" -P "${_ocio_short_ext_build_paths_script}"
+     CONFIGURE_COMMAND ${CMAKE_COMMAND} ${_configure_options}
+     BUILD_COMMAND ${CMAKE_COMMAND} ${_ocio_build_options}
+     INSTALL_COMMAND ${_cmake_install_command}

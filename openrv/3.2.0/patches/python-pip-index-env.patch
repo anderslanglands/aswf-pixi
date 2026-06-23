@@ -5,7 +5,14 @@ diff --git a/cmake/dependencies/python3.cmake b/cmake/dependencies/python3.cmake
  
  # Phase 1: Install build dependencies for phase 2. Note: RV_PYTHON_BUILD_DEPS is kept as a CMake list (semicolon-separated) so it expands to separate arguments.
 +IF(RV_TARGET_WINDOWS)
-+  SET(_python3_scripts_env "PATH=${_install_dir}/Scripts\;$ENV{PATH}")
++  STRING(REPLACE ";" "$<SEMICOLON>" _python3_env_path "$ENV{PATH}")
++  SET(_python3_scripts_env "PATH=${_install_dir}/Scripts$<SEMICOLON>${_python3_env_path}")
++  SET(_python3_requirements_env
++      --unset=CMAKE_GENERATOR
++      --unset=CMAKE_GENERATOR_PLATFORM
++      --unset=CMAKE_GENERATOR_TOOLSET
++      "OTIO_CXX_BUILD_TMP_DIR=${CMAKE_BINARY_DIR}/o"
++  )
 +ELSE()
 +  SET(_python3_scripts_env "PATH=${_install_dir}/bin:$ENV{PATH}")
 +ENDIF()
@@ -40,6 +47,7 @@ diff --git a/cmake/dependencies/python3.cmake b/cmake/dependencies/python3.cmake
 +    PIP_NO_INDEX=0
 +    PIP_NO_DEPENDENCIES=0
 +    ${_python3_scripts_env}
++    ${_python3_requirements_env}
 +    ${_otio_debug_env}
 +    ${_sdkroot_env}
  )

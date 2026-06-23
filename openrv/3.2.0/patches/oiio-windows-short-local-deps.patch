@@ -1,0 +1,12 @@
+﻿diff --git a/cmake/dependencies/oiio.cmake b/cmake/dependencies/oiio.cmake
+--- a/cmake/dependencies/oiio.cmake
++++ b/cmake/dependencies/oiio.cmake
+@@ -142,6 +142,8 @@
+ IF(RV_TARGET_WINDOWS)
+   LIST(PREPEND _configure_options "-G ${CMAKE_GENERATOR}")
+   LIST(APPEND _configure_options "-DCMAKE_CXX_FLAGS=/utf-8")
++  # Keep nested local dependency try-compile paths short enough for MSBuild.
++  LIST(APPEND _configure_options "-DOpenImageIO_LOCAL_DEPS_ROOT=${RV_DEPS_BASE_DIR}/oiio-d")
+ ENDIF()
+
+ IF(NOT RV_VFX_CY2023)

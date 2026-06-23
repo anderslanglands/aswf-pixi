@@ -1,0 +1,115 @@
+﻿diff --git a/src/lib/mu/MuQt6/MuQt6/SignalSpy.h b/src/lib/mu/MuQt6/MuQt6/SignalSpy.h
+index 6ad81e7..fc25395 100644
+--- a/src/lib/mu/MuQt6/MuQt6/SignalSpy.h
++++ b/src/lib/mu/MuQt6/MuQt6/SignalSpy.h
+@@ -7,6 +7,7 @@
+ #ifndef __MuQt__SignalSpy__h__
+ #define __MuQt__SignalSpy__h__
+ #include <iostream>
++#include <vector>
+ #include <Mu/FunctionObject.h>
+ #include <Mu/Thread.h>
+ #include <QtTest/QtTest>
+@@ -52,6 +53,7 @@ namespace Mu
+         Process* _process;
+         const CallEnvironment* _env;
+         std::vector<Types> _argTypes;
++        std::vector<QMetaType> _qtArgTypes;
+     };
+
+ } // namespace Mu
+diff --git a/src/lib/mu/MuQt6/SignalSpy.cpp b/src/lib/mu/MuQt6/SignalSpy.cpp
+index 9a73a88..5b67aa7 100644
+--- a/src/lib/mu/MuQt6/SignalSpy.cpp
++++ b/src/lib/mu/MuQt6/SignalSpy.cpp
+@@ -42,10 +42,7 @@
+ #include <MuQt6/QPointType.h>
+ #include <MuQt6/QRectType.h>
+ #include <MuQt6/QItemSelectionType.h>
+-#define private public
+ #include <MuQt6/SignalSpy.h>
+-#undef private
+-
+ namespace Mu
+ {
+     using namespace std;
+@@ -57,6 +54,25 @@ namespace Mu
+         , _process(p)
+         , _env(p->callEnv())
+     {
++        if (o && sig)
++        {
++            const char* signalSignature = sig;
++            if (*signalSignature >= '0' && *signalSignature <= '9')
++                ++signalSignature;
++
++            QByteArray normalizedSignature = QMetaObject::normalizedSignature(signalSignature);
++            const QMetaObject* metaObject = o->metaObject();
++            const int signalIndex = metaObject ? metaObject->indexOfSignal(normalizedSignature.constData()) : -1;
++
++            if (signalIndex >= 0)
++            {
++                QMetaMethod method = metaObject->method(signalIndex);
++                _qtArgTypes.reserve(static_cast<size_t>(method.parameterCount()));
++                for (int argIndex = 0; argIndex < method.parameterCount(); ++argIndex)
++                    _qtArgTypes.push_back(method.parameterMetaType(argIndex));
++            }
++        }
++
+         const MuLangContext* c = static_cast<const MuLangContext*>(p->context());
+         _argTypes.resize(F->numArgs());
+
+@@ -201,7 +217,7 @@ namespace Mu
+
+                 case TreeItemArg:
+                 {
+-                    QMetaType type = QMetaType(this->args.at(i));
++                    QMetaType type = i < _qtArgTypes.size() ? _qtArgTypes[i] : QMetaType();
+                     QVariant v(type, a[i + 1]);
+                     QTreeWidgetItem* o = v.value<QTreeWidgetItem*>();
+                     args[i]._Pointer = !o ? NULL : makeqpointer<QTreeWidgetItemType>((QTreeWidgetItemType*)_F->argType(i), o);
+@@ -210,7 +226,7 @@ namespace Mu
+
+                 case TableItemArg:
+                 {
+-                    QMetaType type = QMetaType(this->args.at(i));
++                    QMetaType type = i < _qtArgTypes.size() ? _qtArgTypes[i] : QMetaType();
+                     QVariant v(type, a[i + 1]);
+                     QTableWidgetItem* o = v.value<QTableWidgetItem*>();
+                     args[i]._Pointer = !o ? NULL : makeqpointer<QTableWidgetItemType>((QTableWidgetItemType*)_F->argType(i), o);
+@@ -219,7 +235,7 @@ namespace Mu
+
+                 case ListItemArg:
+                 {
+-                    QMetaType type = QMetaType(this->args.at(i));
++                    QMetaType type = i < _qtArgTypes.size() ? _qtArgTypes[i] : QMetaType();
+                     QVariant v(type, a[i + 1]);
+                     QListWidgetItem* o = v.value<QListWidgetItem*>();
+                     args[i]._Pointer = !o ? NULL : makeqpointer<QListWidgetItemType>((QListWidgetItemType*)_F->argType(i), o);
+@@ -228,7 +244,7 @@ namespace Mu
+
+                 case StandardItemArg:
+                 {
+-                    QMetaType type = QMetaType(this->args.at(i));
++                    QMetaType type = i < _qtArgTypes.size() ? _qtArgTypes[i] : QMetaType();
+                     QVariant v(type, a[i + 1]);
+                     QStandardItem* o = v.value<QStandardItem*>();
+                     args[i]._Pointer = !o ? NULL : makeqpointer<QStandardItemType>((QStandardItemType*)_F->argType(i), o);
+@@ -237,7 +253,7 @@ namespace Mu
+
+                 case ModelIndexArg:
+                 {
+-                    QMetaType type = QMetaType(this->args.at(i));
++                    QMetaType type = i < _qtArgTypes.size() ? _qtArgTypes[i] : QMetaType();
+                     QVariant v(type, a[i + 1]);
+                     QModelIndex o = v.value<QModelIndex>();
+                     args[i]._Pointer = makeqtype<QModelIndexType>((Context*)c, o, "qt.QModelIndex");
+@@ -246,7 +262,7 @@ namespace Mu
+
+                 case ItemSelectionArg:
+                 {
+-                    QMetaType type = QMetaType(this->args.at(i));
++                    QMetaType type = i < _qtArgTypes.size() ? _qtArgTypes[i] : QMetaType();
+                     QVariant v(type, a[i + 1]);
+                     QItemSelection o = v.value<QItemSelection>();
+                     args[i]._Pointer = makeqtype<QItemSelectionType>((Context*)c, o, "qt.QItemSelection");

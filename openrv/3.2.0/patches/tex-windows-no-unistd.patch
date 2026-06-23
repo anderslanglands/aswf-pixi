@@ -1,0 +1,12 @@
+﻿diff --git a/src/lib/files/Tex/Tex.cpp b/src/lib/files/Tex/Tex.cpp
+--- a/src/lib/files/Tex/Tex.cpp
++++ b/src/lib/files/Tex/Tex.cpp
+@@ -10,7 +10,9 @@
+ #include <stl_ext/string_algo.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
++#ifndef _WIN32
+ #include <unistd.h>
++#endif
+ #include <vector>
+ #include <string>

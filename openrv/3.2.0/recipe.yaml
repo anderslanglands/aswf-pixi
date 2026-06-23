@@ -19,6 +19,7 @@ source:
     - patches/disable-missing-ndi-sdk.patch
     - patches/optional-osmesa.patch
     - patches/optional-qtbonjour.patch
+    - patches/msvc-mp-compile-options.patch
     - patches/openssl-install-libdir-lib.patch
     - patches/openssl-windows-implib-byproducts.patch
     - patches/standard-lib-windows-implib-byproduct.patch
@@ -27,14 +28,20 @@ source:
     - patches/ocio-windows-implib-byproduct.patch
     - patches/aja-macos-sdk-version.patch
     - patches/tiff-windows-implib-byproduct.patch
+    - patches/tex-windows-no-unistd.patch
+    - patches/rvprof-windows-glu-apientry.patch
     - patches/glew-build-python.patch
     - patches/quote-file-python3-executable.patch
     - patches/minizip-gcc15-pointer-types.patch
     - patches/python-zlib-build-paths.patch
     - patches/python-detect-openssl-libdir.patch
     - patches/python-zlib-runtime-paths.patch
+    - patches/python-disable-macos-pgo.patch
     - patches/cmake-build-python-executable.patch
     - patches/python-pip-index-env.patch
+    - patches/pyside6-windows-short-build-paths.patch
+    - patches/py-interp-windows-qt-plugin-path.patch
+    - patches/signalspy-qt6-msvc-access.patch
     - patches/python-avoid-pip-self-install.patch
     - patches/python-wheel-safe-runtime-deps.patch
     - patches/python-pydantic-py313.patch
@@ -43,6 +50,8 @@ source:
     - patches/ffmpeg-serial-build-and-toolchain.patch
     - patches/boost-conda-toolchain.patch
     - patches/use-external-conda-yaml-cpp.patch
+    - patches/ocio-windows-short-ext-build-paths.patch
+    - patches/oiio-windows-short-local-deps.patch
     - patches/ftgl-gcc15-fpermissive.patch
     - patches/nedmalloc-gnu-source.patch
     - patches/honor-build-testing.patch
@@ -241,7 +250,10 @@ build:
         set "OPENRV_PREFIX_FWD=%OPENRV_PREFIX:\=/%"
         set "CL=/utf-8 %CL%"
         set "CXXFLAGS=%CXXFLAGS% /utf-8"
-        set "PATH=%BUILD_PREFIX%;%PATH%"
+        set "PATH=%BUILD_PREFIX%;%BUILD_PREFIX%\bin;%BUILD_PREFIX%\Scripts;%BUILD_PREFIX%\Library\bin;%PATH%;%BUILD_PREFIX%\Library\usr\bin"
+        set "CMAKE_GENERATOR=Ninja"
+        set "CMAKE_GENERATOR_PLATFORM="
+        set "CMAKE_GENERATOR_TOOLSET="
         if "%CPU_COUNT%"=="" set "CPU_COUNT=2"
         set "QT_PLUGIN_PATH=%LIBRARY_PREFIX%\lib\qt6\plugins;%QT_PLUGIN_PATH%"
         set "QT_QPA_PLATFORM_PLUGIN_PATH=%LIBRARY_PREFIX%\lib\qt6\plugins\platforms;%QT_QPA_PLATFORM_PLUGIN_PATH%"

@@ -1,0 +1,13 @@
+﻿diff --git a/src/build/make_python.py b/src/build/make_python.py
+--- a/src/build/make_python.py
++++ b/src/build/make_python.py
+@@ -236,7 +236,7 @@ def configure() -> None:
+             if platform.system() == "Linux":
+                 # This option prevent Python to build the _ssl module correctly on Darwin.
+                 configure_args.append(f"--with-openssl-rpath={openssl_lib_dir}")
+
+-        if VARIANT == "Release":
++        if VARIANT == "Release" and platform.system() != "Darwin":
+             configure_args.append("--enable-optimizations")
+
+         # For Darwin, we need to pass the whole path to the archive.

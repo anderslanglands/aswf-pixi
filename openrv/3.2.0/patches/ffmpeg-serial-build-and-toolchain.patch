@@ -2,41 +2,130 @@ diff --git i/cmake/dependencies/ffmpeg.cmake w/cmake/dependencies/ffmpeg.cmake
 index 7f949bd..1686237 100644
 --- i/cmake/dependencies/ffmpeg.cmake
 +++ w/cmake/dependencies/ffmpeg.cmake
-@@ -323,6 +323,102 @@ ENDIF()
+@@ -323,6 +323,250 @@ ENDIF()
  LIST(JOIN _ffmpeg_pkg_config_path ":" _ffmpeg_pkg_config_path)
  
  SEPARATE_ARGUMENTS(RV_FFMPEG_PATCH_COMMAND_STEP)
 +SET(_ffmpeg_configure_env
 +    "PKG_CONFIG_PATH=${_ffmpeg_pkg_config_path}"
 +)
++SET(_ffmpeg_extra_libpath_options ${RV_FFMPEG_EXTRA_LIBPATH_OPTIONS})
++SET(_ffmpeg_configure_lib_paths)
++SET(_ffmpeg_c_compiler ${CMAKE_C_COMPILER})
++SET(_ffmpeg_cxx_compiler ${CMAKE_CXX_COMPILER})
++SET(_ffmpeg_linker ${CMAKE_LINKER})
++SET(_ffmpeg_ar ${CMAKE_AR})
++SET(_ffmpeg_ranlib ${CMAKE_RANLIB})
++SET(_ffmpeg_nm ${CMAKE_NM})
++SET(_ffmpeg_strip ${CMAKE_STRIP})
++SET(_ffmpeg_pkg_config $ENV{PKG_CONFIG})
++SET(_ffmpeg_x86asm ${CMAKE_ASM_NASM_COMPILER})
++IF(RV_TARGET_WINDOWS AND NOT _ffmpeg_pkg_config)
++  FIND_PROGRAM(_ffmpeg_pkg_config NAMES pkg-config pkg-config.exe pkgconf pkgconf.exe)
++ENDIF()
++IF(RV_TARGET_WINDOWS AND NOT _ffmpeg_x86asm)
++  FIND_PROGRAM(_ffmpeg_x86asm NAMES nasm nasm.exe)
++ENDIF()
++FUNCTION(_rv_ffmpeg_to_msys_path _ffmpeg_path_var)
++  IF(NOT DEFINED ${_ffmpeg_path_var} OR "${${_ffmpeg_path_var}}" STREQUAL "")
++    RETURN()
++  ENDIF()
++  STRING(REPLACE "\\" "/" _ffmpeg_path "${${_ffmpeg_path_var}}")
++  STRING(REPLACE ":" "" _ffmpeg_path "${_ffmpeg_path}")
++  STRING(FIND "${_ffmpeg_path}" "/" _ffmpeg_first_slash_index)
++  IF(_ffmpeg_first_slash_index GREATER 0)
++    STRING(PREPEND _ffmpeg_path "/")
++  ENDIF()
++  SET(${_ffmpeg_path_var}
++      "${_ffmpeg_path}"
++      PARENT_SCOPE
++  )
++ENDFUNCTION()
++IF(RV_TARGET_WINDOWS)
++  SET(_ffmpeg_kept_extra_libpath_options)
++  FOREACH(_ffmpeg_libpath_option IN LISTS RV_FFMPEG_EXTRA_LIBPATH_OPTIONS)
++    IF(_ffmpeg_libpath_option MATCHES "^--extra-ldflags=-LIBPATH:(.*)$")
++      LIST(APPEND _ffmpeg_configure_lib_paths "${CMAKE_MATCH_1}")
++    ELSE()
++      LIST(APPEND _ffmpeg_kept_extra_libpath_options "${_ffmpeg_libpath_option}")
++    ENDIF()
++  ENDFOREACH()
++  SET(_ffmpeg_extra_libpath_options ${_ffmpeg_kept_extra_libpath_options})
++  IF(_ffmpeg_configure_lib_paths)
++    LIST(JOIN _ffmpeg_configure_lib_paths ";" _ffmpeg_configure_lib_path_env)
++  ENDIF()
++  IF(_ffmpeg_linker)
++    SET(_ffmpeg_msvc_linker "${_ffmpeg_linker}")
++    _rv_ffmpeg_to_msys_path(_ffmpeg_msvc_linker)
++    SET(_ffmpeg_msvc_link_script ${CMAKE_CURRENT_BINARY_DIR}/${_target}_msvc_link.sh)
++    FILE(WRITE ${_ffmpeg_msvc_link_script} "#!/bin/sh\nexec \"${_ffmpeg_msvc_linker}\" \"\$@\"\n")
++    FILE(
++      CHMOD ${_ffmpeg_msvc_link_script}
++      PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
++    )
++    SET(_ffmpeg_linker "${_ffmpeg_msvc_link_script}")
++    _rv_ffmpeg_to_msys_path(_ffmpeg_linker)
++  ENDIF()
++  IF(_ffmpeg_c_compiler)
++    GET_FILENAME_COMPONENT(_ffmpeg_c_compiler "${_ffmpeg_c_compiler}" NAME)
++  ENDIF()
++  IF(_ffmpeg_cxx_compiler)
++    GET_FILENAME_COMPONENT(_ffmpeg_cxx_compiler "${_ffmpeg_cxx_compiler}" NAME)
++  ENDIF()
++  IF(_ffmpeg_ar)
++    GET_FILENAME_COMPONENT(_ffmpeg_ar "${_ffmpeg_ar}" NAME)
++  ENDIF()
++  IF(_ffmpeg_ranlib)
++    GET_FILENAME_COMPONENT(_ffmpeg_ranlib "${_ffmpeg_ranlib}" NAME)
++  ENDIF()
++  IF(_ffmpeg_nm)
++    GET_FILENAME_COMPONENT(_ffmpeg_nm "${_ffmpeg_nm}" NAME)
++  ENDIF()
++  IF(_ffmpeg_strip)
++    GET_FILENAME_COMPONENT(_ffmpeg_strip "${_ffmpeg_strip}" NAME)
++  ENDIF()
++  IF(_ffmpeg_pkg_config)
++    _rv_ffmpeg_to_msys_path(_ffmpeg_pkg_config)
++  ENDIF()
++  IF(_ffmpeg_x86asm)
++    _rv_ffmpeg_to_msys_path(_ffmpeg_x86asm)
++  ENDIF()
++ENDIF()
 +SET(_ffmpeg_toolchain_options)
++IF(RV_TARGET_WINDOWS)
++  LIST(APPEND _ffmpeg_toolchain_options "--disable-decoder=ac3_fixed" "--disable-decoder=prores_raw" "--disable-muxer=whip")
++ENDIF()
 +IF(CMAKE_C_COMPILER)
-+  LIST(APPEND _ffmpeg_configure_env "CC=${CMAKE_C_COMPILER}" "LD=${CMAKE_C_COMPILER}")
-+  LIST(APPEND _ffmpeg_toolchain_options "--cc=${CMAKE_C_COMPILER}" "--ld=${CMAKE_C_COMPILER}")
++  LIST(APPEND _ffmpeg_configure_env "CC=${_ffmpeg_c_compiler}" "LD=${_ffmpeg_c_compiler}")
++  LIST(APPEND _ffmpeg_toolchain_options "--cc=${_ffmpeg_c_compiler}" "--ld=${_ffmpeg_c_compiler}")
 +ENDIF()
 +IF(CMAKE_CXX_COMPILER)
-+  LIST(APPEND _ffmpeg_configure_env "CXX=${CMAKE_CXX_COMPILER}")
-+  LIST(APPEND _ffmpeg_toolchain_options "--cxx=${CMAKE_CXX_COMPILER}")
++  LIST(APPEND _ffmpeg_configure_env "CXX=${_ffmpeg_cxx_compiler}")
++  LIST(APPEND _ffmpeg_toolchain_options "--cxx=${_ffmpeg_cxx_compiler}")
 +ENDIF()
 +IF(CMAKE_AR)
-+  LIST(APPEND _ffmpeg_configure_env "AR=${CMAKE_AR}")
-+  LIST(APPEND _ffmpeg_toolchain_options "--ar=${CMAKE_AR}")
++  LIST(APPEND _ffmpeg_configure_env "AR=${_ffmpeg_ar}")
++  LIST(APPEND _ffmpeg_toolchain_options "--ar=${_ffmpeg_ar}")
 +ENDIF()
 +IF(CMAKE_RANLIB)
-+  LIST(APPEND _ffmpeg_configure_env "RANLIB=${CMAKE_RANLIB}")
-+  LIST(APPEND _ffmpeg_toolchain_options "--ranlib=${CMAKE_RANLIB}")
++  LIST(APPEND _ffmpeg_configure_env "RANLIB=${_ffmpeg_ranlib}")
++  LIST(APPEND _ffmpeg_toolchain_options "--ranlib=${_ffmpeg_ranlib}")
 +ENDIF()
 +IF(CMAKE_NM)
-+  LIST(APPEND _ffmpeg_configure_env "NM=${CMAKE_NM}")
-+  LIST(APPEND _ffmpeg_toolchain_options "--nm=${CMAKE_NM}")
++  LIST(APPEND _ffmpeg_configure_env "NM=${_ffmpeg_nm}")
++  LIST(APPEND _ffmpeg_toolchain_options "--nm=${_ffmpeg_nm}")
 +ENDIF()
 +IF(CMAKE_STRIP)
-+  LIST(APPEND _ffmpeg_configure_env "STRIP=${CMAKE_STRIP}")
-+  LIST(APPEND _ffmpeg_toolchain_options "--strip=${CMAKE_STRIP}")
++  LIST(APPEND _ffmpeg_configure_env "STRIP=${_ffmpeg_strip}")
++  LIST(APPEND _ffmpeg_toolchain_options "--strip=${_ffmpeg_strip}")
 +ENDIF()
-+IF(CMAKE_ASM_NASM_COMPILER)
-+  LIST(APPEND _ffmpeg_configure_env "X86ASM=${CMAKE_ASM_NASM_COMPILER}")
-+  LIST(APPEND _ffmpeg_toolchain_options "--x86asmexe=${CMAKE_ASM_NASM_COMPILER}")
++IF(_ffmpeg_pkg_config)
++  LIST(APPEND _ffmpeg_configure_env "PKG_CONFIG=${_ffmpeg_pkg_config}")
++  LIST(APPEND _ffmpeg_toolchain_options "--pkg-config=${_ffmpeg_pkg_config}")
++ENDIF()
++IF(_ffmpeg_x86asm)
++  LIST(APPEND _ffmpeg_configure_env "X86ASM=${_ffmpeg_x86asm}")
++  LIST(APPEND _ffmpeg_toolchain_options "--x86asmexe=${_ffmpeg_x86asm}")
 +ENDIF()
 +
 +SET(_ffmpeg_build_command ${_make_command} -j1)
@@ -102,10 +191,69 @@ index 7f949bd..1686237 100644
 +ELSE()
 +  SET(_ffmpeg_patch_command ${CMAKE_COMMAND} -P ${_ffmpeg_makefile_patch_script})
 +ENDIF()
++SET(_ffmpeg_configure_command
++    ${CMAKE_COMMAND} -E env ${_ffmpeg_configure_env} ${_configure_command} --prefix=${_install_dir} ${RV_FFMPEG_COMMON_CONFIG_OPTIONS}
++    ${RV_FFMPEG_CONFIG_OPTIONS} ${_ffmpeg_toolchain_options} ${RV_FFMPEG_EXTRA_C_OPTIONS} ${_ffmpeg_extra_libpath_options} ${RV_FFMPEG_EXTERNAL_LIBS}
++)
++IF(RV_TARGET_WINDOWS)
++  SET(_ffmpeg_configure_script ${CMAKE_CURRENT_BINARY_DIR}/${_target}_configure.cmake)
++  SET(_ffmpeg_configure_args
++      ${_configure_command}
++      "--prefix=${_install_dir}"
++      ${RV_FFMPEG_COMMON_CONFIG_OPTIONS}
++      ${RV_FFMPEG_CONFIG_OPTIONS}
++      ${_ffmpeg_toolchain_options}
++      ${RV_FFMPEG_EXTRA_C_OPTIONS}
++      ${_ffmpeg_extra_libpath_options}
++      ${RV_FFMPEG_EXTERNAL_LIBS}
++  )
++  FILE(WRITE ${_ffmpeg_configure_script} "")
++  FOREACH(_ffmpeg_env IN LISTS _ffmpeg_configure_env)
++    IF(_ffmpeg_env MATCHES "^([^=]+)=(.*)$")
++      FILE(APPEND ${_ffmpeg_configure_script} "SET(ENV{${CMAKE_MATCH_1}} [=[${CMAKE_MATCH_2}]=])\n")
++    ENDIF()
++  ENDFOREACH()
++  IF(_ffmpeg_configure_lib_path_env)
++    FILE(APPEND ${_ffmpeg_configure_script} "SET(_ffmpeg_extra_lib_paths [=[${_ffmpeg_configure_lib_path_env}]=])\n")
++    FILE(APPEND ${_ffmpeg_configure_script} "IF(DEFINED ENV{LIB} AND NOT \"\$ENV{LIB}\" STREQUAL \"\")\n")
++    FILE(APPEND ${_ffmpeg_configure_script} "  SET(ENV{LIB} \"\${_ffmpeg_extra_lib_paths};\$ENV{LIB}\")\n")
++    FILE(APPEND ${_ffmpeg_configure_script} "ELSE()\n")
++    FILE(APPEND ${_ffmpeg_configure_script} "  SET(ENV{LIB} \"\${_ffmpeg_extra_lib_paths}\")\n")
++    FILE(APPEND ${_ffmpeg_configure_script} "ENDIF()\n")
++  ENDIF()
++  FILE(APPEND ${_ffmpeg_configure_script} "SET(_ffmpeg_configure_args\n")
++  FOREACH(_ffmpeg_configure_arg IN LISTS _ffmpeg_configure_args)
++    FILE(APPEND ${_ffmpeg_configure_script} "  [=[${_ffmpeg_configure_arg}]=]\n")
++  ENDFOREACH()
++  FILE(APPEND ${_ffmpeg_configure_script} ")\n")
++  FILE(APPEND ${_ffmpeg_configure_script} "EXECUTE_PROCESS(COMMAND \${_ffmpeg_configure_args} COMMAND_ECHO STDOUT RESULT_VARIABLE _ffmpeg_configure_result)\n")
++  FILE(APPEND ${_ffmpeg_configure_script} "IF(NOT _ffmpeg_configure_result EQUAL 0)\n")
++  FILE(APPEND ${_ffmpeg_configure_script} "  MESSAGE(FATAL_ERROR \"FFmpeg configure failed: \${_ffmpeg_configure_result}\")\n")
++  FILE(APPEND ${_ffmpeg_configure_script} "ENDIF()\n")
++  FILE(APPEND ${_ffmpeg_configure_script} "FILE(READ [=[ffbuild/config.mak]=] _ffmpeg_config_mak)\n")
++  FILE(APPEND ${_ffmpeg_configure_script} "STRING(REPLACE [=[LD=cl.exe\n]=] [=[LD=${_ffmpeg_linker}\n]=] _ffmpeg_config_mak \"\${_ffmpeg_config_mak}\")\n")
++  FILE(APPEND ${_ffmpeg_configure_script} "STRING(REPLACE [=[LD_O=-Fe$@\n]=] [=[LD_O=-out:$@\n]=] _ffmpeg_config_mak \"\${_ffmpeg_config_mak}\")\n")
++  FILE(APPEND ${_ffmpeg_configure_script} "FILE(WRITE [=[ffbuild/config.mak]=] \"\${_ffmpeg_config_mak}\")\n")
++  SET(_ffmpeg_configure_command ${CMAKE_COMMAND} -P ${_ffmpeg_configure_script})
++ENDIF()
++IF(RV_TARGET_WINDOWS AND _ffmpeg_configure_lib_path_env)
++  SET(_ffmpeg_build_script ${CMAKE_CURRENT_BINARY_DIR}/${_target}_build.cmake)
++  FILE(WRITE ${_ffmpeg_build_script} "SET(_ffmpeg_extra_lib_paths [=[${_ffmpeg_configure_lib_path_env}]=])\n")
++  FILE(APPEND ${_ffmpeg_build_script} "IF(DEFINED ENV{LIB} AND NOT \"\$ENV{LIB}\" STREQUAL \"\")\n")
++  FILE(APPEND ${_ffmpeg_build_script} "  SET(ENV{LIB} \"\${_ffmpeg_extra_lib_paths};\$ENV{LIB}\")\n")
++  FILE(APPEND ${_ffmpeg_build_script} "ELSE()\n")
++  FILE(APPEND ${_ffmpeg_build_script} "  SET(ENV{LIB} \"\${_ffmpeg_extra_lib_paths}\")\n")
++  FILE(APPEND ${_ffmpeg_build_script} "ENDIF()\n")
++  FILE(APPEND ${_ffmpeg_build_script} "EXECUTE_PROCESS(COMMAND [=[${_make_command}]=] -j1 COMMAND_ECHO STDOUT RESULT_VARIABLE _ffmpeg_build_result)\n")
++  FILE(APPEND ${_ffmpeg_build_script} "IF(NOT _ffmpeg_build_result EQUAL 0)\n")
++  FILE(APPEND ${_ffmpeg_build_script} "  MESSAGE(FATAL_ERROR \"FFmpeg build failed: \${_ffmpeg_build_result}\")\n")
++  FILE(APPEND ${_ffmpeg_build_script} "ENDIF()\n")
++  SET(_ffmpeg_build_command ${CMAKE_COMMAND} -P ${_ffmpeg_build_script})
++ENDIF()
  
  EXTERNALPROJECT_ADD(
    ${_target}
-@@ -334,11 +430,11 @@ EXTERNALPROJECT_ADD(
+@@ -334,11 +578,10 @@ EXTERNALPROJECT_ADD(
    URL ${_download_url}
    URL_MD5 ${_download_hash}
    SOURCE_DIR ${RV_DEPS_BASE_DIR}/${_target}/src
@@ -115,8 +263,7 @@ index 7f949bd..1686237 100644
 -    ${CMAKE_COMMAND} -E env "PKG_CONFIG_PATH=${_ffmpeg_pkg_config_path}" ${_configure_command} --prefix=${_install_dir} ${RV_FFMPEG_COMMON_CONFIG_OPTIONS}
 -    ${RV_FFMPEG_CONFIG_OPTIONS} ${RV_FFMPEG_EXTRA_C_OPTIONS} ${RV_FFMPEG_EXTRA_LIBPATH_OPTIONS} ${RV_FFMPEG_EXTERNAL_LIBS}
 -  BUILD_COMMAND ${_make_command} -j${_cpu_count}
-+    ${CMAKE_COMMAND} -E env ${_ffmpeg_configure_env} ${_configure_command} --prefix=${_install_dir} ${RV_FFMPEG_COMMON_CONFIG_OPTIONS}
-+    ${RV_FFMPEG_CONFIG_OPTIONS} ${_ffmpeg_toolchain_options} ${RV_FFMPEG_EXTRA_C_OPTIONS} ${RV_FFMPEG_EXTRA_LIBPATH_OPTIONS} ${RV_FFMPEG_EXTERNAL_LIBS}
++    ${_ffmpeg_configure_command}
 +  BUILD_COMMAND ${_ffmpeg_build_command}
    INSTALL_COMMAND ${_make_command} install
    BUILD_IN_SOURCE TRUE

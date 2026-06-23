@@ -3,14 +3,20 @@ diff --git a/cmake/dependencies/openjph.cmake b/cmake/dependencies/openjph.cmake
 +++ b/cmake/dependencies/openjph.cmake
 @@ -27,12 +27,6 @@ SET(_download_hash
  
- IF(RV_TARGET_WINDOWS)
-   RV_MAKE_STANDARD_LIB_NAME("openjph.${_version_major}.${_version_minor}" "${RV_DEPS_OPENJPH_VERSION}" "SHARED" "")
+IF(RV_TARGET_WINDOWS)
+  RV_MAKE_STANDARD_LIB_NAME("openjph.${_version_major}.${_version_minor}" "${RV_DEPS_OPENJPH_VERSION}" "SHARED" "")
 -  SET(_libname
 -      "openjph.${_version_major}.${_version_minor}.lib"
 -  )
 -  SET(_implibpath
 -      ${_lib_dir}/${_libname}
 -  )
- ELSE()
-   RV_MAKE_STANDARD_LIB_NAME("openjph" "${RV_DEPS_OPENJPH_VERSION}" "SHARED" "")
- ENDIF()
++  SET(_implibpath
++      "${_lib_dir}/openjph.${_version_major}.${_version_minor}${CMAKE_IMPORT_LIBRARY_SUFFIX}"
++  )
++  SET(_byproducts
++      ${_libpath} ${_implibpath}
++  )
+ELSE()
+  RV_MAKE_STANDARD_LIB_NAME("openjph" "${RV_DEPS_OPENJPH_VERSION}" "SHARED" "")
+ENDIF()

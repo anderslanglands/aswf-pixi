@@ -1,0 +1,220 @@
+﻿diff --git a/cmake/dependencies/python3.cmake b/cmake/dependencies/python3.cmake
+--- a/cmake/dependencies/python3.cmake
++++ b/cmake/dependencies/python3.cmake
+@@ -160,8 +160,12 @@ ELSEIF(RV_VFX_PLATFORM STRGREATER_EQUAL CY2024)
+   LIST(APPEND _pyside_make_command "--output-dir")
+   LIST(APPEND _pyside_make_command ${_install_dir})
+   LIST(APPEND _pyside_make_command "--temp-dir")
+-  LIST(APPEND _pyside_make_command ${_build_dir})
+-
++  IF(RV_TARGET_WINDOWS)
++    LIST(APPEND _pyside_make_command ${RV_DEPS_BASE_DIR}/p6)
++  ELSE()
++    LIST(APPEND _pyside_make_command ${_build_dir})
++  ENDIF()
++
+   IF(DEFINED RV_DEPS_OPENSSL_INSTALL_DIR)
+     LIST(APPEND _pyside_make_command "--openssl-dir")
+     LIST(APPEND _pyside_make_command ${RV_DEPS_OPENSSL_INSTALL_DIR})
+diff --git a/src/build/make_pyside6.py b/src/build/make_pyside6.py
+--- a/src/build/make_pyside6.py
++++ b/src/build/make_pyside6.py
+@@ -56,7 +56,15 @@ def test_python_distribution(python_home: str) -> None:
+             ),
+         ]
+         print(f"Validating the PySide package with {python_validation_args}")
+-        subprocess.run(python_validation_args).check_returncode()
++        validation_env = os.environ.copy()
++        if platform.system() == "Windows":
++            qt_bin_dir = os.path.join(QT_OUTPUT_DIR, "bin")
++            validation_env["PYSIDE_QT_BIN_DIR"] = qt_bin_dir
++            validation_env["PATH"] = os.path.pathsep.join(
++                [qt_bin_dir, os.path.join(tmp_python_home, "bin"), validation_env.get("PATH", "")]
++            )
++
++        subprocess.run(python_validation_args, env=validation_env).check_returncode()
+     finally:
+         print(f"Moving {tmp_python_home} to {python_home}")
+         shutil.move(tmp_python_home, python_home)
+@@ -173,6 +173,43 @@ def prepare() -> None:
+
+                 cmakelist.write(new_line)
+
++    if system == "Windows":
++        build_info_path = os.path.join(SOURCE_DIR, "build_scripts", "build_info_collector.py")
++        with open(build_info_path) as build_info:
++            build_info_contents = build_info.read()
++
++        old_build_base = (
++            "        build_base = self.build_base\n"
++            "        if not build_base:\n"
++        )
++        new_build_base = (
++            "        build_base = os.environ.get('PYSIDE_SETUP_PY_BUILD_BASE') or self.build_base\n"
++            "        if not build_base:\n"
++        )
++        if old_build_base in build_info_contents and "PYSIDE_SETUP_PY_BUILD_BASE" not in build_info_contents:
++            with open(build_info_path, "w") as build_info:
++                build_info.write(build_info_contents.replace(old_build_base, new_build_base))
++
++        qtinfo_path = os.path.join(SOURCE_DIR, "build_scripts", "qtinfo.py")
++        with open(qtinfo_path) as qtinfo:
++            qtinfo_contents = qtinfo.read()
++
++        qtinfo_original_contents = qtinfo_contents
++        for indent in ("                ", "            "):
++            old_config_tests_dir = f'{indent}config_tests_dir = setup_script_dir / "build" / "config.tests"\n'
++            new_config_tests_dir = (
++                f'{indent}config_tests_base = os.environ.get("PYSIDE_SETUP_PY_BUILD_BASE")\n'
++                f'{indent}config_tests_dir = Path(config_tests_base) if config_tests_base else setup_script_dir / "build"\n'
++                f'{indent}config_tests_dir = config_tests_dir / "config.tests"\n'
++            )
++            qtinfo_contents = qtinfo_contents.replace(old_config_tests_dir, new_config_tests_dir)
++
++        if qtinfo_contents != qtinfo_original_contents:
++            with open(qtinfo_path, "w") as qtinfo:
++                qtinfo.write(qtinfo_contents)
++
++        init_path = os.path.join(SOURCE_DIR, "sources", "pyside6", "PySide6", "__init__.py.in")
++        with open(init_path) as init_file:
++            init_contents = init_file.read()
++
++        old_standard_dll_dirs = (
++            "    if shiboken6.is_dir():  # Standard case, only shiboken6 is needed\n"
++            "        return [shiboken6]\n"
++        )
++        new_standard_dll_dirs = (
++            "    if shiboken6.is_dir():  # Standard installed package layout.\n"
++            "        result = [shiboken6, Path(package_dir)]\n"
++            "        qt_bin_dir = os.environ.get('PYSIDE_QT_BIN_DIR')\n"
++            "        if qt_bin_dir and Path(qt_bin_dir).is_dir():\n"
++            "            result.append(Path(qt_bin_dir))\n"
++            "        return result\n"
++        )
++        if old_standard_dll_dirs in init_contents:
++            init_contents = init_contents.replace(old_standard_dll_dirs, new_standard_dll_dirs)
++
++        old_qt_probe = (
++            "    for path in os.environ.get('PATH').split(';'):\n"
++            "        if path:\n"
++            "            if (Path(path) / 'qmake.exe').exists():\n"
++            "                result.append(path)\n"
++            "                break\n"
++        )
++        old_qt_probe_with_markers = (
++            "    for path in os.environ.get('PATH').split(';'):\n"
++            "        if path:\n"
++            "            qt_markers = ('qmake.exe', 'qmake6.exe', 'qtpaths.exe', 'qtpaths6.exe', 'Qt6Core.dll')\n"
++            "            if any((Path(path) / marker).exists() for marker in qt_markers):\n"
++            "                result.append(path)\n"
++            "                break\n"
++        )
++        new_qt_probe = (
++            "    qt_bin_dir = os.environ.get('PYSIDE_QT_BIN_DIR')\n"
++            "    if qt_bin_dir and Path(qt_bin_dir).is_dir():\n"
++            "        result.append(Path(qt_bin_dir))\n"
++            "    for path in os.environ.get('PATH').split(';'):\n"
++            "        if path:\n"
++            "            qt_markers = ('qmake.exe', 'qmake6.exe', 'qtpaths.exe', 'qtpaths6.exe', 'Qt6Core.dll')\n"
++            "            if any((Path(path) / marker).exists() for marker in qt_markers):\n"
++            "                result.append(path)\n"
++            "                break\n"
++        )
++        if old_qt_probe_with_markers in init_contents:
++            init_contents = init_contents.replace(old_qt_probe_with_markers, new_qt_probe)
++        elif old_qt_probe in init_contents:
++            init_contents = init_contents.replace(old_qt_probe, new_qt_probe)
++        if "PYSIDE_QT_BIN_DIR" in init_contents:
++            with open(init_path, "w") as init_file:
++                init_file.write(init_contents)
++
++        windows_desktop_path = os.path.join(SOURCE_DIR, "build_scripts", "platforms", "windows_desktop.py")
++        with open(windows_desktop_path) as windows_desktop:
++            windows_desktop_contents = windows_desktop.read()
++
++        old_designer_copy = (
++            '        if not is_pypy:\n'
++            '            copydir("{install_dir}/plugins/designer",\n'
++            '                    f"{plugins_target}/designer",\n'
++            '                    _filter=["*.dll"],\n'
++            '                    recursive=False,\n'
++            '                    _vars=_vars)\n'
++        )
++        new_designer_copy = (
++            '        if not is_pypy:\n'
++            '            designer_source = "{install_dir}/plugins/designer"\n'
++            '            if not os.path.isdir(designer_source.format(**_vars)):\n'
++            '                designer_source = "{install_dir}/lib/qt6/plugins/designer"\n'
++            '            if os.path.isdir(designer_source.format(**_vars)):\n'
++            '                copydir(designer_source,\n'
++            '                        f"{plugins_target}/designer",\n'
++            '                        _filter=["*.dll"],\n'
++            '                        recursive=False,\n'
++            '                        _vars=_vars)\n'
++        )
++        windows_desktop_modified = False
++        if old_designer_copy in windows_desktop_contents:
++            windows_desktop_contents = windows_desktop_contents.replace(old_designer_copy, new_designer_copy)
++            windows_desktop_modified = True
++
++        if "import shutil\n" not in windows_desktop_contents:
++            windows_desktop_contents = windows_desktop_contents.replace("import os\n", "import os\nimport shutil\n")
++            windows_desktop_modified = True
++
++        old_qml_dll_copy = (
++            '        copydir("{qt_qml_dir}", f"{destination_qt_dir}/qml",\n'
++            '                file_filter_function=qml_dll_filter,\n'
++            '                force=False,\n'
++            '                recursive=True,\n'
++            '                _vars=_vars)\n'
++        )
++        new_qml_dll_copy = old_qml_dll_copy + (
++            '\n'
++            '        qml_target = destination_qt_dir / "qml"\n'
++            '        if qml_target.is_dir():\n'
++            '            for root, dirnames, _ in os.walk(qml_target, topdown=False):\n'
++            '                for dirname in dirnames:\n'
++            '                    if dirname.startswith("objects-") or dirname == ".qt":\n'
++            '                        shutil.rmtree(Path(root) / dirname)\n'
++        )
++        if old_qml_dll_copy in windows_desktop_contents and 'qml_target = destination_qt_dir / "qml"' not in windows_desktop_contents:
++            windows_desktop_contents = windows_desktop_contents.replace(old_qml_dll_copy, new_qml_dll_copy)
++            windows_desktop_modified = True
++
++        if windows_desktop_modified:
++            with open(windows_desktop_path, "w") as windows_desktop:
++                windows_desktop.write(windows_desktop_contents)
++
+
+ def remove_broken_shortcuts(python_home: str) -> None:
+     """
+@@ -260,6 +278,7 @@ def build() -> None:
+         pyside_build_args.append(
+             f"--shiboken-extra-include-paths={os.path.join(QT_OUTPUT_DIR, 'include')}"
+         )
++    pyside_env = os.environ.copy()
+
+     if OPENSSL_OUTPUT_DIR:
+         pyside_build_args.append(f"--openssl={os.path.join(OPENSSL_OUTPUT_DIR, 'bin')}")
+@@ -267,12 +286,16 @@ def build() -> None:
+     if platform.system() == "Windows":
+         # Add the debug switch to match build type but only on Windows
+         # (on other platforms, PySide6 is built in release)
++        pyside_build_base = os.path.join(tempfile.gettempdir(), "rvp6")
++        if os.path.exists(pyside_build_base):
++            shutil.rmtree(pyside_build_base)
++        os.makedirs(pyside_build_base)
++        pyside_env["PYSIDE_SETUP_PY_BUILD_BASE"] = pyside_build_base
++        pyside_env["PYSIDE_QT_BIN_DIR"] = os.path.join(QT_OUTPUT_DIR, "bin")
++
+         if VARIANT == "Debug":
+             pyside_build_args.append("--debug")
+
+     print(f"Executing {pyside_build_args}")
+-    subprocess.run(pyside_build_args).check_returncode()
+-
++    subprocess.run(pyside_build_args, env=pyside_env).check_returncode()
++
+     generator_cleanup_args = python_interpreter_args + [
+         "-m",
+         "pip",
