@@ -36,6 +36,7 @@ source:
     - patches/python-zlib-build-paths.patch
     - patches/python-detect-openssl-libdir.patch
     - patches/python-zlib-runtime-paths.patch
+    - patches/python-darwin-zlib-runshared.patch
     - patches/python-disable-macos-pgo.patch
     - patches/cmake-build-python-executable.patch
     - patches/python-pip-index-env.patch
@@ -366,6 +367,7 @@ requirements:
         - freetype
         - libaio
         - libgl-devel
+        - libglvnd-devel
         - libglu
         - libudev
         - xorg-libx11

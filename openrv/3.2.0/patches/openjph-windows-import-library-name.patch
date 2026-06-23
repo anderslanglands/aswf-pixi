@@ -3,20 +3,22 @@ diff --git a/cmake/dependencies/openjph.cmake b/cmake/dependencies/openjph.cmake
 +++ b/cmake/dependencies/openjph.cmake
 @@ -27,12 +27,6 @@ SET(_download_hash
  
-IF(RV_TARGET_WINDOWS)
-  RV_MAKE_STANDARD_LIB_NAME("openjph.${_version_major}.${_version_minor}" "${RV_DEPS_OPENJPH_VERSION}" "SHARED" "")
+ IF(RV_TARGET_WINDOWS)
+   RV_MAKE_STANDARD_LIB_NAME("openjph.${_version_major}.${_version_minor}" "${RV_DEPS_OPENJPH_VERSION}" "SHARED" "")
 -  SET(_libname
 -      "openjph.${_version_major}.${_version_minor}.lib"
 -  )
 -  SET(_implibpath
 -      ${_lib_dir}/${_libname}
 -  )
-+  SET(_implibpath
-+      "${_lib_dir}/openjph.${_version_major}.${_version_minor}${CMAKE_IMPORT_LIBRARY_SUFFIX}"
-+  )
-+  SET(_byproducts
-+      ${_libpath} ${_implibpath}
-+  )
-ELSE()
-  RV_MAKE_STANDARD_LIB_NAME("openjph" "${RV_DEPS_OPENJPH_VERSION}" "SHARED" "")
-ENDIF()
+ ELSE()
+   RV_MAKE_STANDARD_LIB_NAME("openjph" "${RV_DEPS_OPENJPH_VERSION}" "SHARED" "")
+ ENDIF()
+@@ -58,6 +52,6 @@ EXTERNALPROJECT_ADD(
+   INSTALL_COMMAND ${_cmake_install_command}
+   BUILD_IN_SOURCE FALSE
+   BUILD_ALWAYS FALSE
+-  BUILD_BYPRODUCTS ${_byproducts}
++  INSTALL_BYPRODUCTS ${_byproducts}
+   USES_TERMINAL_BUILD TRUE
+ )
