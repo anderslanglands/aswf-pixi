@@ -129,8 +129,11 @@ outputs:
             git -c core.longpaths=true submodule update --init --recursive
             if errorlevel 1 exit /b 1
             set "MITSUBA_VARIANTS=${{ non_cuda_variants }}"
-            if exist "%PREFIX%\Library\bin\LLVM-C.dll" set "DRJIT_LIBLLVM_PATH=%PREFIX%\Library\bin\LLVM-C.dll"
-            if exist "%PREFIX%\Library\bin\LLVM.dll" set "DRJIT_LIBLLVM_PATH=%PREFIX%\Library\bin\LLVM.dll"
+            if exist "%PREFIX%\Library\bin\LLVM-C.dll" (
+              set "DRJIT_LIBLLVM_PATH=%PREFIX%\Library\bin\LLVM-C.dll"
+            ) else if exist "%PREFIX%\Library\bin\LLVM.dll" (
+              set "DRJIT_LIBLLVM_PATH=%PREFIX%\Library\bin\LLVM.dll"
+            )
             if not defined DRJIT_LIBLLVM_PATH (
               echo Could not find LLVM-C.dll or LLVM.dll in "%PREFIX%\Library\bin"
               exit /b 1
@@ -184,8 +187,11 @@ outputs:
               echo ^) else ^(
               echo   set "CONDA_BACKUP_DRJIT_LIBLLVM_PATH="
               echo ^)
-              echo if exist "%%CONDA_PREFIX%%\Library\bin\LLVM-C.dll" set "DRJIT_LIBLLVM_PATH=%%CONDA_PREFIX%%\Library\bin\LLVM-C.dll"
-              echo if exist "%%CONDA_PREFIX%%\Library\bin\LLVM.dll" set "DRJIT_LIBLLVM_PATH=%%CONDA_PREFIX%%\Library\bin\LLVM.dll"
+              echo if exist "%%CONDA_PREFIX%%\Library\bin\LLVM-C.dll" ^(
+              echo   set "DRJIT_LIBLLVM_PATH=%%CONDA_PREFIX%%\Library\bin\LLVM-C.dll"
+              echo ^) else if exist "%%CONDA_PREFIX%%\Library\bin\LLVM.dll" ^(
+              echo   set "DRJIT_LIBLLVM_PATH=%%CONDA_PREFIX%%\Library\bin\LLVM.dll"
+              echo ^)
               echo set "CONDA_BACKUP_MITSUBA_DLL_PATH=%%PATH%%"
               echo set "PATH=%%CONDA_PREFIX%%\Lib\site-packages\mitsuba;%%CONDA_PREFIX%%\Lib\site-packages\drjit;%%PATH%%"
             ) > "%PREFIX%\etc\conda\activate.d\mitsuba-drjit-llvm.bat"
@@ -203,8 +209,7 @@ outputs:
             ) > "%PREFIX%\etc\conda\deactivate.d\mitsuba-drjit-llvm.bat"
             (
               echo if ^(Test-Path Env:DRJIT_LIBLLVM_PATH^) { $env:CONDA_BACKUP_DRJIT_LIBLLVM_PATH = $env:DRJIT_LIBLLVM_PATH } else { Remove-Item Env:CONDA_BACKUP_DRJIT_LIBLLVM_PATH -ErrorAction SilentlyContinue }
-              echo if ^(Test-Path "$env:CONDA_PREFIX\Library\bin\LLVM-C.dll"^) { $env:DRJIT_LIBLLVM_PATH = "$env:CONDA_PREFIX\Library\bin\LLVM-C.dll" }
-              echo if ^(Test-Path "$env:CONDA_PREFIX\Library\bin\LLVM.dll"^) { $env:DRJIT_LIBLLVM_PATH = "$env:CONDA_PREFIX\Library\bin\LLVM.dll" }
+              echo if ^(Test-Path "$env:CONDA_PREFIX\Library\bin\LLVM-C.dll"^) { $env:DRJIT_LIBLLVM_PATH = "$env:CONDA_PREFIX\Library\bin\LLVM-C.dll" } elseif ^(Test-Path "$env:CONDA_PREFIX\Library\bin\LLVM.dll"^) { $env:DRJIT_LIBLLVM_PATH = "$env:CONDA_PREFIX\Library\bin\LLVM.dll" }
               echo $env:CONDA_BACKUP_MITSUBA_DLL_PATH = $env:PATH
               echo $env:PATH = "$env:CONDA_PREFIX\Lib\site-packages\mitsuba;$env:CONDA_PREFIX\Lib\site-packages\drjit;$env:PATH"
             ) > "%PREFIX%\etc\conda\activate.d\mitsuba-drjit-llvm.ps1"
