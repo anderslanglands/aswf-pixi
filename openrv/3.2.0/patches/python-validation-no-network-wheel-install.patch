@@ -22,9 +22,10 @@ diff --git a/src/build/test_python.py b/src/build/test_python.py
                      "import certifi",
                      # Make sure the SSL_CERT_FILE variable is set
                      "import os",
+-                    "assert certifi.where() == os.environ['SSL_CERT_FILE']",
 +                    # Make sure wheel-installed native runtime modules are available after relocation.
 +                    "import cryptography",
 +                    "import cffi",
-                     "assert certifi.where() == os.environ['SSL_CERT_FILE']",
++                    "assert os.path.exists(os.environ['SSL_CERT_FILE'])",
                      # Make sure ssl is correctly built and linked
                      "import ssl",

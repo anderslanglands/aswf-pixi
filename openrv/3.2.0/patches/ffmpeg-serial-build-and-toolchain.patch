@@ -2,7 +2,7 @@ diff --git i/cmake/dependencies/ffmpeg.cmake w/cmake/dependencies/ffmpeg.cmake
 index 7f949bd..1686237 100644
 --- i/cmake/dependencies/ffmpeg.cmake
 +++ w/cmake/dependencies/ffmpeg.cmake
-@@ -323,6 +323,260 @@ ENDIF()
+@@ -323,6 +323,265 @@ ENDIF()
  LIST(JOIN _ffmpeg_pkg_config_path ":" _ffmpeg_pkg_config_path)
  
  SEPARATE_ARGUMENTS(RV_FFMPEG_PATCH_COMMAND_STEP)
@@ -94,6 +94,11 @@ index 7f949bd..1686237 100644
 +SET(_ffmpeg_toolchain_options)
 +IF(RV_TARGET_WINDOWS)
 +  LIST(APPEND _ffmpeg_toolchain_options "--disable-decoder=ac3_fixed" "--disable-decoder=prores_raw" "--disable-muxer=whip")
++ENDIF()
++IF(RV_TARGET_DARWIN
++   OR RV_TARGET_APPLE_ARM64
++)
++  LIST(APPEND _ffmpeg_toolchain_options "--disable-filter=yadif_videotoolbox")
 +ENDIF()
 +IF(CMAKE_C_COMPILER)
 +  LIST(APPEND _ffmpeg_configure_env "CC=${_ffmpeg_c_compiler}" "LD=${_ffmpeg_c_compiler}")
@@ -263,7 +268,7 @@ index 7f949bd..1686237 100644
  
  EXTERNALPROJECT_ADD(
    ${_target}
-@@ -334,11 +588,10 @@ EXTERNALPROJECT_ADD(
+@@ -334,11 +593,10 @@ EXTERNALPROJECT_ADD(
    URL ${_download_url}
    URL_MD5 ${_download_hash}
    SOURCE_DIR ${RV_DEPS_BASE_DIR}/${_target}/src
