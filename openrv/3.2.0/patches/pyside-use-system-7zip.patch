@@ -2,7 +2,7 @@ diff --git i/src/build/utils.py w/src/build/utils.py
 index 79683ad..361bb5f 100644
 --- i/src/build/utils.py
 +++ w/src/build/utils.py
-@@ -15,9 +15,19 @@ import shutil
+@@ -15,11 +15,53 @@
  import subprocess
  import sys
  
@@ -22,10 +22,42 @@ index 79683ad..361bb5f 100644
 +    )
 +
 +
++class _SystemSevenZipFile:
++    def __init__(self, input_7z: str, mode: str) -> None:
++        if mode != "r":
++            raise ValueError(f"Unsupported 7z mode: {mode}")
++        self.input_7z = input_7z
++
++    def __enter__(self):
++        return self
++
++    def __exit__(self, exc_type, exc_value, traceback):
++        return False
++
++    def extractall(self, output_folder: str) -> None:
++        extract_args = [_find_7zip(), "x", self.input_7z, f"-o{output_folder}", "-y"]
++        print(f"Executing {extract_args}")
++        subprocess.run(extract_args).check_returncode()
++
++    def test(self) -> bool:
++        test_args = [_find_7zip(), "t", self.input_7z]
++        print(f"Executing {test_args}")
++        return subprocess.run(test_args).returncode == 0
++
++
++class _SystemSevenZipExceptions:
++    class Bad7zFile(Exception):
++        pass
++
++
++SevenZipFile = _SystemSevenZipFile
++exceptions = _SystemSevenZipExceptions
++
++
  def _windows_zip_impl(input_folder: str, output_zip: str) -> None:
      """
      Windows implementation of the zip function.
-@@ -151,8 +161,10 @@ def extract_7z_archive(input_7z: str, output_folder: str) -> None:
+@@ -151,8 +193,10 @@
      """
      print(f"Extracting {input_7z} into {output_folder}")
  
@@ -38,7 +70,7 @@ index 79683ad..361bb5f 100644
  
  
  def verify_7z_archive(input_7z: str) -> bool or None:
-@@ -163,8 +175,7 @@ def verify_7z_archive(input_7z: str) -> bool or None:
+@@ -162,11 +206,10 @@
      :param input_zip: Path to the 7z file to uncompress
      """
      print(f"Verifying {input_7z}")
@@ -47,7 +79,12 @@ index 79683ad..361bb5f 100644
 -            return z.test()
 -    except exceptions.Bad7zFile:
 -        return None
+-
+-
 +    test_args = [_find_7zip(), "t", input_7z]
 +
 +    print(f"Executing {test_args}")
 +    return subprocess.run(test_args).returncode == 0
++
++
+ def _darwin_copy_recursively(src_folder: str, destination_folder) -> None:

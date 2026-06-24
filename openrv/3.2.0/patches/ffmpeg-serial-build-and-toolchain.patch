@@ -2,7 +2,7 @@ diff --git i/cmake/dependencies/ffmpeg.cmake w/cmake/dependencies/ffmpeg.cmake
 index 7f949bd..1686237 100644
 --- i/cmake/dependencies/ffmpeg.cmake
 +++ w/cmake/dependencies/ffmpeg.cmake
-@@ -323,6 +323,265 @@ ENDIF()
+@@ -323,6 +323,268 @@ ENDIF()
  LIST(JOIN _ffmpeg_pkg_config_path ":" _ffmpeg_pkg_config_path)
  
  SEPARATE_ARGUMENTS(RV_FFMPEG_PATCH_COMMAND_STEP)
@@ -197,6 +197,9 @@ index 7f949bd..1686237 100644
 +  ENDIF()
 +  STRING(REPLACE "${_ffmpeg_original}" "${_ffmpeg_replacement}" _ffmpeg_common "${_ffmpeg_common}")
 +  FILE(WRITE "${_ffmpeg_common_mak}" "${_ffmpeg_common}")
++ENDIF()
++IF(WIN32)
++  FILE(APPEND "${_ffmpeg_common_mak}" "\n%res.o:\n\tprintf \"void ffmpeg_empty_resource_object(void) {}\\n\" > $(@:.o=.c)\n\t$(CC) $(CCFLAGS) $(CC_DEPFLAGS) $(CC_C) $(CC_O) $(@:.o=.c)\n")
 +ENDIF()
 +]=])
 +
