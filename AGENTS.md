@@ -233,20 +233,6 @@ MDL SDK packaging decisions:
 - On Windows, compile the generated SWIG Python binding with MSVC `/bigobj` because the generated wrapper exceeds the default COFF section limit.
 - On macOS, pass `LLVM_ENABLE_LIBCXX=ON` and pre-seed LLVM 12's atomics cache checks for the embedded LLVM build. Conda's macOS Clang toolchain uses libc++, LLVM 12's default `LLVM_ENABLE_LIBCXX=OFF` path runs stale libstdc++ version probes, and the old atomics probe can report a missing Linux-style `libatomic` even though Apple arm64 atomics are provided by the toolchain.
 
-Mitsuba packaging decisions:
-
-- Package Mitsuba 3.8.0 as `mitsuba-python`, `mitsuba-tools`, and a compatibility/default `mitsuba` metapackage.
-- The `mitsuba` metapackage should depend on the Python package and CLI wrapper only; do not create `mitsuba-lib` or `mitsuba-dev` in the first pass because upstream's supported packaging path is Python-first and does not install CMake package metadata.
-- Build `mitsuba-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
-- Build from the `v3.8.0` git commit with submodules instead of the GitHub release archive, because Mitsuba requires vendored submodules and `resources/data` during the build. Pin the peeled tag commit rather than the annotated tag name for rattler-build source checkout stability.
-- Build and package the bundled upstream `drjit` 1.3.1 submodule as part of `mitsuba-python` instead of depending on conda-forge `drjit`, because the conda-forge `drjit` 1.3.1 headers currently differ from the upstream tag used by Mitsuba 3.8.0. Keep a run constraint excluding external `drjit` to avoid top-level Python package file overlap.
-- Use bundled `nanobind` 2.11.0 from Mitsuba as a build tool for the scikit-build package, then remove it from the final environment. This keeps the nanobind ABI aligned with the bundled Dr.Jit extension modules.
-- On Windows, point Dr.Jit at `LLVM-C.dll` before falling back to `LLVM.dll`; letting activation overwrite the C shim with `LLVM.dll` caused the LLVM render smoke test to exit with `STATUS_HEAP_CORRUPTION` on GitHub-hosted Windows.
-- Keep native `mitsuba-tools` smoke tests on an explicit LLVM variant such as `llvm_ad_rgb` on Unix; scalar rendering is covered through the Python API because upstream Mitsuba 3.8.0 native scalar CLI execution can reach Dr.Jit LLVM state without calling `jit_init(LLVM)` in this bundled build. On Windows, keep the native CLI smoke to startup and variant discovery until the bundled native CLI LLVM initialization path is fixed; Windows Python tests should render an LLVM Mitsuba variant in a child process, require a post-render validation sentinel, and tolerate only the known native teardown abort codes after that sentinel exists.
-- Keep the upstream PyPI variant set enabled by passing `MI_DEFAULT_VARIANTS` where platform support permits it: scalar RGB/spectral and LLVM AD mono/RGB/spectral on all platforms, plus CUDA AD mono/RGB/spectral on Linux. Include upstream polarized variants for the enabled backends where upstream ships them.
-- Treat Linux CUDA/OptiX variants as part of the default Python package for now. They dynamically load CUDA/OptiX through Dr.Jit at runtime and should not introduce a packaged OptiX SDK/header dependency.
-- The scikit-build path still builds upstream's vendored Embree, OpenEXR, libpng, libjpeg, pugixml, asmjit, and rgb2spec components inside the package; discuss any future unbundling separately.
-
 OptiX SDK packaging decisions:
 
 - Package OptiX SDK 9.1.0 as a Linux and Windows `optix-dev` download stub for testing CUDA/OptiX consumers. Do not put NVIDIA header files or other `NVIDIA/optix-dev` repository contents in the conda artifact.

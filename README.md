@@ -274,17 +274,6 @@ The NVIDIA Material Definition Language SDK provides the MDL compiler, runtime S
 - `mdl-sdk-python`: Python bindings (`pymdlsdk` and `pymdl`), built for Python 3.10 through 3.14. Depends on the matching runtime and standard plugins.
 - `mdl-sdk`: Default metapackage for C++ and headless tool consumers. Depends on the matching runtime, development surface, tools, and standard plugins; Python bindings are opt-in.
 
-## Mitsuba
-
-Recipe versions:
-- `3.8.0`
-
-Mitsuba 3 is a retargetable forward and inverse renderer with scalar, LLVM, and CUDA/OptiX JIT variants.
-
-- `mitsuba-python`: Python-first Mitsuba package built for Python 3.10 through 3.14. It builds and vendors the matching upstream `drjit` 1.3.1 submodule, uses bundled `nanobind` 2.11.0 build tooling from Mitsuba, and includes scalar RGB/spectral plus LLVM AD mono/RGB/spectral variants on all platforms. Linux builds also include CUDA AD mono/RGB/spectral variants; polarized variants are included for the enabled backends where upstream ships them.
-- `mitsuba-tools`: Console entry point package exposing `mitsuba` on PATH. Depends on the matching `mitsuba-python` package. The native CLI smoke test renders with `llvm_ad_rgb` on Unix; on Windows it validates CLI startup and variant discovery while the Python smoke test renders an LLVM variant in a child process and accepts the known native teardown abort only after render validation completes.
-- `mitsuba`: Default metapackage depending on `mitsuba-python` and `mitsuba-tools`. A C++ `-lib`/`-dev` split is deferred because upstream's supported packaging path is Python-first and does not install CMake package metadata.
-
 ## OptiX SDK
 
 Recipe versions:
