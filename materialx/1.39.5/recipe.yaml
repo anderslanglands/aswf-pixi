@@ -504,6 +504,13 @@ outputs:
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build-render-slang
 
+            set "SLANG_RHI_SOURCE_DIR=%SRC_DIR%\slang-rhi"
+            set "SLANG_RHI_SOURCE_DIR=%SLANG_RHI_SOURCE_DIR:\=/%"
+            set "SLANG_INCLUDE_DIR=%LIBRARY_INC%"
+            set "SLANG_INCLUDE_DIR=%SLANG_INCLUDE_DIR:\=/%"
+            set "SLANG_BINARY_DIR=%LIBRARY_PREFIX%"
+            set "SLANG_BINARY_DIR=%SLANG_BINARY_DIR:\=/%"
+
             cmake %CMAKE_ARGS% ^
               -GNinja ^
               -DCMAKE_BUILD_TYPE=Release ^
@@ -523,10 +530,10 @@ outputs:
               -DMATERIALX_BUILD_GEN_SLANG=ON ^
               -DMATERIALX_BUILD_RENDER=ON ^
               -DMATERIALX_BUILD_RENDER_PLATFORMS=ON ^
-              -DMATERIALX_SLANG_RHI_SOURCE_DIR="%SRC_DIR%\slang-rhi" ^
+              -DMATERIALX_SLANG_RHI_SOURCE_DIR="%SLANG_RHI_SOURCE_DIR%" ^
               -DSLANG_RHI_FETCH_SLANG=OFF ^
-              -DSLANG_RHI_SLANG_INCLUDE_DIR="%LIBRARY_INC%" ^
-              -DSLANG_RHI_SLANG_BINARY_DIR="%LIBRARY_PREFIX%" ^
+              -DSLANG_RHI_SLANG_INCLUDE_DIR="%SLANG_INCLUDE_DIR%" ^
+              -DSLANG_RHI_SLANG_BINARY_DIR="%SLANG_BINARY_DIR%" ^
               -DSLANG_RHI_BUILD_SHARED=OFF ^
               -DSLANG_RHI_BUILD_TESTS=OFF ^
               -DSLANG_RHI_BUILD_TESTS_WITH_GLFW=OFF ^
@@ -544,8 +551,10 @@ outputs:
               -DMATERIALX_WARNINGS_AS_ERRORS=OFF ^
               -B %SRC_DIR%\..\build-render-slang ^
               -S .
+            if errorlevel 1 exit /b 1
 
             cmake --build %SRC_DIR%\..\build-render-slang --target install --config Release
+            if errorlevel 1 exit /b 1
 
             set "RECIPE_DIR_VAR=%RECIPE_DIR%"
             if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
@@ -558,10 +567,12 @@ outputs:
               -DMATERIALX_SOURCE_DIR="%SRC_DIR%" ^
               -DMATERIALX_INSTALL_PREFIX="%LIBRARY_PREFIX%" ^
               -P "%RECIPE_DIR_VAR%\cmake\install-render-slang.cmake"
+            if errorlevel 1 exit /b 1
             cmake ^
               -DMATERIALX_CONFIG_DIR="%LIBRARY_LIB%\cmake\MaterialX" ^
               -DMATERIALX_OPTIONAL_TARGET_SET=render-slang ^
               -P "%RECIPE_DIR_VAR%\cmake\write-optional-targets.cmake"
+            if errorlevel 1 exit /b 1
     requirements:
       build:
         - ${{ compiler('cxx') }}
@@ -923,6 +934,7 @@ outputs:
             - tests/materialx_consumer.cpp
             - tests/materialx_render_consumer.cpp
             - tests/materialx_render_osl_consumer.cpp
+            - tests/materialx_render_msl_consumer.mm
         requirements:
           run:
             - ${{ compiler('cxx') }}
@@ -1011,6 +1023,7 @@ outputs:
             - tests/materialx_consumer.cpp
             - tests/materialx_render_consumer.cpp
             - tests/materialx_render_slang_consumer.cpp
+            - tests/materialx_render_msl_consumer.mm
         requirements:
           run:
             - ${{ compiler('cxx') }}
