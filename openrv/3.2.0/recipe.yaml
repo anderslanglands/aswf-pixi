@@ -57,6 +57,7 @@ source:
     - patches/ocio-conda-minizip-target.patch
     - patches/ocio-windows-short-ext-build-paths.patch
     - patches/oiio-windows-short-local-deps.patch
+    - patches/oiio-conda-fmt.patch
     - patches/ftgl-gcc15-fpermissive.patch
     - patches/nedmalloc-gnu-source.patch
     - patches/honor-build-testing.patch
@@ -75,6 +76,7 @@ build:
         qt_root="$PREFIX"
         openrv_prefix="$PREFIX/opt/openrv"
         qtpaths_symlink=""
+        minizip_ng_symlink=""
         cmake_osx_architectures_args=()
 
         if [ "$(uname -s)" = "Darwin" ]; then
@@ -98,8 +100,30 @@ build:
           if [ -n "$qtpaths_symlink" ]; then
             rm -f "$qtpaths_symlink"
           fi
+          if [ -n "$minizip_ng_symlink" ]; then
+            rm -f "$minizip_ng_symlink"
+          fi
         }
         trap cleanup_qtpaths_symlink EXIT
+
+        case "$(uname -s)" in
+          Darwin)
+            minizip_lib="libminizip.dylib"
+            minizip_ng_lib="libminizip-ng.dylib"
+            ;;
+          Linux)
+            minizip_lib="libminizip.so"
+            minizip_ng_lib="libminizip-ng.so"
+            ;;
+          *)
+            minizip_lib=""
+            minizip_ng_lib=""
+            ;;
+        esac
+        if [ -n "$minizip_lib" ] && [ -e "$PREFIX/lib/$minizip_lib" ] && [ ! -e "$PREFIX/lib/$minizip_ng_lib" ]; then
+          ln -s "$minizip_lib" "$PREFIX/lib/$minizip_ng_lib"
+          minizip_ng_symlink="$PREFIX/lib/$minizip_ng_lib"
+        fi
 
         export QT_PLUGIN_PATH="$PREFIX/lib/qt6/plugins${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
         export QT_QPA_PLATFORM_PLUGIN_PATH="$PREFIX/lib/qt6/plugins/platforms${QT_QPA_PLATFORM_PLUGIN_PATH:+:$QT_QPA_PLATFORM_PLUGIN_PATH}"
@@ -363,6 +387,7 @@ requirements:
     - qt6-multimedia ==6.10.2
     - yaml-cpp >=0.8,<0.9
     - minizip >=4.2,<5
+    - fmt
     - if: unix
       then:
         - readline
@@ -383,6 +408,7 @@ requirements:
     - qt6-multimedia ==6.10.2
     - yaml-cpp >=0.8,<0.9
     - minizip >=4.2,<5
+    - fmt
     - if: unix
       then:
         - readline

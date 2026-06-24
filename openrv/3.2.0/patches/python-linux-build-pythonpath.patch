@@ -1,7 +1,7 @@
 diff --git a/src/build/make_python.py b/src/build/make_python.py
 --- a/src/build/make_python.py
 +++ b/src/build/make_python.py
-@@ -322,7 +322,21 @@ def configure() -> None:
+@@ -322,7 +322,25 @@ def configure() -> None:
                          "-Wl,-install_name,$(prefix)/lib/libpython$(",
                          "-Wl,-install_name,@rpath/libpython$(",
                      )
@@ -20,6 +20,10 @@ diff --git a/src/build/make_python.py b/src/build/make_python.py
 +                        new_line = new_line.replace(
 +                            "$(RUNSHARED) $(PYTHON_FOR_BUILD) -S -m sysconfig --generate-posix-vars",
 +                            f"PYTHONPATH={source_lib} $(RUNSHARED) ./python -S -m sysconfig --generate-posix-vars",
++                        )
++                        new_line = new_line.replace(
++                            "$(RUNSHARED) $(PYTHON_FOR_BUILD) -c",
++                            f"PYTHONPATH={source_lib} $(RUNSHARED) ./python -c",
 +                        )
                      # Adjust RPaths
                      if new_line.startswith("LINKFORSHARED="):
