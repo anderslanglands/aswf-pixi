@@ -38,6 +38,7 @@ source:
     - patches/python-zlib-runtime-paths.patch
     - patches/python-darwin-zlib-runshared.patch
     - patches/python-disable-macos-pgo.patch
+    - patches/python-linux-build-pythonpath.patch
     - patches/cmake-build-python-executable.patch
     - patches/python-pip-index-env.patch
     - patches/pyside-use-system-7zip.patch
@@ -360,6 +361,7 @@ requirements:
     - qt6-webengine ==6.10.2
     - qt6-multimedia ==6.10.2
     - yaml-cpp >=0.8,<0.9
+    - minizip >=4.2,<5
     - if: unix
       then:
         - readline
@@ -379,6 +381,7 @@ requirements:
     - qt6-webengine ==6.10.2
     - qt6-multimedia ==6.10.2
     - yaml-cpp >=0.8,<0.9
+    - minizip >=4.2,<5
     - if: unix
       then:
         - readline

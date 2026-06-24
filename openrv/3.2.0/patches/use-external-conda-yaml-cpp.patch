@@ -16,11 +16,14 @@ index bd6626a..cf15d32 100644
  #
  # and finally the PyOpenColorIO library
  IF(RV_TARGET_WINDOWS)
-@@ -144,6 +137,8 @@ LIST(APPEND _configure_options "-DImath_ROOT=${RV_DEPS_IMATH_ROOT_DIR}")
+@@ -144,6 +137,11 @@ LIST(APPEND _configure_options "-DImath_ROOT=${RV_DEPS_IMATH_ROOT_DIR}")
  
  LIST(APPEND _configure_options "-DZLIB_ROOT=${RV_DEPS_ZLIB_ROOT_DIR}")
  
 +LIST(APPEND _configure_options "-Dyaml-cpp_ROOT=$ENV{PREFIX}")
++LIST(APPEND _configure_options "-Dminizip-ng_ROOT=$ENV{PREFIX}")
++LIST(APPEND _configure_options "-Dminizip-ng_INCLUDE_DIR=$ENV{PREFIX}/include/minizip")
++LIST(APPEND _configure_options "-Dminizip-ng_LIBRARY=$ENV{PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}minizip${CMAKE_SHARED_LIBRARY_SUFFIX}")
 +
  # OCIO apps are not needed.
  LIST(APPEND _configure_options "-DOCIO_BUILD_APPS=OFF")
@@ -29,7 +32,7 @@ diff --git a/cmake/dependencies/yaml-cpp.cmake b/cmake/dependencies/yaml-cpp.cma
 index 9df5f09..1ab0602 100644
 --- a/cmake/dependencies/yaml-cpp.cmake
 +++ b/cmake/dependencies/yaml-cpp.cmake
-@@ -9,46 +9,24 @@
+@@ -9,49 +9,24 @@
  # Expose OCIO's own 'yaml_cpp' target replacing the legacy 'src/pub/yaml_cpp' folder.
  #
  # ##############################################################################################################################################################

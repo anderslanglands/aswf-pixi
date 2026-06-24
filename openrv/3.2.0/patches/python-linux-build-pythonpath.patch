@@ -1,0 +1,21 @@
+diff --git a/src/build/make_python.py b/src/build/make_python.py
+--- a/src/build/make_python.py
++++ b/src/build/make_python.py
+@@ -322,6 +322,15 @@ def configure() -> None:
+                         "-Wl,-install_name,$(prefix)/lib/libpython$(",
+                         "-Wl,-install_name,@rpath/libpython$(",
+                     )
+-
++
++                    if platform.system() == "Linux" and new_line.startswith("PYTHON_FOR_BUILD="):
++                        # CPython's generated pybuilddir.txt rule invokes this as
++                        # './python -E -S -m sysconfig'. In rattler-build prefixes,
++                        # that in-tree interpreter can fail to discover Lib/encodings
++                        # before the stdlib is installed. Put the source Lib directory
++                        # on the generated build command without baking it into the
++                        # installed interpreter.
++                        source_lib = os.path.join(SOURCE_DIR, "Lib")
++                        new_line = new_line.replace("./python -E", f"PYTHONPATH={source_lib} ./python")
+                     # Adjust RPaths
+                     if new_line.startswith("LINKFORSHARED="):
+                         if platform.system() == "Linux":
