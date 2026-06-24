@@ -2,7 +2,7 @@ diff --git i/src/build/utils.py w/src/build/utils.py
 index 79683ad..361bb5f 100644
 --- i/src/build/utils.py
 +++ w/src/build/utils.py
-@@ -15,11 +15,53 @@
+@@ -15,11 +15,61 @@
  import subprocess
  import sys
  
@@ -15,7 +15,15 @@ index 79683ad..361bb5f 100644
 +    for candidate in ("7zz", "7z", "7za"):
 +        seven_zip = shutil.which(candidate)
 +        if seven_zip:
-+            return seven_zip
++            return os.path.expandvars(seven_zip)
++
++    for root in (os.environ.get("BUILD_PREFIX"), os.environ.get("PREFIX")):
++        if not root:
++            continue
++        for candidate in ("7zz", "7z", "7za"):
++            seven_zip = os.path.join(root, "bin", candidate)
++            if os.path.exists(seven_zip):
++                return seven_zip
 +
 +    raise RuntimeError(
 +        "Could not find a 7zip executable. Install the 7zip build requirement."
@@ -57,7 +65,7 @@ index 79683ad..361bb5f 100644
  def _windows_zip_impl(input_folder: str, output_zip: str) -> None:
      """
      Windows implementation of the zip function.
-@@ -151,8 +193,10 @@
+@@ -151,8 +201,10 @@
      """
      print(f"Extracting {input_7z} into {output_folder}")
  
@@ -70,7 +78,7 @@ index 79683ad..361bb5f 100644
  
  
  def verify_7z_archive(input_7z: str) -> bool or None:
-@@ -162,11 +206,10 @@
+@@ -162,11 +214,10 @@
      :param input_zip: Path to the 7z file to uncompress
      """
      print(f"Verifying {input_7z}")
@@ -79,12 +87,12 @@ index 79683ad..361bb5f 100644
 -            return z.test()
 -    except exceptions.Bad7zFile:
 -        return None
--
--
 +    test_args = [_find_7zip(), "t", input_7z]
 +
 +    print(f"Executing {test_args}")
 +    return subprocess.run(test_args).returncode == 0
+-
+-
 +
 +
  def _darwin_copy_recursively(src_folder: str, destination_folder) -> None:

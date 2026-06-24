@@ -27,7 +27,7 @@ diff --git a/src/build/make_python.py b/src/build/make_python.py
 +                        )
 +                        new_line = new_line.replace(
 +                            "$(RUNSHARED) $(srcdir)/if_runnable.sh $(PYTHON_FOR_BUILD)",
-+                            f"PYTHONPATH={source_lib} $(RUNSHARED) $(srcdir)/if_runnable.sh ./python",
++                            f"PYTHONPATH={source_lib} $(RUNSHARED) ./python",
 +                        )
                      # Adjust RPaths
                      if new_line.startswith("LINKFORSHARED="):
