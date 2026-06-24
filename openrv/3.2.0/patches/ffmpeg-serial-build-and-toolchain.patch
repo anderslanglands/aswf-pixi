@@ -93,7 +93,7 @@ index 7f949bd..1686237 100644
 +ENDIF()
 +SET(_ffmpeg_toolchain_options)
 +IF(RV_TARGET_WINDOWS)
-+  LIST(APPEND _ffmpeg_toolchain_options "--disable-decoder=ac3_fixed" "--disable-decoder=prores_raw" "--disable-muxer=whip")
++  LIST(APPEND _ffmpeg_toolchain_options "--disable-avdevice" "--disable-decoder=ac3_fixed" "--disable-decoder=prores_raw" "--disable-muxer=whip")
 +ENDIF()
 +IF(RV_TARGET_DARWIN
 +   OR RV_TARGET_APPLE_ARM64

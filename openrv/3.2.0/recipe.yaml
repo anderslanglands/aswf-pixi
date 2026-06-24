@@ -54,6 +54,7 @@ source:
     - patches/ffmpeg-serial-build-and-toolchain.patch
     - patches/boost-conda-toolchain.patch
     - patches/use-external-conda-yaml-cpp.patch
+    - patches/ocio-conda-minizip-target.patch
     - patches/ocio-windows-short-ext-build-paths.patch
     - patches/oiio-windows-short-local-deps.patch
     - patches/ftgl-gcc15-fpermissive.patch
