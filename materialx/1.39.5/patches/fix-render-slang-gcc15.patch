@@ -37,6 +37,16 @@ diff --git a/source/MaterialXRenderSlang/SlangFramebuffer.cpp b/source/MaterialX
 +
  MATERIALX_NAMESPACE_BEGIN
  SlangFramebuffer::SlangFramebuffer(SlangContextPtr context,
+diff --git a/source/MaterialXRenderSlang/TextureBaker.h b/source/MaterialXRenderSlang/TextureBaker.h
+--- a/source/MaterialXRenderSlang/TextureBaker.h
++++ b/source/MaterialXRenderSlang/TextureBaker.h
+@@ -14,4 +14,5 @@
+ #include <MaterialXCore/Unit.h>
+ #include <MaterialXRender/TextureBaker.h>
+-
++#include <MaterialXRenderSlang/SlangFramebuffer.h>
++
+ #include <MaterialXRenderSlang/Export.h>
 diff --git a/source/MaterialXRenderSlang/SlangRhi.h b/source/MaterialXRenderSlang/SlangRhi.h
 --- a/source/MaterialXRenderSlang/SlangRhi.h
 +++ b/source/MaterialXRenderSlang/SlangRhi.h

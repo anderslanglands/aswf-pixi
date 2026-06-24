@@ -888,7 +888,7 @@ outputs:
     build:
       files:
         - lib/libMaterialXRenderOsl.so*
-        - lib/libMaterialXRenderOsl.dylib*
+        - lib/libMaterialXRenderOsl*.dylib*
         - include/MaterialXRenderOsl/**
         - bin/MaterialXGenOsl_LibsToOso
         - lib/cmake/MaterialX/MaterialXRenderOslOptionalTargets.cmake
@@ -980,7 +980,7 @@ outputs:
     build:
       files:
         - lib/libMaterialXRenderSlang.so*
-        - lib/libMaterialXRenderSlang.dylib*
+        - lib/libMaterialXRenderSlang*.dylib*
         - include/MaterialXRenderSlang/**
         - include/slang-rhi*.h
         - include/slang-user-config.h
