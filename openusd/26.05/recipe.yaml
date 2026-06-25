@@ -26,7 +26,8 @@ outputs:
             export CFLAGS="${CFLAGS//-ffunction-sections/}"
             export CFLAGS="${CFLAGS//-pipe/}"
 
-            build_jobs="${OPENUSD_BUILD_PARALLEL_LEVEL:-${CMAKE_BUILD_PARALLEL_LEVEL:-24}}"
+            detected_jobs="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)"
+            build_jobs="${OPENUSD_BUILD_PARALLEL_LEVEL:-${CMAKE_BUILD_PARALLEL_LEVEL:-$detected_jobs}}"
             case "$build_jobs" in
               ''|*[!0-9]*)
                 echo "OpenUSD build parallelism must be an integer, got '$build_jobs'"
@@ -100,7 +101,7 @@ outputs:
 
             if "%OPENUSD_BUILD_PARALLEL_LEVEL%"=="" (
               if "%CMAKE_BUILD_PARALLEL_LEVEL%"=="" (
-                set "BUILD_JOBS=24"
+                set "BUILD_JOBS=%NUMBER_OF_PROCESSORS%"
               ) else (
                 set "BUILD_JOBS=%CMAKE_BUILD_PARALLEL_LEVEL%"
               )
@@ -199,7 +200,8 @@ outputs:
             export CFLAGS="${CFLAGS//-ffunction-sections/}"
             export CFLAGS="${CFLAGS//-pipe/}"
 
-            build_jobs="${OPENUSD_BUILD_PARALLEL_LEVEL:-${CMAKE_BUILD_PARALLEL_LEVEL:-24}}"
+            detected_jobs="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)"
+            build_jobs="${OPENUSD_BUILD_PARALLEL_LEVEL:-${CMAKE_BUILD_PARALLEL_LEVEL:-$detected_jobs}}"
             case "$build_jobs" in
               ''|*[!0-9]*)
                 echo "OpenUSD build parallelism must be an integer, got '$build_jobs'"
@@ -308,7 +310,7 @@ outputs:
 
             if "%OPENUSD_BUILD_PARALLEL_LEVEL%"=="" (
               if "%CMAKE_BUILD_PARALLEL_LEVEL%"=="" (
-                set "BUILD_JOBS=24"
+                set "BUILD_JOBS=%NUMBER_OF_PROCESSORS%"
               ) else (
                 set "BUILD_JOBS=%CMAKE_BUILD_PARALLEL_LEVEL%"
               )
@@ -440,7 +442,8 @@ outputs:
             export CFLAGS="${CFLAGS//-ffunction-sections/}"
             export CFLAGS="${CFLAGS//-pipe/}"
 
-            build_jobs="${OPENUSD_BUILD_PARALLEL_LEVEL:-${CMAKE_BUILD_PARALLEL_LEVEL:-24}}"
+            detected_jobs="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)"
+            build_jobs="${OPENUSD_BUILD_PARALLEL_LEVEL:-${CMAKE_BUILD_PARALLEL_LEVEL:-$detected_jobs}}"
             case "$build_jobs" in
               ''|*[!0-9]*)
                 echo "OpenUSD build parallelism must be an integer, got '$build_jobs'"
@@ -557,7 +560,7 @@ outputs:
 
             if "%OPENUSD_BUILD_PARALLEL_LEVEL%"=="" (
               if "%CMAKE_BUILD_PARALLEL_LEVEL%"=="" (
-                set "BUILD_JOBS=24"
+                set "BUILD_JOBS=%NUMBER_OF_PROCESSORS%"
               ) else (
                 set "BUILD_JOBS=%CMAKE_BUILD_PARALLEL_LEVEL%"
               )
