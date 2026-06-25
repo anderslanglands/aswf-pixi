@@ -42,3 +42,14 @@ index 209a42e..c007ba6 100644
 +        if platform.system() == "Linux":
 +            subprocess_env["PYTHONPATH"] = os.path.join(SOURCE_DIR, "Lib")
          if OPENSSL_OUTPUT_DIR:
+@@ -592 +626,4 @@ def install_python_vfx2024() -> None:
+-        make_args = ["make", "install", f"-j{os.cpu_count() or 1}", "-s"]
++        if platform.system() == "Linux":
++            make_args = ["make", "install", "-j1", "-s"]
++        else:
++            make_args = ["make", "install", f"-j{os.cpu_count() or 1}", "-s"]
+@@ -595,2 +632,4 @@ def install_python_vfx2024() -> None:
+         subprocess_env = {**os.environ}
++        if platform.system() == "Linux":
++            subprocess_env["PYTHONPATH"] = os.path.join(SOURCE_DIR, "Lib")
+         if OPENSSL_OUTPUT_DIR:
