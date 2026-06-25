@@ -94,6 +94,32 @@ outputs:
               -S .
 
             cmake --build $SRC_DIR/../build-minimal --target install --parallel "$build_jobs"
+
+            mkdir -p "$PREFIX/etc/conda/activate.d" "$PREFIX/etc/conda/deactivate.d"
+            cat > "$PREFIX/etc/conda/activate.d/openusd-minimal-lib.sh" <<'EOF'
+            if [ -z "${_OPENUSD_MINIMAL_LIB_PLUGINPATH_SET:-}" ]; then
+              export _OPENUSD_MINIMAL_LIB_PLUGINPATH_SET=1
+              if [ -n "${PXR_PLUGINPATH_NAME+x}" ]; then
+                export _OPENUSD_MINIMAL_LIB_OLD_PLUGINPATH="${PXR_PLUGINPATH_NAME}"
+                export PXR_PLUGINPATH_NAME="${CONDA_PREFIX}/lib/usd:${PXR_PLUGINPATH_NAME}"
+              else
+                unset _OPENUSD_MINIMAL_LIB_OLD_PLUGINPATH
+                export PXR_PLUGINPATH_NAME="${CONDA_PREFIX}/lib/usd"
+              fi
+            fi
+            EOF
+
+            cat > "$PREFIX/etc/conda/deactivate.d/openusd-minimal-lib.sh" <<'EOF'
+            if [ -n "${_OPENUSD_MINIMAL_LIB_PLUGINPATH_SET:-}" ]; then
+              if [ -n "${_OPENUSD_MINIMAL_LIB_OLD_PLUGINPATH+x}" ]; then
+                export PXR_PLUGINPATH_NAME="${_OPENUSD_MINIMAL_LIB_OLD_PLUGINPATH}"
+              else
+                unset PXR_PLUGINPATH_NAME
+              fi
+              unset _OPENUSD_MINIMAL_LIB_PLUGINPATH_SET
+              unset _OPENUSD_MINIMAL_LIB_OLD_PLUGINPATH
+            fi
+            EOF
           else: |
             set "CL=/utf-8 %CL%"
             set "CXXFLAGS=%CXXFLAGS% /utf-8"
@@ -186,11 +212,31 @@ outputs:
               echo   set "CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH=%%PATH%%"
               echo   set "PATH=%%CONDA_PREFIX%%\Library\lib;%%PATH%%"
               echo ^)
+              echo if not defined CONDA_OPENUSD_MINIMAL_LIB_PLUGINPATH_SET ^(
+              echo   set "CONDA_OPENUSD_MINIMAL_LIB_PLUGINPATH_SET=1"
+              echo   if defined PXR_PLUGINPATH_NAME ^(
+              echo     set "CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PLUGINPATH_NAME=%%PXR_PLUGINPATH_NAME%%"
+              echo     set "PXR_PLUGINPATH_NAME=%%CONDA_PREFIX%%\Library\lib\usd;%%PXR_PLUGINPATH_NAME%%"
+              echo   ^) else ^(
+              echo     set "CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PLUGINPATH_NAME="
+              echo     set "PXR_PLUGINPATH_NAME=%%CONDA_PREFIX%%\Library\lib\usd"
+              echo   ^)
+              echo ^)
             ) > "%PREFIX%\etc\conda\activate.d\openusd-minimal-lib.bat"
             (
               echo if ^(-not ^(Test-Path Env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH^)^) {
               echo   $env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH = $env:PATH
               echo   $env:PATH = "$env:CONDA_PREFIX\Library\lib;$env:PATH"
+              echo }
+              echo if ^(-not ^(Test-Path Env:CONDA_OPENUSD_MINIMAL_LIB_PLUGINPATH_SET^)^) {
+              echo   $env:CONDA_OPENUSD_MINIMAL_LIB_PLUGINPATH_SET = "1"
+              echo   if ^(Test-Path Env:PXR_PLUGINPATH_NAME^) {
+              echo     $env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PLUGINPATH_NAME = $env:PXR_PLUGINPATH_NAME
+              echo     $env:PXR_PLUGINPATH_NAME = "$env:CONDA_PREFIX\Library\lib\usd;$env:PXR_PLUGINPATH_NAME"
+              echo   } else {
+              echo     Remove-Item Env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PLUGINPATH_NAME -ErrorAction SilentlyContinue
+              echo     $env:PXR_PLUGINPATH_NAME = "$env:CONDA_PREFIX\Library\lib\usd"
+              echo   }
               echo }
             ) > "%PREFIX%\etc\conda\activate.d\openusd-minimal-lib.ps1"
             (
@@ -199,11 +245,29 @@ outputs:
               echo   set "PATH=%%CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH%%"
               echo ^)
               echo set "CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH="
+              echo if defined CONDA_OPENUSD_MINIMAL_LIB_PLUGINPATH_SET ^(
+              echo   if defined CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PLUGINPATH_NAME ^(
+              echo     set "PXR_PLUGINPATH_NAME=%%CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PLUGINPATH_NAME%%"
+              echo   ^) else ^(
+              echo     set "PXR_PLUGINPATH_NAME="
+              echo   ^)
+              echo   set "CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PLUGINPATH_NAME="
+              echo   set "CONDA_OPENUSD_MINIMAL_LIB_PLUGINPATH_SET="
+              echo ^)
             ) > "%PREFIX%\etc\conda\deactivate.d\openusd-minimal-lib.bat"
             (
               echo if ^(Test-Path Env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH^) {
               echo   $env:PATH = $env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH
               echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH -ErrorAction SilentlyContinue
+              echo }
+              echo if ^(Test-Path Env:CONDA_OPENUSD_MINIMAL_LIB_PLUGINPATH_SET^) {
+              echo   if ^(Test-Path Env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PLUGINPATH_NAME^) {
+              echo     $env:PXR_PLUGINPATH_NAME = $env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PLUGINPATH_NAME
+              echo     Remove-Item Env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PLUGINPATH_NAME -ErrorAction SilentlyContinue
+              echo   } else {
+              echo     Remove-Item Env:PXR_PLUGINPATH_NAME -ErrorAction SilentlyContinue
+              echo   }
+              echo   Remove-Item Env:CONDA_OPENUSD_MINIMAL_LIB_PLUGINPATH_SET -ErrorAction SilentlyContinue
               echo }
             ) > "%PREFIX%\etc\conda\deactivate.d\openusd-minimal-lib.ps1"
     requirements:
@@ -317,6 +381,16 @@ outputs:
                 export PYTHONPATH="${CONDA_PREFIX}/lib/python"
               fi
             fi
+            if [ -z "${_OPENUSD_PLUGINPATH_SET:-}" ]; then
+              export _OPENUSD_PLUGINPATH_SET=1
+              if [ -n "${PXR_PLUGINPATH_NAME+x}" ]; then
+                export _OPENUSD_OLD_PLUGINPATH="${PXR_PLUGINPATH_NAME}"
+                export PXR_PLUGINPATH_NAME="${CONDA_PREFIX}/lib/usd:${PXR_PLUGINPATH_NAME}"
+              else
+                unset _OPENUSD_OLD_PLUGINPATH
+                export PXR_PLUGINPATH_NAME="${CONDA_PREFIX}/lib/usd"
+              fi
+            fi
             export OPENUSD_PYTHON_ROOT="${CONDA_PREFIX}/lib/python"
             EOF
 
@@ -329,6 +403,15 @@ outputs:
               fi
               unset _OPENUSD_PYTHONPATH_SET
               unset _OPENUSD_PYTHON_OLD_PYTHONPATH
+            fi
+            if [ -n "${_OPENUSD_PLUGINPATH_SET:-}" ]; then
+              if [ -n "${_OPENUSD_OLD_PLUGINPATH+x}" ]; then
+                export PXR_PLUGINPATH_NAME="${_OPENUSD_OLD_PLUGINPATH}"
+              else
+                unset PXR_PLUGINPATH_NAME
+              fi
+              unset _OPENUSD_PLUGINPATH_SET
+              unset _OPENUSD_OLD_PLUGINPATH
             fi
             unset OPENUSD_PYTHON_ROOT
             EOF
@@ -438,6 +521,16 @@ outputs:
               echo   set "CONDA_BACKUP_OPENUSD_PYTHONPATH="
               echo   set "PYTHONPATH=%%CONDA_PREFIX%%\Library\lib\python"
               echo ^)
+              echo if not defined CONDA_OPENUSD_PLUGINPATH_SET ^(
+              echo   set "CONDA_OPENUSD_PLUGINPATH_SET=1"
+              echo   if defined PXR_PLUGINPATH_NAME ^(
+              echo     set "CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME=%%PXR_PLUGINPATH_NAME%%"
+              echo     set "PXR_PLUGINPATH_NAME=%%CONDA_PREFIX%%\Library\lib\usd;%%PXR_PLUGINPATH_NAME%%"
+              echo   ^) else ^(
+              echo     set "CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME="
+              echo     set "PXR_PLUGINPATH_NAME=%%CONDA_PREFIX%%\Library\lib\usd"
+              echo   ^)
+              echo ^)
               echo set "OPENUSD_PYTHON_ROOT=%%CONDA_PREFIX%%\Library\lib\python"
             ) > "%PREFIX%\etc\conda\activate.d\openusd-minimal-python.bat"
             (
@@ -451,6 +544,16 @@ outputs:
               echo } else {
               echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_PYTHONPATH -ErrorAction SilentlyContinue
               echo   $env:PYTHONPATH = "$env:CONDA_PREFIX\Library\lib\python"
+              echo }
+              echo if ^(-not ^(Test-Path Env:CONDA_OPENUSD_PLUGINPATH_SET^)^) {
+              echo   $env:CONDA_OPENUSD_PLUGINPATH_SET = "1"
+              echo   if ^(Test-Path Env:PXR_PLUGINPATH_NAME^) {
+              echo     $env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME = $env:PXR_PLUGINPATH_NAME
+              echo     $env:PXR_PLUGINPATH_NAME = "$env:CONDA_PREFIX\Library\lib\usd;$env:PXR_PLUGINPATH_NAME"
+              echo   } else {
+              echo     Remove-Item Env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME -ErrorAction SilentlyContinue
+              echo     $env:PXR_PLUGINPATH_NAME = "$env:CONDA_PREFIX\Library\lib\usd"
+              echo   }
               echo }
               echo $env:OPENUSD_PYTHON_ROOT = "$env:CONDA_PREFIX\Library\lib\python"
             ) > "%PREFIX%\etc\conda\activate.d\openusd-minimal-python.ps1"
@@ -466,6 +569,15 @@ outputs:
               echo   set "PYTHONPATH="
               echo ^)
               echo set "CONDA_BACKUP_OPENUSD_PYTHONPATH="
+              echo if defined CONDA_OPENUSD_PLUGINPATH_SET ^(
+              echo   if defined CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME ^(
+              echo     set "PXR_PLUGINPATH_NAME=%%CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME%%"
+              echo   ^) else ^(
+              echo     set "PXR_PLUGINPATH_NAME="
+              echo   ^)
+              echo   set "CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME="
+              echo   set "CONDA_OPENUSD_PLUGINPATH_SET="
+              echo ^)
               echo set "OPENUSD_PYTHON_ROOT="
             ) > "%PREFIX%\etc\conda\deactivate.d\openusd-minimal-python.bat"
             (
@@ -478,6 +590,15 @@ outputs:
               echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_PYTHONPATH -ErrorAction SilentlyContinue
               echo } else {
               echo   Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
+              echo }
+              echo if ^(Test-Path Env:CONDA_OPENUSD_PLUGINPATH_SET^) {
+              echo   if ^(Test-Path Env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME^) {
+              echo     $env:PXR_PLUGINPATH_NAME = $env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME
+              echo     Remove-Item Env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME -ErrorAction SilentlyContinue
+              echo   } else {
+              echo     Remove-Item Env:PXR_PLUGINPATH_NAME -ErrorAction SilentlyContinue
+              echo   }
+              echo   Remove-Item Env:CONDA_OPENUSD_PLUGINPATH_SET -ErrorAction SilentlyContinue
               echo }
               echo Remove-Item Env:OPENUSD_PYTHON_ROOT -ErrorAction SilentlyContinue
             ) > "%PREFIX%\etc\conda\deactivate.d\openusd-minimal-python.ps1"
@@ -601,6 +722,16 @@ outputs:
                 export PYTHONPATH="${CONDA_PREFIX}/lib/python"
               fi
             fi
+            if [ -z "${_OPENUSD_PLUGINPATH_SET:-}" ]; then
+              export _OPENUSD_PLUGINPATH_SET=1
+              if [ -n "${PXR_PLUGINPATH_NAME+x}" ]; then
+                export _OPENUSD_OLD_PLUGINPATH="${PXR_PLUGINPATH_NAME}"
+                export PXR_PLUGINPATH_NAME="${CONDA_PREFIX}/lib/usd:${PXR_PLUGINPATH_NAME}"
+              else
+                unset _OPENUSD_OLD_PLUGINPATH
+                export PXR_PLUGINPATH_NAME="${CONDA_PREFIX}/lib/usd"
+              fi
+            fi
             export OPENUSD_PYTHON_ROOT="${CONDA_PREFIX}/lib/python"
             EOF
 
@@ -613,6 +744,15 @@ outputs:
               fi
               unset _OPENUSD_PYTHONPATH_SET
               unset _OPENUSD_PYTHON_OLD_PYTHONPATH
+            fi
+            if [ -n "${_OPENUSD_PLUGINPATH_SET:-}" ]; then
+              if [ -n "${_OPENUSD_OLD_PLUGINPATH+x}" ]; then
+                export PXR_PLUGINPATH_NAME="${_OPENUSD_OLD_PLUGINPATH}"
+              else
+                unset PXR_PLUGINPATH_NAME
+              fi
+              unset _OPENUSD_PLUGINPATH_SET
+              unset _OPENUSD_OLD_PLUGINPATH
             fi
             unset OPENUSD_PYTHON_ROOT
             EOF
@@ -730,6 +870,16 @@ outputs:
               echo   set "CONDA_BACKUP_OPENUSD_PYTHONPATH="
               echo   set "PYTHONPATH=%%CONDA_PREFIX%%\Library\lib\python"
               echo ^)
+              echo if not defined CONDA_OPENUSD_PLUGINPATH_SET ^(
+              echo   set "CONDA_OPENUSD_PLUGINPATH_SET=1"
+              echo   if defined PXR_PLUGINPATH_NAME ^(
+              echo     set "CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME=%%PXR_PLUGINPATH_NAME%%"
+              echo     set "PXR_PLUGINPATH_NAME=%%CONDA_PREFIX%%\Library\lib\usd;%%PXR_PLUGINPATH_NAME%%"
+              echo   ^) else ^(
+              echo     set "CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME="
+              echo     set "PXR_PLUGINPATH_NAME=%%CONDA_PREFIX%%\Library\lib\usd"
+              echo   ^)
+              echo ^)
               echo set "OPENUSD_PYTHON_ROOT=%%CONDA_PREFIX%%\Library\lib\python"
             ) > "%PREFIX%\etc\conda\activate.d\openusd.bat"
             (
@@ -743,6 +893,16 @@ outputs:
               echo } else {
               echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_PYTHONPATH -ErrorAction SilentlyContinue
               echo   $env:PYTHONPATH = "$env:CONDA_PREFIX\Library\lib\python"
+              echo }
+              echo if ^(-not ^(Test-Path Env:CONDA_OPENUSD_PLUGINPATH_SET^)^) {
+              echo   $env:CONDA_OPENUSD_PLUGINPATH_SET = "1"
+              echo   if ^(Test-Path Env:PXR_PLUGINPATH_NAME^) {
+              echo     $env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME = $env:PXR_PLUGINPATH_NAME
+              echo     $env:PXR_PLUGINPATH_NAME = "$env:CONDA_PREFIX\Library\lib\usd;$env:PXR_PLUGINPATH_NAME"
+              echo   } else {
+              echo     Remove-Item Env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME -ErrorAction SilentlyContinue
+              echo     $env:PXR_PLUGINPATH_NAME = "$env:CONDA_PREFIX\Library\lib\usd"
+              echo   }
               echo }
               echo $env:OPENUSD_PYTHON_ROOT = "$env:CONDA_PREFIX\Library\lib\python"
             ) > "%PREFIX%\etc\conda\activate.d\openusd.ps1"
@@ -758,6 +918,15 @@ outputs:
               echo   set "PYTHONPATH="
               echo ^)
               echo set "CONDA_BACKUP_OPENUSD_PYTHONPATH="
+              echo if defined CONDA_OPENUSD_PLUGINPATH_SET ^(
+              echo   if defined CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME ^(
+              echo     set "PXR_PLUGINPATH_NAME=%%CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME%%"
+              echo   ^) else ^(
+              echo     set "PXR_PLUGINPATH_NAME="
+              echo   ^)
+              echo   set "CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME="
+              echo   set "CONDA_OPENUSD_PLUGINPATH_SET="
+              echo ^)
               echo set "OPENUSD_PYTHON_ROOT="
             ) > "%PREFIX%\etc\conda\deactivate.d\openusd.bat"
             (
@@ -770,6 +939,15 @@ outputs:
               echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_PYTHONPATH -ErrorAction SilentlyContinue
               echo } else {
               echo   Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
+              echo }
+              echo if ^(Test-Path Env:CONDA_OPENUSD_PLUGINPATH_SET^) {
+              echo   if ^(Test-Path Env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME^) {
+              echo     $env:PXR_PLUGINPATH_NAME = $env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME
+              echo     Remove-Item Env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME -ErrorAction SilentlyContinue
+              echo   } else {
+              echo     Remove-Item Env:PXR_PLUGINPATH_NAME -ErrorAction SilentlyContinue
+              echo   }
+              echo   Remove-Item Env:CONDA_OPENUSD_PLUGINPATH_SET -ErrorAction SilentlyContinue
               echo }
               echo Remove-Item Env:OPENUSD_PYTHON_ROOT -ErrorAction SilentlyContinue
             ) > "%PREFIX%\etc\conda\deactivate.d\openusd.ps1"
@@ -981,7 +1159,8 @@ outputs:
               - test -f "$PREFIX/pxrConfig.cmake"
               - test -f "$PREFIX/cmake/pxrTargets.cmake"
               - test -d "$PREFIX/lib/python/pxr"
-              - PYTHONPATH="$PREFIX/lib/python${PYTHONPATH:+:$PYTHONPATH}" python -c "from pxr import Tf, Usd, UsdMtlx; assert Usd.GetVersion()[1:] == (26, 5)"
+              - test -f "$PREFIX/etc/conda/activate.d/openusd-minimal-python.sh"
+              - export CONDA_PREFIX="$PREFIX" && . "$PREFIX/etc/conda/activate.d/openusd-minimal-python.sh" && python -c "from pxr import Tf, Usd, UsdMtlx; assert Usd.GetVersion()[1:] == (26, 5)"
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/openusd_consumer
@@ -991,7 +1170,8 @@ outputs:
               - if not exist "%LIBRARY_PREFIX%\pxrConfig.cmake" exit /b 1
               - if not exist "%LIBRARY_PREFIX%\cmake\pxrTargets.cmake" exit /b 1
               - if not exist "%LIBRARY_LIB%\python\pxr" exit /b 1
-              - set "PYTHONPATH=%LIBRARY_LIB%\python;%PYTHONPATH%" && python -c "from pxr import Tf, Usd, UsdMtlx; assert Usd.GetVersion()[1:] == (26, 5)"
+              - if not exist "%PREFIX%\etc\conda\activate.d\openusd-minimal-python.bat" exit /b 1
+              - set "CONDA_PREFIX=%PREFIX%" && call "%PREFIX%\etc\conda\activate.d\openusd-minimal-python.bat" && python -c "from pxr import Tf, Usd, UsdMtlx; assert Usd.GetVersion()[1:] == (26, 5)"
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
               - cmake --build build --config Release
               - build\openusd_consumer.exe
@@ -1050,7 +1230,8 @@ outputs:
               - test -f "$PREFIX/pxrConfig.cmake"
               - test -f "$PREFIX/cmake/pxrTargets.cmake"
               - test -d "$PREFIX/lib/python/pxr"
-              - PYTHONPATH="$PREFIX/lib/python${PYTHONPATH:+:$PYTHONPATH}" python -c "from pxr import Tf, Usd, UsdImagingGL, UsdMtlx; assert Usd.GetVersion()[1:] == (26, 5)"
+              - test -f "$PREFIX/etc/conda/activate.d/openusd.sh"
+              - export CONDA_PREFIX="$PREFIX" && . "$PREFIX/etc/conda/activate.d/openusd.sh" && python -c "from pxr import Tf, Usd, UsdImagingGL, UsdMtlx; assert Usd.GetVersion()[1:] == (26, 5)"
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/openusd_consumer
@@ -1060,7 +1241,8 @@ outputs:
               - if not exist "%LIBRARY_PREFIX%\cmake\pxrTargets.cmake" exit /b 1
               - if not exist "%LIBRARY_LIB%\python\pxr" exit /b 1
               - if not exist "%LIBRARY_BIN%\usdview" if not exist "%LIBRARY_BIN%\usdview.cmd" if not exist "%LIBRARY_BIN%\usdview.exe" exit /b 1
-              - set "PYTHONPATH=%LIBRARY_LIB%\python;%PYTHONPATH%" && python -c "from pxr import Tf, Usd, UsdImagingGL, UsdMtlx; assert Usd.GetVersion()[1:] == (26, 5)"
+              - if not exist "%PREFIX%\etc\conda\activate.d\openusd.bat" exit /b 1
+              - set "CONDA_PREFIX=%PREFIX%" && call "%PREFIX%\etc\conda\activate.d\openusd.bat" && python -c "from pxr import Tf, Usd, UsdImagingGL, UsdMtlx; assert Usd.GetVersion()[1:] == (26, 5)"
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
               - cmake --build build --config Release
               - build\openusd_consumer.exe
