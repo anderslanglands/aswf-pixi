@@ -1,0 +1,21 @@
+diff --git a/src/lib/image/IONSImage/IONSImage.mm b/src/lib/image/IONSImage/IONSImage.mm
+index 9efda5a..59e3cec 100644
+--- a/src/lib/image/IONSImage/IONSImage.mm
++++ b/src/lib/image/IONSImage/IONSImage.mm
+@@ -135 +135,15 @@ IONSImage::getImageInfo(const std::string& filename, FBInfo& fbi) const
+-	NSBitmapImageRep *rep = [[image representations] objectAtIndex:0];
++        NSImageRep* imageRep = [[image representations] objectAtIndex:0];
++        NSBitmapImageRep* rep = nil;
++        if ([imageRep isKindOfClass: [NSBitmapImageRep class]])
++        {
++            rep = (NSBitmapImageRep*) imageRep;
++        }
++        else
++        {
++            rep = [NSBitmapImageRep imageRepWithData: [image TIFFRepresentation]];
++        }
++        if (!rep)
++        {
++            if (pool) [pool release];
++            TWK_THROW_STREAM(Exception, "NSImage: unable to create a bitmap representation");
++        }

@@ -27,6 +27,7 @@ source:
     - patches/imgui-windows-implib-byproduct.patch
     - patches/ocio-windows-implib-byproduct.patch
     - patches/aja-macos-sdk-version.patch
+    - patches/ionsimage-macos-nsbitmapimagerep.patch
     - patches/tiff-windows-implib-byproduct.patch
     - patches/tex-windows-no-unistd.patch
     - patches/rvprof-windows-glu-apientry.patch
