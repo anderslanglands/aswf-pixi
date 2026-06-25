@@ -168,6 +168,16 @@ build:
 
         cmake --build "$SRC_DIR/../build" --target install --parallel "${CPU_COUNT:-2}"
 
+        for python_site in \
+          "$openrv_prefix/lib/python3.13/site-packages" \
+          "$openrv_prefix/RV.app/Contents/lib/python3.13/site-packages"; do
+          if [ -d "$python_site" ]; then
+            rm -rf \
+              "$python_site/Cython" \
+              "$python_site/Cython-"*.dist-info
+          fi
+        done
+
         rm -rf \
           "$openrv_prefix/include" \
           "$openrv_prefix/src" \
