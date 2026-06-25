@@ -1,12 +1,9 @@
-diff --git a/cmake/dependencies/oiio.cmake b/cmake/dependencies/oiio.cmake
 --- a/cmake/dependencies/oiio.cmake
 +++ b/cmake/dependencies/oiio.cmake
-@@ -136,6 +136,7 @@ IF(NOT RV_TARGET_LINUX)
-   # Linux has a Link error related to relocation; WebP appears not built with -fPIC. Hence OIIO will build WebP itself.
- ENDIF()
- LIST(APPEND _configure_options "-DZLIB_ROOT=${RV_DEPS_ZLIB_ROOT_DIR}")
+@@ -136,0 +137 @@
 +LIST(APPEND _configure_options "-Dfmt_ROOT=$ENV{PREFIX}")
--
-+
- # OIIO tools are not needed.
- LIST(APPEND _configure_options "-DOIIO_BUILD_TOOLS=OFF" "-DOIIO_BUILD_TESTS=OFF")
+@@ -201 +202,3 @@
+-    "${_cpu_count}"
++    # OIIO's generated Windows build can link OpenImageIO_Util before all of
++    # its object files are ready when CMake drives it in parallel.
++    "1"

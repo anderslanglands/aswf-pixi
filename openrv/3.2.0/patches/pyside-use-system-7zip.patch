@@ -1,33 +1,86 @@
-diff --git i/src/build/utils.py w/src/build/utils.py
-index 79683ad..361bb5f 100644
---- i/src/build/utils.py
-+++ w/src/build/utils.py
-@@ -15,11 +15,61 @@
- import subprocess
- import sys
- 
+--- a/src/build/utils.py
++++ b/src/build/utils.py
+@@ -18 +17,0 @@
 -from py7zr import SevenZipFile, exceptions
- from typing import List
- from zipfile import ZipFile
- 
- 
-+def _find_7zip() -> str:
-+    for candidate in ("7zz", "7z", "7za"):
-+        seven_zip = shutil.which(candidate)
-+        if seven_zip:
-+            return os.path.expandvars(seven_zip)
+@@ -20,0 +20,108 @@
 +
-+    for root in (os.environ.get("BUILD_PREFIX"), os.environ.get("PREFIX")):
-+        if not root:
++
++def _prefix_from_executable() -> str or None:
++    executable = os.path.realpath(sys.executable)
++    bin_dir = os.path.dirname(executable)
++    if os.path.basename(bin_dir).lower() in ("bin", "scripts"):
++        return os.path.dirname(bin_dir)
++    return None
++
++
++def _expand_tool_path(path: str) -> str:
++    expanded = os.path.expandvars(path)
++    build_prefix = os.environ.get("BUILD_PREFIX") or _prefix_from_executable()
++    if build_prefix:
++        expanded = expanded.replace("${BUILD_PREFIX}", build_prefix).replace("$BUILD_PREFIX", build_prefix)
++    prefix = os.environ.get("PREFIX")
++    if prefix:
++        expanded = expanded.replace("${PREFIX}", prefix).replace("$PREFIX", prefix)
++    return expanded
++
++
++def _find_7zip() -> str:
++    candidates = ("7zz", "7z", "7za")
++    checked = set()
++
++    def candidate_paths():
++        for candidate in candidates:
++            seven_zip = shutil.which(candidate)
++            if seven_zip:
++                yield seven_zip
++
++        for path_dir in os.environ.get("PATH", "").split(os.pathsep):
++            expanded_dir = _expand_tool_path(path_dir)
++            if not expanded_dir or "$" in expanded_dir:
++                continue
++            for candidate in candidates:
++                yield os.path.join(expanded_dir, candidate)
++
++        for root in (os.environ.get("BUILD_PREFIX"), _prefix_from_executable(), os.environ.get("PREFIX")):
++            if not root:
++                continue
++            for candidate in candidates:
++                yield os.path.join(root, "bin", candidate)
++
++    for seven_zip in candidate_paths():
++        seven_zip = _expand_tool_path(seven_zip)
++        if seven_zip in checked or "$" in seven_zip:
 +            continue
-+        for candidate in ("7zz", "7z", "7za"):
-+            seven_zip = os.path.join(root, "bin", candidate)
-+            if os.path.exists(seven_zip):
-+                return seven_zip
++        checked.add(seven_zip)
++        if os.path.exists(seven_zip):
++            return seven_zip
 +
 +    raise RuntimeError(
 +        "Could not find a 7zip executable. Install the 7zip build requirement."
 +    )
++
++
++def _run_7zip(args: List[str], *, allow_dangerous_links: bool = False, check: bool = True) -> bool:
++    print(f"Executing {args}")
++    result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
++    if result.stdout:
++        print(result.stdout, end="" if result.stdout.endswith("\n") else "\n")
++
++    ignored_dangerous_links = (
++        allow_dangerous_links
++        and result.returncode == 2
++        and "Dangerous link via another link was ignored" in result.stdout
++    )
++    if ignored_dangerous_links:
++        print("Ignoring 7zip dangerous-link warnings from libclang symlinks")
++        return True
++
++    if result.returncode != 0:
++        if check:
++            result.check_returncode()
++        return False
++
++    return True
 +
 +
 +class _SystemSevenZipFile:
@@ -44,13 +97,11 @@ index 79683ad..361bb5f 100644
 +
 +    def extractall(self, output_folder: str) -> None:
 +        extract_args = [_find_7zip(), "x", self.input_7z, f"-o{output_folder}", "-y"]
-+        print(f"Executing {extract_args}")
-+        subprocess.run(extract_args).check_returncode()
++        _run_7zip(extract_args, allow_dangerous_links=True)
 +
 +    def test(self) -> bool:
 +        test_args = [_find_7zip(), "t", self.input_7z]
-+        print(f"Executing {test_args}")
-+        return subprocess.run(test_args).returncode == 0
++        return _run_7zip(test_args, check=False)
 +
 +
 +class _SystemSevenZipExceptions:
@@ -60,39 +111,16 @@ index 79683ad..361bb5f 100644
 +
 +SevenZipFile = _SystemSevenZipFile
 +exceptions = _SystemSevenZipExceptions
-+
-+
- def _windows_zip_impl(input_folder: str, output_zip: str) -> None:
-     """
-     Windows implementation of the zip function.
-@@ -151,8 +201,10 @@
-     """
-     print(f"Extracting {input_7z} into {output_folder}")
- 
+@@ -154,2 +261,2 @@
 -    with SevenZipFile(input_7z, "r") as z:
 -        z.extractall(output_folder)
 +    extract_args = [_find_7zip(), "x", input_7z, f"-o{output_folder}", "-y"]
-+
-+    print(f"Executing {extract_args}")
-+    subprocess.run(extract_args).check_returncode()
- 
- 
- def verify_7z_archive(input_7z: str) -> bool or None:
-@@ -162,11 +214,10 @@
-     :param input_zip: Path to the 7z file to uncompress
-     """
-     print(f"Verifying {input_7z}")
++    _run_7zip(extract_args, allow_dangerous_links=True)
+@@ -165,5 +272,2 @@
 -    try:
 -        with SevenZipFile(input_7z, "r") as z:
 -            return z.test()
 -    except exceptions.Bad7zFile:
 -        return None
 +    test_args = [_find_7zip(), "t", input_7z]
-+
-+    print(f"Executing {test_args}")
-+    return subprocess.run(test_args).returncode == 0
--
--
-+
-+
- def _darwin_copy_recursively(src_folder: str, destination_folder) -> None:
++    return _run_7zip(test_args, check=False)
