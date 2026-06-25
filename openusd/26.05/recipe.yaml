@@ -177,6 +177,35 @@ outputs:
 
             cmake --build %SRC_DIR%\..\build-minimal --target install --config Release --parallel %BUILD_JOBS%
             if %ERRORLEVEL% neq 0 exit /b 1
+
+            if not exist "%PREFIX%\etc\conda\activate.d" mkdir "%PREFIX%\etc\conda\activate.d"
+            if not exist "%PREFIX%\etc\conda\deactivate.d" mkdir "%PREFIX%\etc\conda\deactivate.d"
+            (
+              echo @echo off
+              echo if not defined CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH ^(
+              echo   set "CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH=%%PATH%%"
+              echo   set "PATH=%%CONDA_PREFIX%%\Library\lib;%%PATH%%"
+              echo ^)
+            ) > "%PREFIX%\etc\conda\activate.d\openusd-minimal-lib.bat"
+            (
+              echo if ^(-not ^(Test-Path Env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH^)^) {
+              echo   $env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH = $env:PATH
+              echo   $env:PATH = "$env:CONDA_PREFIX\Library\lib;$env:PATH"
+              echo }
+            ) > "%PREFIX%\etc\conda\activate.d\openusd-minimal-lib.ps1"
+            (
+              echo @echo off
+              echo if defined CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH ^(
+              echo   set "PATH=%%CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH%%"
+              echo ^)
+              echo set "CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH="
+            ) > "%PREFIX%\etc\conda\deactivate.d\openusd-minimal-lib.bat"
+            (
+              echo if ^(Test-Path Env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH^) {
+              echo   $env:PATH = $env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH
+              echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_MINIMAL_LIB_PATH -ErrorAction SilentlyContinue
+              echo }
+            ) > "%PREFIX%\etc\conda\deactivate.d\openusd-minimal-lib.ps1"
     requirements:
       build:
         - ${{ compiler('c') }}
@@ -398,6 +427,10 @@ outputs:
             if not exist "%PREFIX%\etc\conda\deactivate.d" mkdir "%PREFIX%\etc\conda\deactivate.d"
             (
               echo @echo off
+              echo if not defined CONDA_BACKUP_OPENUSD_PATH ^(
+              echo   set "CONDA_BACKUP_OPENUSD_PATH=%%PATH%%"
+              echo   set "PATH=%%CONDA_PREFIX%%\Library\lib;%%PATH%%"
+              echo ^)
               echo if defined PYTHONPATH ^(
               echo   set "CONDA_BACKUP_OPENUSD_PYTHONPATH=%%PYTHONPATH%%"
               echo   set "PYTHONPATH=%%CONDA_PREFIX%%\Library\lib\python;%%PYTHONPATH%%"
@@ -408,7 +441,25 @@ outputs:
               echo set "OPENUSD_PYTHON_ROOT=%%CONDA_PREFIX%%\Library\lib\python"
             ) > "%PREFIX%\etc\conda\activate.d\openusd-minimal-python.bat"
             (
+              echo if ^(-not ^(Test-Path Env:CONDA_BACKUP_OPENUSD_PATH^)^) {
+              echo   $env:CONDA_BACKUP_OPENUSD_PATH = $env:PATH
+              echo   $env:PATH = "$env:CONDA_PREFIX\Library\lib;$env:PATH"
+              echo }
+              echo if ^(Test-Path Env:PYTHONPATH^) {
+              echo   $env:CONDA_BACKUP_OPENUSD_PYTHONPATH = $env:PYTHONPATH
+              echo   $env:PYTHONPATH = "$env:CONDA_PREFIX\Library\lib\python;$env:PYTHONPATH"
+              echo } else {
+              echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_PYTHONPATH -ErrorAction SilentlyContinue
+              echo   $env:PYTHONPATH = "$env:CONDA_PREFIX\Library\lib\python"
+              echo }
+              echo $env:OPENUSD_PYTHON_ROOT = "$env:CONDA_PREFIX\Library\lib\python"
+            ) > "%PREFIX%\etc\conda\activate.d\openusd-minimal-python.ps1"
+            (
               echo @echo off
+              echo if defined CONDA_BACKUP_OPENUSD_PATH ^(
+              echo   set "PATH=%%CONDA_BACKUP_OPENUSD_PATH%%"
+              echo ^)
+              echo set "CONDA_BACKUP_OPENUSD_PATH="
               echo if defined CONDA_BACKUP_OPENUSD_PYTHONPATH ^(
               echo   set "PYTHONPATH=%%CONDA_BACKUP_OPENUSD_PYTHONPATH%%"
               echo ^) else ^(
@@ -417,6 +468,19 @@ outputs:
               echo set "CONDA_BACKUP_OPENUSD_PYTHONPATH="
               echo set "OPENUSD_PYTHON_ROOT="
             ) > "%PREFIX%\etc\conda\deactivate.d\openusd-minimal-python.bat"
+            (
+              echo if ^(Test-Path Env:CONDA_BACKUP_OPENUSD_PATH^) {
+              echo   $env:PATH = $env:CONDA_BACKUP_OPENUSD_PATH
+              echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_PATH -ErrorAction SilentlyContinue
+              echo }
+              echo if ^(Test-Path Env:CONDA_BACKUP_OPENUSD_PYTHONPATH^) {
+              echo   $env:PYTHONPATH = $env:CONDA_BACKUP_OPENUSD_PYTHONPATH
+              echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_PYTHONPATH -ErrorAction SilentlyContinue
+              echo } else {
+              echo   Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
+              echo }
+              echo Remove-Item Env:OPENUSD_PYTHON_ROOT -ErrorAction SilentlyContinue
+            ) > "%PREFIX%\etc\conda\deactivate.d\openusd-minimal-python.ps1"
     requirements:
       build:
         - ${{ compiler('c') }}
@@ -655,6 +719,10 @@ outputs:
             if not exist "%PREFIX%\etc\conda\deactivate.d" mkdir "%PREFIX%\etc\conda\deactivate.d"
             (
               echo @echo off
+              echo if not defined CONDA_BACKUP_OPENUSD_PATH ^(
+              echo   set "CONDA_BACKUP_OPENUSD_PATH=%%PATH%%"
+              echo   set "PATH=%%CONDA_PREFIX%%\Library\lib;%%PATH%%"
+              echo ^)
               echo if defined PYTHONPATH ^(
               echo   set "CONDA_BACKUP_OPENUSD_PYTHONPATH=%%PYTHONPATH%%"
               echo   set "PYTHONPATH=%%CONDA_PREFIX%%\Library\lib\python;%%PYTHONPATH%%"
@@ -665,7 +733,25 @@ outputs:
               echo set "OPENUSD_PYTHON_ROOT=%%CONDA_PREFIX%%\Library\lib\python"
             ) > "%PREFIX%\etc\conda\activate.d\openusd.bat"
             (
+              echo if ^(-not ^(Test-Path Env:CONDA_BACKUP_OPENUSD_PATH^)^) {
+              echo   $env:CONDA_BACKUP_OPENUSD_PATH = $env:PATH
+              echo   $env:PATH = "$env:CONDA_PREFIX\Library\lib;$env:PATH"
+              echo }
+              echo if ^(Test-Path Env:PYTHONPATH^) {
+              echo   $env:CONDA_BACKUP_OPENUSD_PYTHONPATH = $env:PYTHONPATH
+              echo   $env:PYTHONPATH = "$env:CONDA_PREFIX\Library\lib\python;$env:PYTHONPATH"
+              echo } else {
+              echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_PYTHONPATH -ErrorAction SilentlyContinue
+              echo   $env:PYTHONPATH = "$env:CONDA_PREFIX\Library\lib\python"
+              echo }
+              echo $env:OPENUSD_PYTHON_ROOT = "$env:CONDA_PREFIX\Library\lib\python"
+            ) > "%PREFIX%\etc\conda\activate.d\openusd.ps1"
+            (
               echo @echo off
+              echo if defined CONDA_BACKUP_OPENUSD_PATH ^(
+              echo   set "PATH=%%CONDA_BACKUP_OPENUSD_PATH%%"
+              echo ^)
+              echo set "CONDA_BACKUP_OPENUSD_PATH="
               echo if defined CONDA_BACKUP_OPENUSD_PYTHONPATH ^(
               echo   set "PYTHONPATH=%%CONDA_BACKUP_OPENUSD_PYTHONPATH%%"
               echo ^) else ^(
@@ -674,6 +760,19 @@ outputs:
               echo set "CONDA_BACKUP_OPENUSD_PYTHONPATH="
               echo set "OPENUSD_PYTHON_ROOT="
             ) > "%PREFIX%\etc\conda\deactivate.d\openusd.bat"
+            (
+              echo if ^(Test-Path Env:CONDA_BACKUP_OPENUSD_PATH^) {
+              echo   $env:PATH = $env:CONDA_BACKUP_OPENUSD_PATH
+              echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_PATH -ErrorAction SilentlyContinue
+              echo }
+              echo if ^(Test-Path Env:CONDA_BACKUP_OPENUSD_PYTHONPATH^) {
+              echo   $env:PYTHONPATH = $env:CONDA_BACKUP_OPENUSD_PYTHONPATH
+              echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_PYTHONPATH -ErrorAction SilentlyContinue
+              echo } else {
+              echo   Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
+              echo }
+              echo Remove-Item Env:OPENUSD_PYTHON_ROOT -ErrorAction SilentlyContinue
+            ) > "%PREFIX%\etc\conda\deactivate.d\openusd.ps1"
     requirements:
       build:
         - ${{ compiler('c') }}
@@ -717,6 +816,9 @@ outputs:
         - plugin/usd/**
         - share/usd/**
         - Library/bin/usd_*.dll
+        - Library/lib/usd_*.dll
+        - etc/conda/activate.d/openusd-minimal-lib.*
+        - etc/conda/deactivate.d/openusd-minimal-lib.*
         - Library/lib/usd/**
         - Library/plugin/usd/**
         - Library/share/usd/**
@@ -754,7 +856,8 @@ outputs:
               - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libusd_usd*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
           - if: win
             then:
-              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'usd_usd*.dll')); assert paths; ctypes.WinDLL(paths[0])"
+              - where usd_usd.dll
+              - python -c "import ctypes, os; ctypes.WinDLL(os.path.join(os.environ['LIBRARY_LIB'], 'usd_usd.dll'))"
         requirements:
           run:
             - python

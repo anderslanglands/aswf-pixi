@@ -9,3 +9,6 @@ endif()
 add_executable(openusd_consumer openusd_consumer.cpp)
 target_link_libraries(openusd_consumer PRIVATE usd usdMtlx)
 target_compile_features(openusd_consumer PRIVATE cxx_std_17)
+
+enable_testing()
+add_test(NAME openusd_consumer COMMAND openusd_consumer)
