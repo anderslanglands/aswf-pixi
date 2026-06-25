@@ -157,6 +157,8 @@ def package_needs_consumer_test(root_package: str, package: dict[str, object], r
         return True
     if root_package == "openvdb" and name == "nanovdb":
         return True
+    if root_package == "opensubdiv" and name in {"opensubdiv-gpu", "opensubdiv-cuda"}:
+        return True
     return name == root_package or name.endswith("-dev")
 
 
@@ -172,7 +174,7 @@ def cmake_consumer_args(root_package: str, package: dict[str, object], platform:
             return ["-DOPENSUBDIV_CONSUMER_EXPECT_CPU_ONLY=ON"]
         if name in {"opensubdiv-gpu", "opensubdiv-gpu-dev"}:
             args = ["-DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON"]
-            if platform.startswith("linux-"):
+            if platform.startswith(("linux-", "win-")):
                 args.extend(
                     [
                         "-DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON",
@@ -186,6 +188,17 @@ def cmake_consumer_args(root_package: str, package: dict[str, object], platform:
                     [
                         "-DOPENSUBDIV_CONSUMER_REQUIRE_METAL=ON",
                         "-DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON",
+                    ]
+                )
+            return args
+        if name in {"opensubdiv-cuda", "opensubdiv-cuda-dev"}:
+            args = ["-DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON", "-DOPENSUBDIV_CONSUMER_REQUIRE_CUDA=ON"]
+            if platform.startswith(("linux-", "win-")):
+                args.extend(
+                    [
+                        "-DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON",
+                        "-DOPENSUBDIV_CONSUMER_REQUIRE_TBB=ON",
+                        "-DOPENSUBDIV_CONSUMER_FORBID_METAL=ON",
                     ]
                 )
             return args

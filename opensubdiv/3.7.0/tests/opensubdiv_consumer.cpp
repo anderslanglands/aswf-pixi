@@ -1,11 +1,37 @@
 #include <opensubdiv/osd/cpuVertexBuffer.h>
 #include <opensubdiv/version.h>
 
+#if defined(OPENSUBDIV_CONSUMER_REQUIRE_CUDA)
+#include <opensubdiv/osd/cudaEvaluator.h>
+#include <opensubdiv/osd/cudaVertexBuffer.h>
+#endif
+
+#if defined(OPENSUBDIV_CONSUMER_REQUIRE_OPENGL)
+#include <opensubdiv/osd/glComputeEvaluator.h>
+#include <opensubdiv/osd/glVertexBuffer.h>
+#endif
+
 #include <array>
 
 int main()
 {
     static_assert(OPENSUBDIV_VERSION_NUMBER == 30700, "unexpected OpenSubdiv version");
+
+#if defined(OPENSUBDIV_CONSUMER_REQUIRE_CUDA)
+    OpenSubdiv::Osd::CudaVertexBuffer* cudaVertices = nullptr;
+    OpenSubdiv::Osd::CudaEvaluator const* cudaEvaluator = nullptr;
+    (void)cudaVertices;
+    (void)cudaEvaluator;
+#endif
+
+#if defined(OPENSUBDIV_CONSUMER_REQUIRE_OPENGL)
+    OpenSubdiv::Osd::GLVertexBuffer* glVertices = nullptr;
+    OpenSubdiv::Osd::GLComputeEvaluator const* glEvaluator = nullptr;
+    OpenSubdiv::Osd::GLComputeEvaluator::ID glBufferId = 0;
+    (void)glVertices;
+    (void)glEvaluator;
+    (void)glBufferId;
+#endif
 
     using OpenSubdiv::Osd::CpuVertexBuffer;
 

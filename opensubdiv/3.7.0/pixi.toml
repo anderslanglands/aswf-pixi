@@ -26,6 +26,15 @@ opensubdiv-gpu-dev = "==3.7.0"
 [feature.opensubdiv-gpu.dependencies]
 opensubdiv-gpu = "==3.7.0"
 
+[feature.opensubdiv-cuda-lib.dependencies]
+opensubdiv-cuda-lib = "==3.7.0"
+
+[feature.opensubdiv-cuda-dev.dependencies]
+opensubdiv-cuda-dev = "==3.7.0"
+
+[feature.opensubdiv-cuda.dependencies]
+opensubdiv-cuda = "==3.7.0"
+
 [environments]
 opensubdiv-lib = ["opensubdiv-lib"]
 opensubdiv-dev = ["opensubdiv-dev"]
@@ -33,3 +42,6 @@ opensubdiv = ["opensubdiv"]
 opensubdiv-gpu-lib = ["opensubdiv-gpu-lib"]
 opensubdiv-gpu-dev = ["opensubdiv-gpu-dev"]
 opensubdiv-gpu = ["opensubdiv-gpu"]
+opensubdiv-cuda-lib = ["opensubdiv-cuda-lib"]
+opensubdiv-cuda-dev = ["opensubdiv-cuda-dev"]
+opensubdiv-cuda = ["opensubdiv-cuda"]

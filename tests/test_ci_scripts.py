@@ -754,21 +754,49 @@ class SmokeConsumersTests(unittest.TestCase):
             ["-DOPENQMC_CONSUMER_EXPECT_HEADER_ONLY=ON"],
         )
 
+    def test_opensubdiv_public_flavor_metapackages_run_cmake_consumer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            recipe = Path(tmp_raw) / "opensubdiv" / "3.7.0"
+            tests = recipe / "tests"
+            tests.mkdir(parents=True)
+            (tests / "CMakeLists.txt").write_text(
+                "cmake_minimum_required(VERSION 3.20)\n",
+                encoding="utf-8",
+            )
+
+            for package_name in ["opensubdiv", "opensubdiv-dev", "opensubdiv-gpu", "opensubdiv-cuda"]:
+                with self.subTest(package_name=package_name):
+                    self.assertTrue(
+                        smoke_consumers.package_needs_consumer_test(
+                            "opensubdiv",
+                            {"name": package_name},
+                            recipe,
+                        )
+                    )
+
     def test_opensubdiv_flavor_packages_pass_expected_cmake_flags(self) -> None:
         self.assertEqual(
             smoke_consumers.cmake_consumer_args("opensubdiv", {"name": "opensubdiv-dev"}, "linux-64"),
             ["-DOPENSUBDIV_CONSUMER_EXPECT_CPU_ONLY=ON"],
         )
-        self.assertEqual(
-            smoke_consumers.cmake_consumer_args("opensubdiv", {"name": "opensubdiv-gpu-dev"}, "linux-64"),
-            [
-                "-DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON",
-                "-DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON",
-                "-DOPENSUBDIV_CONSUMER_REQUIRE_TBB=ON",
-                "-DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON",
-                "-DOPENSUBDIV_CONSUMER_FORBID_METAL=ON",
-            ],
-        )
+        graphics_api_args = [
+            "-DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON",
+            "-DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON",
+            "-DOPENSUBDIV_CONSUMER_REQUIRE_TBB=ON",
+            "-DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON",
+            "-DOPENSUBDIV_CONSUMER_FORBID_METAL=ON",
+        ]
+        for package_name in ["opensubdiv-gpu", "opensubdiv-gpu-dev"]:
+            with self.subTest(package_name=package_name, platform="linux-64"):
+                self.assertEqual(
+                    smoke_consumers.cmake_consumer_args("opensubdiv", {"name": package_name}, "linux-64"),
+                    graphics_api_args,
+                )
+            with self.subTest(package_name=package_name, platform="win-64"):
+                self.assertEqual(
+                    smoke_consumers.cmake_consumer_args("opensubdiv", {"name": package_name}, "win-64"),
+                    graphics_api_args,
+                )
         self.assertEqual(
             smoke_consumers.cmake_consumer_args("opensubdiv", {"name": "opensubdiv-gpu-dev"}, "osx-arm64"),
             [
@@ -777,6 +805,24 @@ class SmokeConsumersTests(unittest.TestCase):
                 "-DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON",
             ],
         )
+        cuda_args = [
+            "-DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON",
+            "-DOPENSUBDIV_CONSUMER_REQUIRE_CUDA=ON",
+            "-DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON",
+            "-DOPENSUBDIV_CONSUMER_REQUIRE_TBB=ON",
+            "-DOPENSUBDIV_CONSUMER_FORBID_METAL=ON",
+        ]
+        for package_name in ["opensubdiv-cuda", "opensubdiv-cuda-dev"]:
+            with self.subTest(package_name=package_name, platform="linux-64"):
+                self.assertEqual(
+                    smoke_consumers.cmake_consumer_args("opensubdiv", {"name": package_name}, "linux-64"),
+                    cuda_args,
+                )
+            with self.subTest(package_name=package_name, platform="win-64"):
+                self.assertEqual(
+                    smoke_consumers.cmake_consumer_args("opensubdiv", {"name": package_name}, "win-64"),
+                    cuda_args,
+                )
 
     def test_openqmc_flavor_packages_are_mutually_exclusive(self) -> None:
         recipe = (ROOT / "openqmc" / "0.7.1" / "recipe.yaml").read_text(encoding="utf-8")
@@ -791,22 +837,37 @@ class SmokeConsumersTests(unittest.TestCase):
 
     def test_opensubdiv_flavor_packages_are_mutually_exclusive(self) -> None:
         recipe = (ROOT / "opensubdiv" / "3.7.0" / "recipe.yaml").read_text(encoding="utf-8")
-        self.assertRegex(
-            recipe,
-            r"(?ms)name: opensubdiv-lib.*run_constraints:\n\s+- opensubdiv-gpu-lib <0a0",
-        )
-        self.assertRegex(
-            recipe,
-            r"(?ms)name: opensubdiv-gpu-lib.*run_constraints:\n\s+- opensubdiv-lib <0a0",
-        )
-        self.assertRegex(
-            recipe,
-            r"(?ms)name: opensubdiv-dev.*run_constraints:\n\s+- opensubdiv-gpu-dev <0a0",
-        )
-        self.assertRegex(
-            recipe,
-            r"(?ms)name: opensubdiv-gpu-dev.*run_constraints:\n\s+- opensubdiv-dev <0a0",
-        )
+
+        def output_block(package_name: str) -> str:
+            match = re.search(
+                rf"(?ms)^  - package:\n      name: {re.escape(package_name)}\n(?P<block>.*?)(?=^  - (?:package|staging):|\Z)",
+                recipe,
+            )
+            self.assertIsNotNone(match, f"missing output block for {package_name}")
+            return match.group("block") if match else ""
+
+        def run_constraints(package_name: str) -> set[str]:
+            match = re.search(
+                r"(?ms)^      run_constraints:\n(?P<body>(?:        - .+\n)+)",
+                output_block(package_name),
+            )
+            self.assertIsNotNone(match, f"missing run_constraints for {package_name}")
+            return set(re.findall(r"^        - (.+)$", match.group("body"), flags=re.MULTILINE)) if match else set()
+
+        expected_constraints = {
+            "opensubdiv-lib": {"opensubdiv-gpu-lib <0a0", "opensubdiv-cuda-lib <0a0"},
+            "opensubdiv-gpu-lib": {"opensubdiv-lib <0a0", "opensubdiv-cuda-lib <0a0"},
+            "opensubdiv-cuda-lib": {"opensubdiv-lib <0a0", "opensubdiv-gpu-lib <0a0"},
+            "opensubdiv-dev": {"opensubdiv-gpu-dev <0a0", "opensubdiv-cuda-dev <0a0"},
+            "opensubdiv-gpu-dev": {"opensubdiv-dev <0a0", "opensubdiv-cuda-dev <0a0"},
+            "opensubdiv-cuda-dev": {"opensubdiv-dev <0a0", "opensubdiv-gpu-dev <0a0"},
+            "opensubdiv": {"opensubdiv-gpu <0a0", "opensubdiv-cuda <0a0"},
+            "opensubdiv-gpu": {"opensubdiv <0a0", "opensubdiv-cuda <0a0"},
+            "opensubdiv-cuda": {"opensubdiv <0a0", "opensubdiv-gpu <0a0"},
+        }
+        for package_name, expected in expected_constraints.items():
+            with self.subTest(package_name=package_name):
+                self.assertEqual(run_constraints(package_name), expected)
 
 
 if __name__ == "__main__":

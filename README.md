@@ -187,11 +187,14 @@ Recipe versions:
 OpenSubdiv provides subdivision surface evaluation libraries for CPU and GPU workflows.
 
 - `opensubdiv-lib`: CPU-only implementation library. On Linux and macOS this carries the shared `osdCPU` runtime library; on Windows upstream 3.7.0 installs a static `osdCPU.lib` rather than a DLL.
-- `opensubdiv-dev`: CPU-only headers, CMake package files, and Unix static archives. Depends on the matching `opensubdiv-lib` and conflicts with `opensubdiv-gpu-dev`.
+- `opensubdiv-dev`: CPU-only headers, CMake package files, and Unix static archives. Depends on the matching `opensubdiv-lib` and conflicts with the GPU and CUDA development flavors.
 - `opensubdiv`: Default CPU-only metapackage for C++ consumers. Depends on the matching `opensubdiv-lib` and `opensubdiv-dev`.
-- `opensubdiv-gpu-lib`: GPU-enabled implementation libraries, carrying both `osdCPU` and `osdGPU`. Linux builds enable OpenGL, GLEW, GLFW, and TBB with CUDA and Metal disabled; macOS builds enable Metal, OpenGL, GLEW, GLFW, and TBB with CUDA disabled. Windows GPU outputs are not built for now.
-- `opensubdiv-gpu-dev`: GPU-enabled headers, CMake package files, and Unix static archives. Depends on the matching `opensubdiv-gpu-lib` and conflicts with `opensubdiv-dev`; also carries the TBB and Linux OpenGL development dependencies required by the exported CMake targets.
-- `opensubdiv-gpu`: GPU-enabled compatibility/default metapackage. Depends on the matching `opensubdiv-gpu-lib` and `opensubdiv-gpu-dev`, and conflicts with `opensubdiv`.
+- `opensubdiv-gpu-lib`: Non-CUDA graphics API GPU implementation libraries, carrying both `osdCPU` and `osdGPU`. Linux and Windows builds enable OpenGL, GLEW, GLFW, and TBB with CUDA and Metal disabled; macOS builds enable Metal, OpenGL, GLEW, GLFW, and TBB with CUDA disabled. Windows packages may carry static `osdCPU.lib`/`osdGPU.lib` rather than DLLs.
+- `opensubdiv-gpu-dev`: Non-CUDA GPU headers and CMake package files. Depends on the matching `opensubdiv-gpu-lib` and conflicts with the CPU and CUDA development flavors.
+- `opensubdiv-gpu`: Non-CUDA GPU compatibility/default metapackage. Depends on the matching `opensubdiv-gpu-lib` and `opensubdiv-gpu-dev`, and conflicts with `opensubdiv` and `opensubdiv-cuda`.
+- `opensubdiv-cuda-lib`: CUDA-enabled implementation libraries, carrying both `osdCPU` and `osdGPU`. Linux and Windows builds enable CUDA, OpenGL, GLEW, GLFW, and TBB; macOS CUDA outputs are not built.
+- `opensubdiv-cuda-dev`: CUDA-enabled headers and CMake package files. Depends on the matching `opensubdiv-cuda-lib` and conflicts with the CPU and non-CUDA GPU development flavors.
+- `opensubdiv-cuda`: CUDA-enabled compatibility/default metapackage. Depends on the matching `opensubdiv-cuda-lib` and `opensubdiv-cuda-dev`, and conflicts with `opensubdiv` and `opensubdiv-gpu`.
 
 ## SeExpr
 

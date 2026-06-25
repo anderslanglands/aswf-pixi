@@ -155,15 +155,16 @@ OpenQMC packaging decisions:
 
 OpenSubdiv packaging decisions:
 
-- Package OpenSubdiv 3.7.0 as `opensubdiv-lib`, `opensubdiv-dev`, `opensubdiv`, `opensubdiv-gpu-lib`, `opensubdiv-gpu-dev`, and `opensubdiv-gpu`.
+- Package OpenSubdiv 3.7.0 with three public flavor metapackages: `opensubdiv`, `opensubdiv-gpu`, and `opensubdiv-cuda`. Keep matching runtime/development split outputs underneath them, for example `opensubdiv-lib`/`opensubdiv-dev`, `opensubdiv-gpu-lib`/`opensubdiv-gpu-dev`, and `opensubdiv-cuda-lib`/`opensubdiv-cuda-dev`.
 - The `opensubdiv` metapackage should depend on the CPU-only runtime and development surface.
-- The `opensubdiv-gpu` metapackage should depend on the GPU-enabled runtime and development surface, and remain mutually exclusive with `opensubdiv` because the builds install overlapping headers, CMake metadata, and `osdCPU` implementation libraries.
+- The `opensubdiv-gpu` metapackage should mean non-CUDA graphics-API GPU support: OpenGL/GLEW/GLFW/TBB on Linux and Windows where available, and Metal/OpenGL/GLEW/GLFW/TBB on macOS. It should not depend on CUDA packages.
+- The `opensubdiv-cuda` metapackage should mean CUDA-enabled OpenSubdiv, initially for Linux and Windows. Enable CUDA plus OpenGL/GLEW/GLFW/TBB where useful for interop, keep Metal disabled, and do not build it on macOS.
+- Keep the CPU, non-CUDA GPU, and CUDA flavors mutually exclusive because the builds install overlapping headers, CMake metadata, and `osdCPU`/`osdGPU` implementation libraries.
 - Keep OpenSubdiv examples, tutorials, regression tests, GL tests, PTex, docs, OpenMP, OpenCL, CLEW, DirectX, and macOS frameworks disabled unless Anders explicitly asks for them.
 - The CPU-only build should keep TBB, CUDA, OpenGL, Metal, GLEW, and GLFW disabled.
-- Linux GPU builds should enable OpenGL, GLEW, GLFW, and TBB, with CUDA and Metal disabled for now. Upstream 3.7.0 uses legacy `FindCUDA`, which does not detect the current conda CUDA/CMake stack without patching; revisit CUDA as a separate package decision if needed.
-- macOS GPU builds should enable Metal, OpenGL, GLEW, GLFW, and TBB, with CUDA disabled.
-- Keep the GPU CMake package self-contained for clean consumers: `OpenSubdivConfig.cmake` should load TBB and OpenGL dependency targets before upstream targets, and `opensubdiv-gpu-dev` should depend on `tbb-devel` plus Linux `libgl-devel`.
-- Do not build Windows GPU outputs for now. Upstream OpenSubdiv 3.7.0 also does not build shared libraries on Windows without CMake install/export changes; keep the CPU Windows package static-only unless Anders decides carrying a shared-library patch is worth it.
+- Upstream 3.7.0 uses legacy `FindCUDA`, so expect a narrow conda CUDA/CMake detection patch or configure workaround before CUDA-enabled builds are publishable.
+- For Windows `opensubdiv-cuda`, accept a static-only `osdGPU.lib`/`osdCPU.lib` package if upstream 3.7.0 does not produce shared libraries cleanly; do not treat the lack of Windows DLLs as a blocker.
+- Keep the GPU and CUDA CMake packages self-contained for clean consumers: `OpenSubdivConfig.cmake` should load dependency targets such as TBB, OpenGL, and CUDA before upstream targets, and development outputs should depend on the matching development dependencies.
 
 SeExpr packaging decisions:
 
