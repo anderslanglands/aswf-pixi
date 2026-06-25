@@ -454,7 +454,12 @@ outputs:
       host:
         - cuda-version ${{ cuda_version }}.*
         - cuda-cudart-dev
-        - cuda-nvcc
+        - if: linux
+          then:
+            - cuda-nvcc
+        - if: win
+          then:
+            - cuda-nvcc_win-64
         - tbb-devel >=2022.3,<2023
         - glew
         - glfw
