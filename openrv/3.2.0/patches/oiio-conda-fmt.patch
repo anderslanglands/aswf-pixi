@@ -27,4 +27,4 @@
 +]=])
 @@ -240 +260 @@
 -    BUILD_COMMAND ${CMAKE_COMMAND} ${_oiio_build_options}
-+    BUILD_COMMAND ${CMAKE_COMMAND} -P ${_oiio_build_script}
++    BUILD_COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_BINARY_DIR}/${_target}_build.cmake"
