@@ -162,9 +162,9 @@ OpenSubdiv packaging decisions:
 - Keep the CPU, non-CUDA GPU, and CUDA flavors mutually exclusive because the builds install overlapping headers, CMake metadata, and `osdCPU`/`osdGPU` implementation libraries.
 - Keep OpenSubdiv examples, tutorials, regression tests, GL tests, PTex, docs, OpenMP, OpenCL, CLEW, DirectX, and macOS frameworks disabled unless Anders explicitly asks for them.
 - The CPU-only build should keep TBB, CUDA, OpenGL, Metal, GLEW, and GLFW disabled.
-- Upstream 3.7.0 uses legacy `FindCUDA`, so expect a narrow conda CUDA/CMake detection patch or configure workaround before CUDA-enabled builds are publishable.
+- Upstream 3.7.0 uses legacy `FindCUDA`; keep CUDA builds pinned to the CUDA 12.9 package line for now, pass explicit conda CUDA include/library hints, and fail the staging build if CMake does not find usable CUDA include and `nvcc` paths.
 - For Windows `opensubdiv-cuda`, accept a static-only `osdGPU.lib`/`osdCPU.lib` package if upstream 3.7.0 does not produce shared libraries cleanly; do not treat the lack of Windows DLLs as a blocker.
-- Keep the GPU and CUDA CMake packages self-contained for clean consumers: `OpenSubdivConfig.cmake` should load dependency targets such as TBB, OpenGL, and CUDA before upstream targets, and development outputs should depend on the matching development dependencies.
+- Keep the GPU and CUDA CMake packages self-contained for clean consumers: `OpenSubdivConfig.cmake` should load dependency targets such as TBB, OpenGL, and Threads before upstream targets, and CUDA development outputs should depend on `cuda-cudart-dev` for the runtime/static library paths exported by upstream.
 
 SeExpr packaging decisions:
 

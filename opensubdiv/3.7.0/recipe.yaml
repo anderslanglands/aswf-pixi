@@ -2,6 +2,7 @@ context:
   version: "3.7.0"
   tag: v3_7_0
   build_number: 0
+  cuda_version: "12.9"
 
 recipe:
   name: opensubdiv
@@ -283,6 +284,19 @@ outputs:
               echo "RECIPE_DIR is not set" >&2
               exit 1
             fi
+            cuda_toolkit_root_dir="$PREFIX"
+            cuda_toolkit_include="$PREFIX/include"
+            cuda_include_dirs="$PREFIX/include"
+            if [ -d "$PREFIX/targets/x86_64-linux/include" ]; then
+              cuda_toolkit_root_dir="$PREFIX/targets/x86_64-linux"
+              cuda_toolkit_include="$cuda_toolkit_root_dir/include"
+              cuda_include_dirs="$cuda_toolkit_include;$cuda_include_dirs"
+            fi
+            cuda_cudart_library="$PREFIX/lib/libcudart.so"
+            if [ -f "$PREFIX/targets/x86_64-linux/lib/libcudart.so" ]; then
+              cuda_cudart_library="$PREFIX/targets/x86_64-linux/lib/libcudart.so"
+            fi
+            cuda_nvcc="$PREFIX/bin/nvcc"
 
             cmake $CMAKE_ARGS \
               -GNinja \
@@ -314,15 +328,29 @@ outputs:
               -DTBB_ROOT=$PREFIX \
               -DGLEW_LOCATION=$PREFIX \
               -DGLFW_LOCATION=$PREFIX \
-              -DCUDA_TOOLKIT_ROOT_DIR=$PREFIX \
+              -DCUDA_TOOLKIT_ROOT_DIR="$cuda_toolkit_root_dir" \
+              -DCUDA_TOOLKIT_INCLUDE="$cuda_toolkit_include" \
+              -DCUDA_INCLUDE_DIRS="$cuda_include_dirs" \
+              -DCUDA_CUDART_LIBRARY="$cuda_cudart_library" \
+              -DCUDA_NVCC_EXECUTABLE="$cuda_nvcc" \
               -DOSD_CUDA_NVCC_FLAGS=--gpu-architecture=sm_60 \
               -B $SRC_DIR/../build-cuda \
               -S .
 
+            if ! grep -q '^CUDA_TOOLKIT_INCLUDE:PATH=' "$SRC_DIR/../build-cuda/CMakeCache.txt" || \
+               grep -q '^CUDA_TOOLKIT_INCLUDE:PATH=.*-NOTFOUND' "$SRC_DIR/../build-cuda/CMakeCache.txt" || \
+               grep -q '^CUDA_NVCC_EXECUTABLE:FILEPATH=.*-NOTFOUND' "$SRC_DIR/../build-cuda/CMakeCache.txt"; then
+              echo "OpenSubdiv CMake did not find a usable CUDA toolkit" >&2
+              grep '^CUDA_' "$SRC_DIR/../build-cuda/CMakeCache.txt" >&2 || true
+              exit 1
+            fi
+
             cmake --build $SRC_DIR/../build-cuda --target install
+            test -f "$PREFIX/include/opensubdiv/osd/cudaEvaluator.h"
+            test -f "$PREFIX/include/opensubdiv/osd/cudaVertexBuffer.h"
             cmake \
               -DOPENSD_CONFIG=$PREFIX/lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake \
-              -DOPENSD_FIND_DEPENDENCIES="TBB CONFIG REQUIRED;OpenGL REQUIRED;CUDAToolkit REQUIRED" \
+              -DOPENSD_FIND_DEPENDENCIES="TBB CONFIG REQUIRED;OpenGL REQUIRED;Threads REQUIRED" \
               -DOPENSD_TARGET_DEFINITIONS="OPENSUBDIV_HAS_TBB;OPENSUBDIV_HAS_OPENGL;OPENSUBDIV_HAS_CUDA" \
               -P "$recipe_dir/cmake/patch-opensubdiv-config.cmake"
         - if: win
@@ -335,6 +363,16 @@ outputs:
               exit /b 1
             )
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "CUDA_TOOLKIT_TARGET_DIR=%LIBRARY_PREFIX_FWD%"
+            set "CUDA_TOOLKIT_INCLUDE=%LIBRARY_PREFIX_FWD%/include"
+            if exist "%LIBRARY_INC%\targets\x64\device_functions.h" (
+              set "CUDA_TOOLKIT_INCLUDE=%LIBRARY_PREFIX_FWD%/include/targets/x64"
+            )
+            set "CUDA_INCLUDE_DIRS=%LIBRARY_PREFIX_FWD%/include;%LIBRARY_PREFIX_FWD%/include/targets/x64;%LIBRARY_PREFIX_FWD%/include/targets/x64/cccl"
+            set "CUDA_CUDART_LIBRARY=%LIBRARY_PREFIX_FWD%/lib/cudart.lib"
+            set "CUDA_NVCC=%LIBRARY_BIN%\nvcc.exe"
+            if not exist "%CUDA_NVCC%" set "CUDA_NVCC=%PREFIX%\bin\nvcc.exe"
+            set "CUDA_NVCC_FWD=%CUDA_NVCC:\=/%"
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
@@ -367,14 +405,40 @@ outputs:
               -DGLEW_LOCATION=%LIBRARY_PREFIX% ^
               -DGLFW_LOCATION=%LIBRARY_PREFIX% ^
               -DCUDA_TOOLKIT_ROOT_DIR=%LIBRARY_PREFIX_FWD% ^
+              -DCUDA_TOOLKIT_TARGET_DIR="%CUDA_TOOLKIT_TARGET_DIR%" ^
+              -DCUDA_TOOLKIT_INCLUDE="%CUDA_TOOLKIT_INCLUDE%" ^
+              -DCUDA_INCLUDE_DIRS="%CUDA_INCLUDE_DIRS%" ^
+              -DCUDA_CUDART_LIBRARY="%CUDA_CUDART_LIBRARY%" ^
+              -DCUDA_NVCC_EXECUTABLE="%CUDA_NVCC_FWD%" ^
               -DOSD_CUDA_NVCC_FLAGS=--gpu-architecture=sm_60 ^
               -B %SRC_DIR%\..\build-cuda ^
               -S .
 
+            findstr /B /C:"CUDA_TOOLKIT_INCLUDE:PATH=" "%SRC_DIR%\..\build-cuda\CMakeCache.txt" >NUL
+            if errorlevel 1 (
+              echo OpenSubdiv CMake did not find a CUDA include directory
+              findstr /B /C:"CUDA_" "%SRC_DIR%\..\build-cuda\CMakeCache.txt"
+              exit /b 1
+            )
+            findstr /C:"CUDA_TOOLKIT_INCLUDE:PATH=CUDA_TOOLKIT_INCLUDE-NOTFOUND" "%SRC_DIR%\..\build-cuda\CMakeCache.txt" >NUL
+            if not errorlevel 1 (
+              echo OpenSubdiv CMake did not find a usable CUDA toolkit
+              findstr /B /C:"CUDA_" "%SRC_DIR%\..\build-cuda\CMakeCache.txt"
+              exit /b 1
+            )
+            findstr /C:"CUDA_NVCC_EXECUTABLE:FILEPATH=CUDA_NVCC_EXECUTABLE-NOTFOUND" "%SRC_DIR%\..\build-cuda\CMakeCache.txt" >NUL
+            if not errorlevel 1 (
+              echo OpenSubdiv CMake did not find nvcc
+              findstr /B /C:"CUDA_" "%SRC_DIR%\..\build-cuda\CMakeCache.txt"
+              exit /b 1
+            )
+
             cmake --build %SRC_DIR%\..\build-cuda --target install --config Release
+            if not exist "%LIBRARY_INC%\opensubdiv\osd\cudaEvaluator.h" exit /b 1
+            if not exist "%LIBRARY_INC%\opensubdiv\osd\cudaVertexBuffer.h" exit /b 1
             cmake ^
               -DOPENSD_CONFIG="%LIBRARY_LIB%\cmake\OpenSubdiv\OpenSubdivConfig.cmake" ^
-              -DOPENSD_FIND_DEPENDENCIES="TBB CONFIG REQUIRED;OpenGL REQUIRED;CUDAToolkit REQUIRED" ^
+              -DOPENSD_FIND_DEPENDENCIES="TBB CONFIG REQUIRED;OpenGL REQUIRED;Threads REQUIRED" ^
               -DOPENSD_TARGET_DEFINITIONS="OPENSUBDIV_HAS_TBB;OPENSUBDIV_HAS_OPENGL;OPENSUBDIV_HAS_CUDA" ^
               -P "%RECIPE_DIR_VAR%\cmake\patch-opensubdiv-config.cmake"
     requirements:
@@ -388,6 +452,7 @@ outputs:
             - gcc_linux-64 <15
             - gxx_linux-64 <15
       host:
+        - cuda-version ${{ cuda_version }}.*
         - cuda-cudart-dev
         - cuda-nvcc
         - tbb-devel >=2022.3,<2023
@@ -716,6 +781,7 @@ outputs:
         - Library/lib/osdGPU*.lib
     requirements:
       run:
+        - cuda-version ${{ cuda_version }}.*
         - cuda-cudart
         - tbb >=2022.3,<2023
       run_constraints:
@@ -762,6 +828,7 @@ outputs:
     requirements:
       run:
         - ${{ pin_subpackage('opensubdiv-cuda-lib', exact=True) }}
+        - cuda-version ${{ cuda_version }}.*
         - cuda-cudart-dev
         - tbb-devel >=2022.3,<2023
         - if: linux
