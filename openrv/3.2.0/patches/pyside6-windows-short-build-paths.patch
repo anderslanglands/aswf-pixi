@@ -1,28 +1,15 @@
-﻿diff --git a/cmake/dependencies/python3.cmake b/cmake/dependencies/python3.cmake
 --- a/cmake/dependencies/python3.cmake
 +++ b/cmake/dependencies/python3.cmake
-@@ -160,8 +160,12 @@ ELSEIF(RV_VFX_PLATFORM STRGREATER_EQUAL CY2024)
-   LIST(APPEND _pyside_make_command "--output-dir")
-   LIST(APPEND _pyside_make_command ${_install_dir})
-   LIST(APPEND _pyside_make_command "--temp-dir")
+@@ -158 +158,5 @@
 -  LIST(APPEND _pyside_make_command ${_build_dir})
--
 +  IF(RV_TARGET_WINDOWS)
 +    LIST(APPEND _pyside_make_command ${RV_DEPS_BASE_DIR}/p6)
 +  ELSE()
 +    LIST(APPEND _pyside_make_command ${_build_dir})
 +  ENDIF()
-+
-   IF(DEFINED RV_DEPS_OPENSSL_INSTALL_DIR)
-     LIST(APPEND _pyside_make_command "--openssl-dir")
-     LIST(APPEND _pyside_make_command ${RV_DEPS_OPENSSL_INSTALL_DIR})
-diff --git a/src/build/make_pyside6.py b/src/build/make_pyside6.py
 --- a/src/build/make_pyside6.py
 +++ b/src/build/make_pyside6.py
-@@ -56,7 +56,15 @@ def test_python_distribution(python_home: str) -> None:
-             ),
-         ]
-         print(f"Validating the PySide package with {python_validation_args}")
+@@ -65 +65,9 @@
 -        subprocess.run(python_validation_args).check_returncode()
 +        validation_env = os.environ.copy()
 +        if platform.system() == "Windows":
@@ -33,13 +20,8 @@ diff --git a/src/build/make_pyside6.py b/src/build/make_pyside6.py
 +            )
 +
 +        subprocess.run(python_validation_args, env=validation_env).check_returncode()
-     finally:
-         print(f"Moving {tmp_python_home} to {python_home}")
-         shutil.move(tmp_python_home, python_home)
-@@ -173,6 +173,151 @@ def prepare() -> None:
-
-                 cmakelist.write(new_line)
-
+@@ -178,0 +187,174 @@
++
 +    if system == "Windows":
 +        build_info_path = os.path.join(SOURCE_DIR, "build_scripts", "build_info_collector.py")
 +        with open(build_info_path) as build_info:
@@ -185,20 +167,37 @@ diff --git a/src/build/make_pyside6.py b/src/build/make_pyside6.py
 +            with open(windows_desktop_path, "w") as windows_desktop:
 +                windows_desktop.write(windows_desktop_contents)
 +
-
- def remove_broken_shortcuts(python_home: str) -> None:
-     """
-@@ -218,5 +363,6 @@ def build() -> None:
-     Run the build step of the build. It compile every target of the project.
-     """
-     python_home = PYTHON_OUTPUT_DIR
++    if system == "Darwin":
++        macos_path = os.path.join(SOURCE_DIR, "build_scripts", "platforms", "macos.py")
++        with open(macos_path) as macos_file:
++            macos_contents = macos_file.read()
++
++        old_designer_copy = (
++            '        if not is_pypy:\n'
++            '            copydir("{install_dir}/plugins/designer",\n'
++            '                    plugins_target / "designer",\n'
++            '                    _filter=filters,\n'
++            '                    recursive=False,\n'
++            '                    _vars=_vars)\n'
++        )
++        new_designer_copy = (
++            '        if not is_pypy:\n'
++            '            designer_source = "{install_dir}/plugins/designer"\n'
++            '            if not Path(designer_source.format(**_vars)).is_dir():\n'
++            '                designer_source = "{install_dir}/lib/qt6/plugins/designer"\n'
++            '            if Path(designer_source.format(**_vars)).is_dir():\n'
++            '                copydir(designer_source,\n'
++            '                        plugins_target / "designer",\n'
++            '                        _filter=filters,\n'
++            '                        recursive=False,\n'
++            '                        _vars=_vars)\n'
++        )
++        if old_designer_copy in macos_contents:
++            with open(macos_path, "w") as macos_file:
++                macos_file.write(macos_contents.replace(old_designer_copy, new_designer_copy))
+@@ -244,0 +427 @@
 +    pyside_env = os.environ.copy()
-     python_interpreter_args = get_python_interpreter_args(python_home, VARIANT)
-
-@@ -267,12 +413,19 @@ def build() -> None:
-     if platform.system() == "Windows":
-         # Add the debug switch to match build type but only on Windows
-         # (on other platforms, PySide6 is built in release)
+@@ -276,0 +460,7 @@
 +        pyside_build_base = os.path.join(tempfile.gettempdir(), "rvp6")
 +        if os.path.exists(pyside_build_base):
 +            shutil.rmtree(pyside_build_base)
@@ -206,14 +205,6 @@ diff --git a/src/build/make_pyside6.py b/src/build/make_pyside6.py
 +        pyside_env["PYSIDE_SETUP_PY_BUILD_BASE"] = pyside_build_base
 +        pyside_env["PYSIDE_QT_BIN_DIR"] = os.path.join(QT_OUTPUT_DIR, "bin")
 +
-         if VARIANT == "Debug":
-             pyside_build_args.append("--debug")
-
-     print(f"Executing {pyside_build_args}")
+@@ -281 +471 @@
 -    subprocess.run(pyside_build_args).check_returncode()
--
 +    subprocess.run(pyside_build_args, env=pyside_env).check_returncode()
-+
-     generator_cleanup_args = python_interpreter_args + [
-         "-m",
-         "pip",

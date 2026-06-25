@@ -1,7 +1,7 @@
 diff --git a/src/build/make_python.py b/src/build/make_python.py
 --- a/src/build/make_python.py
 +++ b/src/build/make_python.py
-@@ -322,7 +322,33 @@ def configure() -> None:
+@@ -322,7 +322,35 @@ def configure() -> None:
                          "-Wl,-install_name,$(prefix)/lib/libpython$(",
                          "-Wl,-install_name,@rpath/libpython$(",
                      )
@@ -33,6 +33,8 @@ diff --git a/src/build/make_python.py b/src/build/make_python.py
 +                            "$(RUNSHARED) $(srcdir)/if_runnable.sh $(PYTHON_FOR_BUILD)",
 +                            f"PYTHONPATH={source_lib} $(RUNSHARED) ./python",
 +                        )
++                        if "$(srcdir)/Tools/build/check_extension_modules.py" in new_line:
++                            new_line = '\t@echo "Skipping checksharedmods during OpenRV dependency build"\n'
                      # Adjust RPaths
                      if new_line.startswith("LINKFORSHARED="):
                          if platform.system() == "Linux":

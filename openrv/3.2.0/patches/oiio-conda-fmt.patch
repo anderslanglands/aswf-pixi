@@ -7,3 +7,24 @@
 +    # OIIO's generated Windows build can link OpenImageIO_Util before all of
 +    # its object files are ready when CMake drives it in parallel.
 +    "1"
+@@ -212,0 +216,17 @@
++
++  SET(_oiio_build_script ${CMAKE_CURRENT_BINARY_DIR}/${_target}_build.cmake)
++  FILE(WRITE ${_oiio_build_script} "SET(_oiio_build_command\n")
++  FOREACH(_oiio_build_arg IN LISTS CMAKE_COMMAND _oiio_build_options)
++    FILE(APPEND ${_oiio_build_script} "  [=[${_oiio_build_arg}]=]\n")
++  ENDFOREACH()
++  FILE(APPEND ${_oiio_build_script} [=[
++)
++EXECUTE_PROCESS(COMMAND ${_oiio_build_command} COMMAND_ECHO STDOUT RESULT_VARIABLE _oiio_build_result)
++IF(NOT _oiio_build_result EQUAL 0)
++  MESSAGE(WARNING "OpenImageIO build failed with ${_oiio_build_result}; retrying once")
++  EXECUTE_PROCESS(COMMAND ${_oiio_build_command} COMMAND_ECHO STDOUT RESULT_VARIABLE _oiio_build_result)
++ENDIF()
++IF(NOT _oiio_build_result EQUAL 0)
++  MESSAGE(FATAL_ERROR "OpenImageIO build failed: ${_oiio_build_result}")
++ENDIF()
++]=])
+@@ -240 +260 @@
+-    BUILD_COMMAND ${CMAKE_COMMAND} ${_oiio_build_options}
++    BUILD_COMMAND ${CMAKE_COMMAND} -P ${_oiio_build_script}
