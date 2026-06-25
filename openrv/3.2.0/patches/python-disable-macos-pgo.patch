@@ -1,7 +1,0 @@
-diff --git a/src/build/make_python.py b/src/build/make_python.py
---- a/src/build/make_python.py
-+++ b/src/build/make_python.py
-@@ -274,2 +274,2 @@ def configure() -> None:
--        if VARIANT == "Release":
-+        if False:  # PGO bootstrap fails under rattler-build prefixes.
-             configure_args.append("--enable-optimizations")

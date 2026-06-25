@@ -342,14 +342,14 @@ outputs:
                 ["split-app-lib", "split-app"],
             )
 
-    def test_empty_publish_build_number_resolves_real_openrv_recipe(self) -> None:
+    def test_empty_publish_build_number_resolves_real_imath_recipe(self) -> None:
         fetched_urls: list[str] = []
 
         def fake_fetch(url: str) -> list[dict[str, object]]:
             fetched_urls.append(url)
             return []
 
-        recipe = ROOT / "openrv" / "3.2.0"
+        recipe = ROOT / "imath" / "3.2.2"
         self.assertEqual(
             resolve_build_numbers.resolve_build_numbers(
                 [recipe],
@@ -360,10 +360,15 @@ outputs:
             ),
             {recipe.as_posix(): "0"},
         )
-        self.assertEqual(
+        self.assertCountEqual(
             fetched_urls,
-            ["https://api.anaconda.org/package/anderslanglands/openrv/files"],
+            [
+                "https://api.anaconda.org/package/anderslanglands/imath/files",
+                "https://api.anaconda.org/package/anderslanglands/imath-dev/files",
+                "https://api.anaconda.org/package/anderslanglands/imath-lib/files",
+            ],
         )
+        self.assertEqual(len(fetched_urls), 3)
 
     def test_fetch_package_files_accepts_list_and_dict_payloads(self) -> None:
         class FakeResponse:

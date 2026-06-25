@@ -204,6 +204,16 @@ OpenImageIO packaging decisions:
 - Keep Qt viewer (`iv`), OpenCV, Freetype text rendering support, Ptex integration, R3DSDK, Nuke, docs, tests, and fonts disabled unless Anders explicitly asks for them.
 
 
+OpenUSD packaging decisions:
+
+- Package OpenUSD 26.05 as `openusd-minimal-lib`, `openusd-minimal-dev`, `openusd-minimal-tools`, `openusd-minimal-python`, and `openusd`.
+- The `openusd-minimal-*` family should stay lean and depend only on MaterialX, OpenSubdiv, TBB, and Python/Jinja where Python support is enabled. Enable MaterialX support, exec, validation, and command-line tools; keep imaging, USD imaging, GUI tools, OpenImageIO, OpenColorIO, OpenVDB, Draco, Embree, Vulkan, Ptex, Alembic, OSL, PRMan, HDF5, docs, examples, tutorials, tests, generated-code validation, and precompiled headers disabled.
+- Split only the non-Python minimal build into runtime, development, and tools outputs. Keep `openusd-minimal-python` as one package containing runtime libraries, headers, CMake metadata, tools, and `pxr` Python modules because Python support changes the OpenUSD build ABI/surface and installs overlapping files.
+- Use `openusd` for the full Python-enabled package. It should be one package containing runtime libraries, headers, CMake metadata, tools, `pxr` Python modules, USD imaging, `usdview`, GUI dependencies, MaterialX render support, and supported plugins. It depends on `materialx-render` because USD imaging builds `hdSt` against MaterialXRender headers. It is mutually exclusive with all `openusd-minimal-*` packages.
+- Full `openusd` should enable USD tools, imaging, USD imaging, validation, exec, USDView, GL/Metal support, OpenImageIO, OpenColorIO, ImageIO, Draco, Embree, MaterialX, and OpenVDB support. Keep Vulkan disabled for 26.05 because the old recipe hit a Vulkan header API mismatch; keep Ptex, Alembic, OSL, Renderman/PRMan, HDF5, MayaPy tests, AnimX tests, generated-code validation, and precompiled headers disabled unless Anders asks.
+- Keep the old OpenUSD build stability fixes: cap recipe build parallelism at 24 jobs, remove `-pipe`, `-ffunction-sections`, and `-fvisibility-inlines-hidden` from compiler flags, and pass `PXR_PY_UNDEFINED_DYNAMIC_LOOKUP=OFF` for Python-enabled builds.
+- Do not build the full `openusd` package on Windows until the full Windows feature dependency stack has been validated; keep that as a separate OpenUSD packaging decision rather than coupling it to the OpenSubdiv GPU package split.
+
 OpenShadingLanguage packaging decisions:
 
 - Package OpenShadingLanguage 1.15.5.0 as `openshadinglanguage-lib`, `openshadinglanguage-dev`, `openshadinglanguage-tools`, `openshadinglanguage-guitools`, `openshadinglanguage-python`, `openimageio-format-osl`, and a compatibility/default `openshadinglanguage` metapackage.
@@ -252,14 +262,3 @@ pbrt packaging decisions:
 - Disable `PBRT_BUILD_NATIVE_EXECUTABLE` for distributable packages so CI runner CPU flags are not baked into published binaries.
 - Build Linux packages with GLFW's X11 backend only; keep Wayland disabled unless Anders asks for Wayland runtime support.
 - Use external `openexr-dev`/`openexr-lib` and zlib where upstream CMake supports them; keep the rest of upstream's required `src/ext` submodules vendored for now.
-
-OpenRV packaging decisions:
-
-- Package OpenRV 3.2.0 as a single `openrv` application package for now; do not split development/runtime subpackages unless a concrete downstream need appears.
-- Use the OpenRV v3.2.0 git source with submodules rather than the GitHub release archive, because the archive does not include required submodule contents under `src/pub` and `src/lib/files/WFObj`.
-- Build against the CY2026 dependency set, updated to the newer versions used in this repository where OpenRV has matching support: Imath 3.2.2, OpenEXR 3.4.13, OpenColorIO 2.5.2, OpenImageIO 3.1.14.1, FFmpeg 8, Qt 6.10.2, and PySide 6.10.2.
-- Use conda-forge `qt6-main` and `qt6-webengine` 6.10.2 as external build/runtime dependencies. Do not copy Qt into the staged OpenRV app package.
-- Do not build `osx-64` for OpenRV 3.2.0 while using Qt WebEngine 6.10.2, because conda-forge does not publish that Qt WebEngine version for Intel macOS.
-- Omit proprietary/optional SDK integrations initially when their SDKs are unavailable, including Blackmagic DeckLink, NDI, and Apple ProRes SDK support. Keep AJA enabled because upstream builds it from the open libajantv2 source.
-- Keep package tests headless: validate launcher/app-tree layout, external Qt/WebEngine path assumptions, and `rv -version`; defer GUI launch smoke tests until there is a reliable headless GUI strategy.
-- Default the Linux launcher to `QT_QPA_PLATFORM=xcb` unless the user explicitly overrides it; OpenRV 3.2.0 still uses X11/GLX-specific startup code and Qt Wayland crashed on startup with Qt 6.10 in local testing.

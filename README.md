@@ -245,6 +245,19 @@ OpenImageIO provides image file I/O libraries, command-line tools, texture utili
 - `openimageio-format-openvdb`: OpenVDB input plugin. Depends on the matching OpenVDB runtime package.
 - `openimageio`: Default metapackage for C++ and tool consumers. Depends on the matching `openimageio-lib`, `openimageio-dev`, and `openimageio-tools`; Python bindings and extra format plugins are opt-in.
 
+## OpenUSD
+
+Recipe versions:
+- `26.05`
+
+OpenUSD provides Pixar Universal Scene Description libraries, schemas, tools, Python modules, and imaging integrations.
+
+- `openusd-minimal-lib`: Minimal non-Python runtime libraries and plugin resources. Depends only on MaterialX, OpenSubdiv, and TBB runtime packages.
+- `openusd-minimal-dev`: Minimal non-Python headers, CMake package files, and Windows import libraries. Depends on the matching `openusd-minimal-lib` plus MaterialX/OpenSubdiv/TBB development packages.
+- `openusd-minimal-tools`: Minimal non-Python command-line tools such as `usdcat`. Depends on the matching `openusd-minimal-lib`.
+- `openusd-minimal-python`: Minimal Python-enabled OpenUSD package containing runtime libraries, development files, tools, and `pxr` Python modules in one package. It uses only MaterialX, OpenSubdiv, TBB, and Python/Jinja dependencies and is mutually exclusive with the non-Python minimal split packages.
+- `openusd`: Full Python-enabled OpenUSD package containing runtime libraries, development files, tools, `pxr` Python modules, USD imaging, `usdview`, GUI dependencies, MaterialX render support, and supported plugins. It is mutually exclusive with all `openusd-minimal-*` packages.
+
 ## OpenShadingLanguage
 
 Recipe versions:
@@ -295,12 +308,3 @@ pbrt is the physically based rendering system described by the PBRT book.
 
 - `pbrt`: CPU-only command-line application package installing `pbrt`, `imgtool`, `pspec`, `plytool`, and `cyhair2pbrt`.
 - `pbrt-optix`: Linux and Windows CUDA/OptiX application package built with `optix-dev 9.1.*`, CUDA 13.2, `cuda-nvcc`, and a fixed `PBRT_GPU_SHADER_MODEL=sm_75` so package builds do not require probing a local GPU. It installs the same command names as `pbrt` and is mutually exclusive with the CPU-only package.
-
-## OpenRV
-
-Recipe versions:
-- `3.2.0`
-
-OpenRV is an image and sequence playback, review, and inspection application for production workflows.
-
-- `openrv`: Application package installing the staged OpenRV app under `opt/openrv` with a `rv` launcher on PATH. It uses conda-forge Qt 6 and Qt WebEngine 6.10.2 at runtime instead of bundling Qt into the package.

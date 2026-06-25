@@ -1,8 +1,0 @@
-diff --git a/src/build/requirements.txt.in b/src/build/requirements.txt.in
---- a/src/build/requirements.txt.in
-+++ b/src/build/requirements.txt.in
-@@ -23,4 +23,4 @@ packaging==24.0         # License: Apache Software License, BSD License
- requests==2.31.0        # License: Apache Software License (Apache 2.0)
- cryptography==42.0.5    # License: Apache Software License, BSD License ((Apache-2.0 OR BSD-3-Clause) AND PSF-2.0)
--pydantic==2.7.1         # License: MIT License (MIT)
-+pydantic==2.13.4        # License: MIT License (MIT)

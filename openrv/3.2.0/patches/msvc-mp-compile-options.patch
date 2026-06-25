@@ -1,9 +1,0 @@
-﻿diff --git a/cmake/defaults/cxx_msvc_defaults.cmake b/cmake/defaults/cxx_msvc_defaults.cmake
---- a/cmake/defaults/cxx_msvc_defaults.cmake
-+++ b/cmake/defaults/cxx_msvc_defaults.cmake
-@@ -70,4 +70,4 @@ ADD_LINK_OPTIONS("/STACK:8388608")
-
- # Enable parallel builds Note that in theory we should be able to specify just /MP here but when we do cmake sets /MP1 instead. So in order to parellize the
- # build, we must set the number of processors.
--ADD_DEFINITIONS(/MP${_cpu_count})
-+ADD_COMPILE_OPTIONS("$<$<COMPILE_LANGUAGE:C,CXX>:/MP${_cpu_count}>")
