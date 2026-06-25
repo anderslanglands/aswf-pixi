@@ -1,10 +1,10 @@
-diff --git i/src/build/make_python.py w/src/build/make_python.py
-index 209a42e..c007ba6 100644
---- i/src/build/make_python.py
-+++ w/src/build/make_python.py
-@@ -361,0 +362,28 @@ def configure() -> None:
+diff --git a/src/build/make_python.py b/src/build/make_python.py
+--- a/src/build/make_python.py
++++ b/src/build/make_python.py
+@@ -360,0 +361,29 @@
++
 +                    if platform.system() == "Linux":
-+                        # CPython's generated pybuilddir.txt rule invokes the
++                        # CPython's generated build/install rules invoke the
 +                        # in-tree interpreter before the stdlib is installed. In
 +                        # rattler-build prefixes that can leave it unable to find
 +                        # Lib/encodings. Put the source Lib directory on just the
@@ -31,25 +31,33 @@ index 209a42e..c007ba6 100644
 +                        )
 +                        if "$(srcdir)/Tools/build/check_extension_modules.py" in new_line:
 +                            new_line = '\t@echo "Skipping checksharedmods during OpenRV dependency build"\n'
-@@ -475 +504,4 @@ def install_python_vfx2023() -> None:
+@@ -475 +504,13 @@
 -        make_args = ["make", "install", f"-j{os.cpu_count() or 1}", "-s"]
 +        if platform.system() == "Linux":
-+            make_args = ["make", "install", "-j1", "-s"]
++            source_lib = os.path.join(SOURCE_DIR, "Lib")
++            make_args = [
++                "make",
++                "install",
++                "-j1",
++                "-s",
++                f"PYTHON_FOR_BUILD=PYTHONPATH={source_lib} ./python",
++                "COMPILEALL_OPTS=-j1",
++                "ENSUREPIP=no",
++            ]
 +        else:
 +            make_args = ["make", "install", f"-j{os.cpu_count() or 1}", "-s"]
-@@ -478,2 +510,4 @@ def install_python_vfx2023() -> None:
-         subprocess_env = {**os.environ}
-+        if platform.system() == "Linux":
-+            subprocess_env["PYTHONPATH"] = os.path.join(SOURCE_DIR, "Lib")
-         if OPENSSL_OUTPUT_DIR:
-@@ -592 +626,4 @@ def install_python_vfx2024() -> None:
+@@ -590 +631,13 @@
 -        make_args = ["make", "install", f"-j{os.cpu_count() or 1}", "-s"]
 +        if platform.system() == "Linux":
-+            make_args = ["make", "install", "-j1", "-s"]
++            source_lib = os.path.join(SOURCE_DIR, "Lib")
++            make_args = [
++                "make",
++                "install",
++                "-j1",
++                "-s",
++                f"PYTHON_FOR_BUILD=PYTHONPATH={source_lib} ./python",
++                "COMPILEALL_OPTS=-j1",
++                "ENSUREPIP=no",
++            ]
 +        else:
 +            make_args = ["make", "install", f"-j{os.cpu_count() or 1}", "-s"]
-@@ -595,2 +632,4 @@ def install_python_vfx2024() -> None:
-         subprocess_env = {**os.environ}
-+        if platform.system() == "Linux":
-+            subprocess_env["PYTHONPATH"] = os.path.join(SOURCE_DIR, "Lib")
-         if OPENSSL_OUTPUT_DIR:
