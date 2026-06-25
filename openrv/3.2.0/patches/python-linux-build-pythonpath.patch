@@ -1,6 +1,8 @@
---- a/src/build/make_python.py
-+++ b/src/build/make_python.py
-@@ -309,0 +310,28 @@
+diff --git i/src/build/make_python.py w/src/build/make_python.py
+index 209a42e..c007ba6 100644
+--- i/src/build/make_python.py
++++ w/src/build/make_python.py
+@@ -361,0 +362,28 @@ def configure() -> None:
 +                    if platform.system() == "Linux":
 +                        # CPython's generated pybuilddir.txt rule invokes the
 +                        # in-tree interpreter before the stdlib is installed. In
@@ -29,12 +31,14 @@
 +                        )
 +                        if "$(srcdir)/Tools/build/check_extension_modules.py" in new_line:
 +                            new_line = '\t@echo "Skipping checksharedmods during OpenRV dependency build"\n'
-@@ -422 +450,4 @@
+@@ -475 +504,4 @@ def install_python_vfx2023() -> None:
 -        make_args = ["make", "install", f"-j{os.cpu_count() or 1}", "-s"]
 +        if platform.system() == "Linux":
 +            make_args = ["make", "install", "-j1", "-s"]
 +        else:
 +            make_args = ["make", "install", f"-j{os.cpu_count() or 1}", "-s"]
-@@ -425,0 +457,2 @@
+@@ -478,2 +510,4 @@ def install_python_vfx2023() -> None:
+         subprocess_env = {**os.environ}
 +        if platform.system() == "Linux":
 +            subprocess_env["PYTHONPATH"] = os.path.join(SOURCE_DIR, "Lib")
+         if OPENSSL_OUTPUT_DIR:
