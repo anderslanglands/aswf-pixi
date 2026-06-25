@@ -1,12 +1,6 @@
-diff --git a/src/build/make_python.py b/src/build/make_python.py
 --- a/src/build/make_python.py
 +++ b/src/build/make_python.py
-@@ -322,7 +322,35 @@ def configure() -> None:
-                         "-Wl,-install_name,$(prefix)/lib/libpython$(",
-                         "-Wl,-install_name,@rpath/libpython$(",
-                     )
--
-+
+@@ -309,0 +310,28 @@
 +                    if platform.system() == "Linux":
 +                        # CPython's generated pybuilddir.txt rule invokes the
 +                        # in-tree interpreter before the stdlib is installed. In
@@ -35,6 +29,12 @@ diff --git a/src/build/make_python.py b/src/build/make_python.py
 +                        )
 +                        if "$(srcdir)/Tools/build/check_extension_modules.py" in new_line:
 +                            new_line = '\t@echo "Skipping checksharedmods during OpenRV dependency build"\n'
-                     # Adjust RPaths
-                     if new_line.startswith("LINKFORSHARED="):
-                         if platform.system() == "Linux":
+@@ -422 +450,4 @@
+-        make_args = ["make", "install", f"-j{os.cpu_count() or 1}", "-s"]
++        if platform.system() == "Linux":
++            make_args = ["make", "install", "-j1", "-s"]
++        else:
++            make_args = ["make", "install", f"-j{os.cpu_count() or 1}", "-s"]
+@@ -425,0 +457,2 @@
++        if platform.system() == "Linux":
++            subprocess_env["PYTHONPATH"] = os.path.join(SOURCE_DIR, "Lib")
