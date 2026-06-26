@@ -204,6 +204,9 @@ outputs:
             cmake --build %SRC_DIR%\..\build-minimal --target install --config Release --parallel %BUILD_JOBS%
             if %ERRORLEVEL% neq 0 exit /b 1
 
+            rem Normalize generated metadata so rattler-build does not see mixed slash forms of %%PREFIX%%.
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $prefixFwd = $env:PREFIX -replace '\\', '/'; $prefixPattern = (($env:PREFIX -split '\\') | ForEach-Object { [regex]::Escape($_) }) -join '[\\/]'; $files = @(); $config = Join-Path $env:LIBRARY_PREFIX 'pxrConfig.cmake'; if (Test-Path $config) { $files += Get-Item $config }; $cmakeDir = Join-Path $env:LIBRARY_PREFIX 'cmake'; if (Test-Path $cmakeDir) { $files += Get-ChildItem -Path $cmakeDir -Filter '*.cmake' -Recurse -File }; foreach ($file in $files) { $text = [IO.File]::ReadAllText($file.FullName); $text = [regex]::Replace($text, $prefixPattern, $prefixFwd); $text = $text.Replace($prefixFwd + [char]92, $prefixFwd + '/'); [IO.File]::WriteAllText($file.FullName, $text) }"
+
             if not exist "%PREFIX%\etc\conda\activate.d" mkdir "%PREFIX%\etc\conda\activate.d"
             if not exist "%PREFIX%\etc\conda\deactivate.d" mkdir "%PREFIX%\etc\conda\deactivate.d"
             (
@@ -505,6 +508,9 @@ outputs:
 
             cmake --build %SRC_DIR%\..\build-minimal-python --target install --config Release --parallel %BUILD_JOBS%
             if %ERRORLEVEL% neq 0 exit /b 1
+
+            rem Normalize generated metadata so rattler-build does not see mixed slash forms of %%PREFIX%%.
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $prefixFwd = $env:PREFIX -replace '\\', '/'; $prefixPattern = (($env:PREFIX -split '\\') | ForEach-Object { [regex]::Escape($_) }) -join '[\\/]'; $files = @(); $config = Join-Path $env:LIBRARY_PREFIX 'pxrConfig.cmake'; if (Test-Path $config) { $files += Get-Item $config }; $cmakeDir = Join-Path $env:LIBRARY_PREFIX 'cmake'; if (Test-Path $cmakeDir) { $files += Get-ChildItem -Path $cmakeDir -Filter '*.cmake' -Recurse -File }; foreach ($file in $files) { $text = [IO.File]::ReadAllText($file.FullName); $text = [regex]::Replace($text, $prefixPattern, $prefixFwd); $text = $text.Replace($prefixFwd + [char]92, $prefixFwd + '/'); [IO.File]::WriteAllText($file.FullName, $text) }"
 
             if not exist "%PREFIX%\etc\conda\activate.d" mkdir "%PREFIX%\etc\conda\activate.d"
             if not exist "%PREFIX%\etc\conda\deactivate.d" mkdir "%PREFIX%\etc\conda\deactivate.d"
@@ -854,6 +860,9 @@ outputs:
 
             cmake --build %SRC_DIR%\..\build-openusd --target install --config Release --parallel %BUILD_JOBS%
             if %ERRORLEVEL% neq 0 exit /b 1
+
+            rem Normalize generated metadata so rattler-build does not see mixed slash forms of %%PREFIX%%.
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $prefixFwd = $env:PREFIX -replace '\\', '/'; $prefixPattern = (($env:PREFIX -split '\\') | ForEach-Object { [regex]::Escape($_) }) -join '[\\/]'; $files = @(); $config = Join-Path $env:LIBRARY_PREFIX 'pxrConfig.cmake'; if (Test-Path $config) { $files += Get-Item $config }; $cmakeDir = Join-Path $env:LIBRARY_PREFIX 'cmake'; if (Test-Path $cmakeDir) { $files += Get-ChildItem -Path $cmakeDir -Filter '*.cmake' -Recurse -File }; foreach ($file in $files) { $text = [IO.File]::ReadAllText($file.FullName); $text = [regex]::Replace($text, $prefixPattern, $prefixFwd); $text = $text.Replace($prefixFwd + [char]92, $prefixFwd + '/'); [IO.File]::WriteAllText($file.FullName, $text) }"
 
             if not exist "%PREFIX%\etc\conda\activate.d" mkdir "%PREFIX%\etc\conda\activate.d"
             if not exist "%PREFIX%\etc\conda\deactivate.d" mkdir "%PREFIX%\etc\conda\deactivate.d"
