@@ -9,6 +9,8 @@ recipe:
 source:
   url: https://github.com/PixarAnimationStudios/OpenUSD/archive/refs/tags/v${{ version }}.tar.gz
   sha256: bf514f62ac9508d3c5b121dc1107f3b29bf3c954473b9b0bf8324b7cf04c64c1
+  patches:
+    - link-python-to-executables.patch
 
 build:
   number: ${{ build_number }}
