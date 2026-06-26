@@ -311,6 +311,12 @@ outputs:
             export CMAKE_BUILD_PARALLEL_LEVEL="$build_jobs"
             echo "OpenUSD build parallelism: $build_jobs"
 
+            py_undefined_dynamic_lookup=OFF
+            case "${target_platform:-}" in
+              osx-*) py_undefined_dynamic_lookup=ON ;;
+            esac
+            echo "OpenUSD Python undefined dynamic lookup: $py_undefined_dynamic_lookup"
+
             cmake -E rm -rf $SRC_DIR/../build-minimal-python
 
             cmake $CMAKE_ARGS \
@@ -322,7 +328,7 @@ outputs:
               -DBUILD_SHARED_LIBS=ON \
               -DPXR_BUILD_MONOLITHIC=OFF \
               -DPXR_ENABLE_PYTHON_SUPPORT=ON \
-              -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=OFF \
+              -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=$py_undefined_dynamic_lookup \
               -DPXR_BUILD_DOCUMENTATION=OFF \
               -DPXR_BUILD_HTML_DOCUMENTATION=OFF \
               -DPXR_BUILD_PYTHON_DOCUMENTATION=OFF \
@@ -648,6 +654,12 @@ outputs:
             export CMAKE_BUILD_PARALLEL_LEVEL="$build_jobs"
             echo "OpenUSD build parallelism: $build_jobs"
 
+            py_undefined_dynamic_lookup=OFF
+            case "${target_platform:-}" in
+              osx-*) py_undefined_dynamic_lookup=ON ;;
+            esac
+            echo "OpenUSD Python undefined dynamic lookup: $py_undefined_dynamic_lookup"
+
             cmake -E rm -rf $SRC_DIR/../build-openusd
 
             cmake $CMAKE_ARGS \
@@ -659,7 +671,7 @@ outputs:
               -DBUILD_SHARED_LIBS=ON \
               -DPXR_BUILD_MONOLITHIC=OFF \
               -DPXR_ENABLE_PYTHON_SUPPORT=ON \
-              -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=OFF \
+              -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=$py_undefined_dynamic_lookup \
               -DPXR_BUILD_DOCUMENTATION=OFF \
               -DPXR_BUILD_HTML_DOCUMENTATION=OFF \
               -DPXR_BUILD_PYTHON_DOCUMENTATION=OFF \
