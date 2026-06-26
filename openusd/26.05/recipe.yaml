@@ -1181,7 +1181,46 @@ outputs:
               - test -f "$PREFIX/cmake/pxrTargets.cmake"
               - test -d "$PREFIX/lib/python/pxr"
               - test -f "$PREFIX/etc/conda/activate.d/openusd-minimal-python.sh"
+          - if: linux
+            then:
               - export CONDA_PREFIX="$PREFIX" && . "$PREFIX/etc/conda/activate.d/openusd-minimal-python.sh" && python -c "from pxr import Tf, Usd, UsdMtlx; assert Usd.GetVersion()[1:] == (26, 5)"
+          - if: osx
+            then:
+              - |
+                set -u
+                export CONDA_PREFIX="$PREFIX"
+                . "$PREFIX/etc/conda/activate.d/openusd-minimal-python.sh"
+                export PYTHONFAULTHANDLER=1
+                python_exe="$(command -v python)"
+                echo "OPENUSD_DIAG package=openusd-minimal-python python=${python_exe}"
+                echo "OPENUSD_DIAG package=openusd-minimal-python PYTHONPATH=${PYTHONPATH:-}"
+                echo "OPENUSD_DIAG package=openusd-minimal-python PXR_PLUGINPATH_NAME=${PXR_PLUGINPATH_NAME:-}"
+                for module in pxr.Tf pxr.Usd pxr.UsdMtlx; do
+                  echo "OPENUSD_DIAG package=openusd-minimal-python module=${module} import-start"
+                  "${python_exe}" -c "import importlib; print('OPENUSD_DIAG python-start ${module}', flush=True); importlib.import_module('${module}'); print('OPENUSD_DIAG python-ok ${module}', flush=True)"
+                  status="$?"
+                  echo "OPENUSD_DIAG package=openusd-minimal-python module=${module} import-status=${status}"
+                  if [ "${status}" -ne 0 ]; then
+                    echo "OPENUSD_DIAG package=openusd-minimal-python module=${module} lldb-start"
+                    lldb --batch -o run -o "thread backtrace all" -- "${python_exe}" -c "import importlib; importlib.import_module('${module}')"
+                    lldb_status="$?"
+                    echo "OPENUSD_DIAG package=openusd-minimal-python module=${module} lldb-status=${lldb_status}"
+                    exit "${status}"
+                  fi
+                done
+                echo "OPENUSD_DIAG package=openusd-minimal-python combined-import-start"
+                "${python_exe}" -c "from pxr import Tf, Usd, UsdMtlx; assert Usd.GetVersion()[1:] == (26, 5)"
+                status="$?"
+                echo "OPENUSD_DIAG package=openusd-minimal-python combined-import-status=${status}"
+                if [ "${status}" -ne 0 ]; then
+                  echo "OPENUSD_DIAG package=openusd-minimal-python combined-import lldb-start"
+                  lldb --batch -o run -o "thread backtrace all" -- "${python_exe}" -c "from pxr import Tf, Usd, UsdMtlx; assert Usd.GetVersion()[1:] == (26, 5)"
+                  lldb_status="$?"
+                  echo "OPENUSD_DIAG package=openusd-minimal-python combined-import lldb-status=${lldb_status}"
+                  exit "${status}"
+                fi
+          - if: unix
+            then:
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/openusd_consumer
@@ -1255,7 +1294,46 @@ outputs:
               - test -f "$PREFIX/cmake/pxrTargets.cmake"
               - test -d "$PREFIX/lib/python/pxr"
               - test -f "$PREFIX/etc/conda/activate.d/openusd.sh"
+          - if: linux
+            then:
               - export CONDA_PREFIX="$PREFIX" && . "$PREFIX/etc/conda/activate.d/openusd.sh" && python -c "from pxr import Tf, Usd, UsdImagingGL, UsdMtlx; assert Usd.GetVersion()[1:] == (26, 5)"
+          - if: osx
+            then:
+              - |
+                set -u
+                export CONDA_PREFIX="$PREFIX"
+                . "$PREFIX/etc/conda/activate.d/openusd.sh"
+                export PYTHONFAULTHANDLER=1
+                python_exe="$(command -v python)"
+                echo "OPENUSD_DIAG package=openusd python=${python_exe}"
+                echo "OPENUSD_DIAG package=openusd PYTHONPATH=${PYTHONPATH:-}"
+                echo "OPENUSD_DIAG package=openusd PXR_PLUGINPATH_NAME=${PXR_PLUGINPATH_NAME:-}"
+                for module in pxr.Tf pxr.Usd pxr.UsdImagingGL pxr.UsdMtlx; do
+                  echo "OPENUSD_DIAG package=openusd module=${module} import-start"
+                  "${python_exe}" -c "import importlib; print('OPENUSD_DIAG python-start ${module}', flush=True); importlib.import_module('${module}'); print('OPENUSD_DIAG python-ok ${module}', flush=True)"
+                  status="$?"
+                  echo "OPENUSD_DIAG package=openusd module=${module} import-status=${status}"
+                  if [ "${status}" -ne 0 ]; then
+                    echo "OPENUSD_DIAG package=openusd module=${module} lldb-start"
+                    lldb --batch -o run -o "thread backtrace all" -- "${python_exe}" -c "import importlib; importlib.import_module('${module}')"
+                    lldb_status="$?"
+                    echo "OPENUSD_DIAG package=openusd module=${module} lldb-status=${lldb_status}"
+                    exit "${status}"
+                  fi
+                done
+                echo "OPENUSD_DIAG package=openusd combined-import-start"
+                "${python_exe}" -c "from pxr import Tf, Usd, UsdImagingGL, UsdMtlx; assert Usd.GetVersion()[1:] == (26, 5)"
+                status="$?"
+                echo "OPENUSD_DIAG package=openusd combined-import-status=${status}"
+                if [ "${status}" -ne 0 ]; then
+                  echo "OPENUSD_DIAG package=openusd combined-import lldb-start"
+                  lldb --batch -o run -o "thread backtrace all" -- "${python_exe}" -c "from pxr import Tf, Usd, UsdImagingGL, UsdMtlx; assert Usd.GetVersion()[1:] == (26, 5)"
+                  lldb_status="$?"
+                  echo "OPENUSD_DIAG package=openusd combined-import lldb-status=${lldb_status}"
+                  exit "${status}"
+                fi
+          - if: unix
+            then:
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/openusd_consumer
