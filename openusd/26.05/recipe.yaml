@@ -1187,6 +1187,7 @@ outputs:
           - if: osx
             then:
               - |
+                set +e
                 set -u
                 export CONDA_PREFIX="$PREFIX"
                 . "$PREFIX/etc/conda/activate.d/openusd-minimal-python.sh"
@@ -1300,6 +1301,7 @@ outputs:
           - if: osx
             then:
               - |
+                set +e
                 set -u
                 export CONDA_PREFIX="$PREFIX"
                 . "$PREFIX/etc/conda/activate.d/openusd.sh"
