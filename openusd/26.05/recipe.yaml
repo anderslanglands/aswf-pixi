@@ -996,6 +996,9 @@ outputs:
       name: openusd-minimal-lib
     inherit: openusd-minimal-build
     build:
+      skip:
+        - if: openusd_build_set != "minimal-cpp"
+          then: true
       files:
         - lib/libusd_*.so*
         - lib/libusd_*.dylib*
@@ -1053,6 +1056,9 @@ outputs:
       name: openusd-minimal-dev
     inherit: openusd-minimal-build
     build:
+      skip:
+        - if: openusd_build_set != "minimal-cpp"
+          then: true
       files:
         - include/pxr/**
         - pxrConfig.cmake
@@ -1115,6 +1121,9 @@ outputs:
       from: openusd-minimal-build
       run_exports: false
     build:
+      skip:
+        - if: openusd_build_set != "minimal-cpp"
+          then: true
       files:
         - bin/usd*
         - Library/bin/usd*.exe
@@ -1143,6 +1152,9 @@ outputs:
       name: openusd-minimal-python
     inherit: openusd-minimal-python-build
     build:
+      skip:
+        - if: openusd_build_set != "minimal-python"
+          then: true
       string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
       files:
         - "**"
@@ -1200,6 +1212,9 @@ outputs:
       name: openusd
     inherit: openusd-build
     build:
+      skip:
+        - if: openusd_build_set != "full"
+          then: true
       string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
       files:
         - "**"

@@ -63,7 +63,7 @@ jobs:
           echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
 
   build:
-    name: Build ${{ matrix.recipe }} (${{ matrix.platform }})
+    name: Build ${{ matrix.recipe }} (${{ matrix.platform }}, ${{ matrix.partition }})
     needs: prepare
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -100,6 +100,7 @@ jobs:
           RECIPE: ${{ matrix.recipe }}
           PLATFORM: ${{ matrix.platform }}
           BUILD_NUMBER: ${{ matrix.build_number }}
+          VARIANT_ARGS: ${{ matrix.variant_args }}
           OUTPUT_DIR: ${{ steps.package-output.outputs.dir }}
         run: |
           test_mode=native
@@ -121,6 +122,13 @@ jobs:
 
           if [[ -n "$BUILD_NUMBER" ]]; then
             args+=(--build-num "$BUILD_NUMBER")
+          fi
+
+          if [[ -n "$VARIANT_ARGS" ]]; then
+            read -r -a variant_pairs <<< "$VARIANT_ARGS"
+            for variant_pair in "${variant_pairs[@]}"; do
+              args+=(--variant "$variant_pair")
+            done
           fi
 
           if [[ "$PLATFORM" == "win-64" ]]; then
@@ -200,7 +208,7 @@ jobs:
         run: pixi run -- python scripts/publish_packages.py --target "$PUBLISH_TARGET" --root artifacts
 
   smoke:
-    name: Evaluate smoke for ${{ matrix.recipe }} (${{ matrix.platform }}, ${{ inputs.publish_target }}, smoke=${{ inputs.run_smoke_tests }})
+    name: Evaluate smoke for ${{ matrix.recipe }} (${{ matrix.platform }}, ${{ matrix.partition }}, ${{ inputs.publish_target }}, smoke=${{ inputs.run_smoke_tests }})
     if: ${{ inputs.publish_target != 'artifact-only' && inputs.run_smoke_tests }}
     needs:
       - prepare

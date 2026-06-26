@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -197,7 +198,10 @@ class CiMatrixTests(unittest.TestCase):
         self.assertIn("run-name: Build ${{ inputs.recipes }} (${{ inputs.platforms }}, ${{ inputs.publish_target }}, smoke=${{ inputs.run_smoke_tests }})", workflow)
         self.assertIn("name: Prepare ${{ inputs.recipes }} matrix", workflow)
         self.assertIn("name: ${{ inputs.publish_target == 'artifact-only' && format('Skip publish for {0} (artifact-only)', inputs.recipes) || format('Publish {0} to Anaconda ({1})', inputs.recipes, inputs.publish_target) }}", workflow)
-        self.assertIn("name: Evaluate smoke for ${{ matrix.recipe }} (${{ matrix.platform }}, ${{ inputs.publish_target }}, smoke=${{ inputs.run_smoke_tests }})", workflow)
+        self.assertIn("name: Build ${{ matrix.recipe }} (${{ matrix.platform }}, ${{ matrix.partition }})", workflow)
+        self.assertIn("name: Evaluate smoke for ${{ matrix.recipe }} (${{ matrix.platform }}, ${{ matrix.partition }}, ${{ inputs.publish_target }}, smoke=${{ inputs.run_smoke_tests }})", workflow)
+        self.assertIn("VARIANT_ARGS: ${{ matrix.variant_args }}", workflow)
+        self.assertIn("args+=(--variant \"$variant_pair\")", workflow)
         match = re.search(r"(?ms)^      publish_target:\n(?P<body>(?:        .*\n)+)", workflow)
         self.assertIsNotNone(match)
         assert match is not None
@@ -228,6 +232,107 @@ class CiMatrixTests(unittest.TestCase):
             [item["build_number"] for item in result["include"]],
             ["3", "3"],
         )
+
+    def test_read_simple_variant_values_reads_quoted_values(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            recipe = Path(tmp_raw) / "openusd" / "26.05"
+            recipe.mkdir(parents=True)
+            (recipe / "variants.yaml").write_text(
+                "python:\n  - \"3.10\"\n  - \"3.11\"\nopenusd_build_set:\n  - full\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                ci_matrix.read_simple_variant_values(recipe, "python"),
+                ["3.10", "3.11"],
+            )
+
+    def test_openusd_matrix_splits_long_build_partitions(self) -> None:
+        recipe = Path("openusd/26.05")
+        result = ci_matrix.matrix(
+            [recipe],
+            ["linux-64"],
+            {recipe.as_posix(): "4"},
+        )
+
+        self.assertEqual(len(result["include"]), 11)
+        self.assertEqual(
+            [item["partition"] for item in result["include"]],
+            [
+                "minimal-cpp",
+                "minimal-python-py310",
+                "minimal-python-py311",
+                "minimal-python-py312",
+                "minimal-python-py313",
+                "minimal-python-py314",
+                "full-py310",
+                "full-py311",
+                "full-py312",
+                "full-py313",
+                "full-py314",
+            ],
+        )
+        self.assertEqual(result["include"][0]["variant_args"], "openusd_build_set=minimal-cpp")
+        self.assertEqual(
+            result["include"][3]["variant_args"],
+            "openusd_build_set=minimal-python python=3.12",
+        )
+        self.assertEqual(
+            result["include"][-1]["variant_args"],
+            "openusd_build_set=full python=3.14",
+        )
+        self.assertEqual(
+            result["include"][-1]["artifact"],
+            "openusd-26.05-linux-64-full-py314",
+        )
+
+    def test_openusd_partition_variants_render_expected_outputs(self) -> None:
+        rattler_build = shutil.which("rattler-build")
+        if rattler_build is None:
+            self.skipTest("rattler-build is not available on PATH")
+
+        cases = [
+            (["openusd_build_set=minimal-cpp"], ["openusd-minimal-lib", "openusd-minimal-dev", "openusd-minimal-tools"]),
+            (["openusd_build_set=minimal-python", "python=3.12"], ["openusd-minimal-python"]),
+            (["openusd_build_set=full", "python=3.12"], ["openusd"]),
+        ]
+        for variants, expected_names in cases:
+            with self.subTest(variants=variants), tempfile.TemporaryDirectory() as tmp_raw:
+                cmd = [
+                    rattler_build,
+                    "build",
+                    "--recipe",
+                    "openusd/26.05/recipe.yaml",
+                    "--target-platform",
+                    "linux-64",
+                    "--channel",
+                    "https://conda.anaconda.org/anderslanglands",
+                    "--channel",
+                    "conda-forge",
+                    "--channel-priority",
+                    "strict",
+                    "--output-dir",
+                    tmp_raw,
+                    "--package-format",
+                    "conda",
+                    "--test",
+                    "skip",
+                    "--render-only",
+                ]
+                for variant in variants:
+                    cmd.extend(["--variant", variant])
+
+                completed = subprocess.run(
+                    cmd,
+                    cwd=ROOT,
+                    check=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
+                rendered_names = re.findall(r"Build variant: (.+?)-26\.05-", completed.stdout)
+
+                self.assertEqual(rendered_names, expected_names)
 
     def test_resolved_build_numbers_must_cover_requested_recipes(self) -> None:
         with self.assertRaisesRegex(SystemExit, "Missing resolved build number"):

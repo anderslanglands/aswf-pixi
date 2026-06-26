@@ -19,6 +19,8 @@ RUNNERS = {
 
 DEFAULT_PLATFORMS = ["linux-64", "win-64", "osx-arm64"]
 
+OPENUSD_RECIPE = "openusd/26.05"
+
 RECIPE_SUPPORTED_PLATFORMS = {
     "optix-dev": {"linux-64", "win-64"},
 }
@@ -119,6 +121,32 @@ def validate_build_number(value: str) -> None:
         raise SystemExit("Build number must be empty, auto, or a non-negative integer.")
 
 
+def read_simple_variant_values(recipe: Path, key: str) -> list[str]:
+    variants_file = recipe / "variants.yaml"
+    if not variants_file.is_file():
+        raise SystemExit(f"Recipe {recipe} does not contain variants.yaml.")
+
+    values: list[str] = []
+    in_variant = False
+    for line in variants_file.read_text(encoding="utf-8").splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if not line.startswith((" ", "-")):
+            if in_variant:
+                break
+            in_variant = line.rstrip() == f"{key}:"
+            continue
+        if not in_variant:
+            continue
+        match = re.fullmatch(r"\s*-\s*['\"]?([^'\"#]+?)['\"]?\s*(?:#.*)?", line)
+        if match:
+            values.append(match.group(1).strip())
+
+    if not values:
+        raise SystemExit(f"Recipe {recipe} variants.yaml does not define any {key!r} values.")
+    return values
+
+
 def validate_publish_target(value: str) -> None:
     if value not in {"artifact-only", "test-label", "default-label"}:
         raise SystemExit(
@@ -188,15 +216,52 @@ def matrix(
             )
 
         for platform in recipe_platforms:
+            base_item = {
+                "recipe": recipe_key,
+                "package": package,
+                "version": version,
+                "platform": platform,
+                "runner": RUNNERS[platform],
+                "build_number": build_numbers[recipe_key],
+            }
+            if recipe_key == OPENUSD_RECIPE:
+                openusd_python_versions = read_simple_variant_values(recipe, "python")
+                include.append(
+                    {
+                        **base_item,
+                        "partition": "minimal-cpp",
+                        "artifact": f"{package}-{version}-{platform}-minimal-cpp",
+                        "variant_args": "openusd_build_set=minimal-cpp",
+                    }
+                )
+                for python in openusd_python_versions:
+                    python_tag = python.replace(".", "")
+                    include.append(
+                        {
+                            **base_item,
+                            "partition": f"minimal-python-py{python_tag}",
+                            "artifact": f"{package}-{version}-{platform}-minimal-python-py{python_tag}",
+                            "variant_args": f"openusd_build_set=minimal-python python={python}",
+                        }
+                    )
+                for python in openusd_python_versions:
+                    python_tag = python.replace(".", "")
+                    include.append(
+                        {
+                            **base_item,
+                            "partition": f"full-py{python_tag}",
+                            "artifact": f"{package}-{version}-{platform}-full-py{python_tag}",
+                            "variant_args": f"openusd_build_set=full python={python}",
+                        }
+                    )
+                continue
+
             include.append(
                 {
-                    "recipe": recipe_key,
-                    "package": package,
-                    "version": version,
-                    "platform": platform,
-                    "runner": RUNNERS[platform],
+                    **base_item,
+                    "partition": "all",
                     "artifact": f"{package}-{version}-{platform}",
-                    "build_number": build_numbers[recipe_key],
+                    "variant_args": "",
                 }
             )
     return {"include": include}

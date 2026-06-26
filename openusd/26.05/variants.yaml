@@ -4,3 +4,7 @@ python:
   - "3.12"
   - "3.13"
   - "3.14"
+openusd_build_set:
+  - minimal-cpp
+  - minimal-python
+  - full
