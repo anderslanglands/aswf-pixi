@@ -1,0 +1,27 @@
+[workspace]
+name = "shader-slang-2026.12-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.shader-slang-lib.dependencies]
+shader-slang-lib = "==2026.12"
+
+[feature.shader-slang-dev.dependencies]
+shader-slang-dev = "==2026.12"
+
+[feature.shader-slang-tools.dependencies]
+shader-slang-tools = "==2026.12"
+
+[feature.shader-slang.dependencies]
+shader-slang = "==2026.12"
+
+[environments]
+shader-slang-lib = ["shader-slang-lib"]
+shader-slang-dev = ["shader-slang-dev"]
+shader-slang-tools = ["shader-slang-tools"]
+shader-slang = ["shader-slang"]
