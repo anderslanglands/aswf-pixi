@@ -1,0 +1,48 @@
+diff --git a/pxr/pxrConfig.cmake.in b/pxr/pxrConfig.cmake.in
+--- a/pxr/pxrConfig.cmake.in
++++ b/pxr/pxrConfig.cmake.in
+@@ -24,6 +24,32 @@
+ # were set. This can be overridden by specifying different values when
+ # running cmake.
+ if(@PXR_ENABLE_PYTHON_SUPPORT@)
++    set(_pxr_python_prefix "${PXR_CMAKE_DIR}")
++    if(WIN32)
++        get_filename_component(_pxr_python_prefix "${_pxr_python_prefix}/.." ABSOLUTE)
++    endif()
++    if(WIN32 AND EXISTS "${_pxr_python_prefix}/python.exe")
++        set(_pxr_python_executable "${_pxr_python_prefix}/python.exe")
++    elseif(EXISTS "${_pxr_python_prefix}/bin/python")
++        set(_pxr_python_executable "${_pxr_python_prefix}/bin/python")
++    endif()
++
++    if (DEFINED _pxr_python_executable
++            AND NOT DEFINED Python3_EXECUTABLE
++            AND NOT DEFINED Python3_ROOT_DIR)
++        set(Python3_ROOT_DIR "${_pxr_python_prefix}")
++        set(Python3_EXECUTABLE "${_pxr_python_executable}")
++        if (NOT DEFINED Python3_FIND_STRATEGY)
++            set(Python3_FIND_STRATEGY LOCATION)
++        endif()
++        if (NOT DEFINED Python3_FIND_REGISTRY)
++            set(Python3_FIND_REGISTRY NEVER)
++        endif()
++        if (NOT DEFINED Python3_FIND_FRAMEWORK)
++            set(Python3_FIND_FRAMEWORK NEVER)
++        endif()
++    endif()
++
+     if (NOT DEFINED Python3_EXECUTABLE)
+         if (NOT [[@Python3_EXECUTABLE@]] STREQUAL "")
+             set(Python3_EXECUTABLE [[@Python3_EXECUTABLE@]])
+@@ -43,9 +69,9 @@
+     endif()
+ 
+     if (NOT DEFINED Python3_VERSION)
+-        find_dependency(Python3 "@Python3_VERSION@" EXACT COMPONENTS Development)
++        find_dependency(Python3 "@Python3_VERSION@" EXACT COMPONENTS Interpreter Development)
+     else()
+-        find_dependency(Python3 COMPONENTS Development)
++        find_dependency(Python3 COMPONENTS Interpreter Development)
+     endif()
+ endif()
+ 
