@@ -14,6 +14,7 @@ import shutil
 import sys
 from typing import Any, Callable, Iterable
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 
@@ -22,12 +23,15 @@ NUMBERED_TAG_RE = re.compile(r"^v?(?P<number>[0-9]+(?:[._][0-9]+)+)$", re.IGNORE
 GITHUB_REPO_RE = re.compile(r"github\.com[/:](?P<owner>[^/\s]+)/(?P<repo>[^/\s?#]+)")
 CONTEXT_VALUE_RE = re.compile(r"^  (?P<key>[A-Za-z_][A-Za-z0-9_]*):\s*(?P<value>.*?)\s*(?:#.*)?$")
 SOURCE_URL_RE = re.compile(r"(?m)^(\s*url:\s*)(?P<value>.+?)\s*$")
+SOURCE_GIT_RE = re.compile(r"(?m)^\s*git:\s*(?P<value>.+?)\s*$")
+SOURCE_REV_RE = re.compile(r"(?m)^(\s*rev:\s*)(?P<value>[^#\n]*?)(\s*(?:#.*)?)$")
 SOURCE_REPOSITORY_RE = re.compile(r"(?m)^\s*(?:-\s*)?(?:url|git):\s*(?P<value>.+?)\s*$")
 SHA256_RE = re.compile(r"(?m)^(\s*sha256:\s*)([0-9a-fA-F]+)(\s*(?:#.*)?)$")
 BUILD_NUMBER_RE = re.compile(r"(?m)^(\s*build_number:\s*)[0-9]+(\s*(?:#.*)?)$")
 RECIPE_VERSIONS_RE = re.compile(r"(?m)^Recipe versions:(?P<inline>.*)$")
 RECIPE_VERSION_ITEM_RE = re.compile(r"^- `(?P<version>[0-9]+(?:[._][0-9]+)+)`\s*$")
 TEMPLATE_EXPR_RE = re.compile(r"\$\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}")
+TEMPLATE_ONLY_RE = re.compile(r"^\$\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}$")
 README_HEADING_RE = re.compile(r"^##\s+(?P<title>.+?)\s*$")
 
 
@@ -253,6 +257,33 @@ def github_api_pages(repo: str, endpoint: str, token: str | None) -> Iterable[li
         page += 1
 
 
+def github_tag_commit(repo: str, tag: str, token: str | None) -> str:
+    payload = github_request_json(
+        f"{GITHUB_API_ROOT}/repos/{repo}/git/ref/tags/{quote(tag, safe='')}",
+        token,
+    )
+    if not isinstance(payload, dict):
+        raise SystemExit(f"Unexpected GitHub API response shape for {repo} tag {tag}.")
+
+    obj: Any = payload.get("object")
+    for _ in range(5):
+        if not isinstance(obj, dict):
+            raise SystemExit(f"Unexpected GitHub tag object shape for {repo} tag {tag}.")
+        obj_type = obj.get("type")
+        sha = str(obj.get("sha", ""))
+        if obj_type == "commit" and sha:
+            return sha
+        if obj_type == "tag" and sha:
+            tag_payload = github_request_json(f"{GITHUB_API_ROOT}/repos/{repo}/git/tags/{sha}", token)
+            if not isinstance(tag_payload, dict):
+                raise SystemExit(f"Unexpected GitHub annotated tag shape for {repo} tag {tag}.")
+            obj = tag_payload.get("object")
+            continue
+        raise SystemExit(f"GitHub tag {tag} for {repo} points at unsupported object type {obj_type!r}.")
+
+    raise SystemExit(f"GitHub tag {tag} for {repo} did not resolve to a commit.")
+
+
 def release_candidate_from_tag(tag: str, source: str, url: str = "") -> ReleaseCandidate | None:
     version = parse_numbered_tag(tag)
     if version is None:
@@ -373,14 +404,7 @@ def replace_text_in_tree(root: Path, old_version: str, new_version: str, old_tag
             path.write_text(updated, encoding="utf-8")
 
 
-def render_source_url(recipe_file: Path) -> str:
-    recipe_text = recipe_file.read_text(encoding="utf-8")
-    context = parse_context(recipe_text)
-    match = SOURCE_URL_RE.search(recipe_text)
-    if not match:
-        raise SystemExit(f"{recipe_file} does not define source.url.")
-    template = strip_quotes(match.group("value"))
-
+def render_template_value(recipe_file: Path, template: str, context: dict[str, str]) -> str:
     def replace(match: re.Match[str]) -> str:
         key = match.group(1)
         if key not in context:
@@ -388,6 +412,21 @@ def render_source_url(recipe_file: Path) -> str:
         return context[key]
 
     return TEMPLATE_EXPR_RE.sub(replace, template)
+
+
+def render_source_url_if_present(recipe_file: Path) -> str | None:
+    recipe_text = recipe_file.read_text(encoding="utf-8")
+    match = SOURCE_URL_RE.search(recipe_text)
+    if not match:
+        return None
+    return render_template_value(recipe_file, strip_quotes(match.group("value")), parse_context(recipe_text))
+
+
+def render_source_url(recipe_file: Path) -> str:
+    source_url = render_source_url_if_present(recipe_file)
+    if source_url is None:
+        raise SystemExit(f"{recipe_file} does not define source.url.")
+    return source_url
 
 
 def source_sha256(url: str, token: str | None) -> str:
@@ -407,9 +446,55 @@ def source_sha256(url: str, token: str | None) -> str:
     return digest.hexdigest()
 
 
-def update_recipe_sha256(recipe_file: Path, sha256: str) -> None:
+def reset_recipe_build_number(recipe_file: Path) -> None:
     text = recipe_file.read_text(encoding="utf-8")
     text = BUILD_NUMBER_RE.sub(lambda match: f"{match.group(1)}0{match.group(2)}", text, count=1)
+    recipe_file.write_text(text, encoding="utf-8")
+
+
+def format_yaml_scalar_like(existing_value: str, new_value: str) -> str:
+    stripped = existing_value.strip()
+    if len(stripped) >= 2 and stripped[0] == stripped[-1] and stripped[0] in {"'", '"'}:
+        return f"{stripped[0]}{new_value}{stripped[0]}"
+    return new_value
+
+
+def update_context_value(recipe_file: Path, key: str, value: str) -> None:
+    text = recipe_file.read_text(encoding="utf-8")
+    pattern = re.compile(rf"(?m)^(  {re.escape(key)}:\s*)(?P<value>[^#\n]*?)(\s*(?:#.*)?)$")
+    text, count = pattern.subn(
+        lambda match: f"{match.group(1)}{format_yaml_scalar_like(match.group('value'), value)}{match.group(3)}",
+        text,
+        count=1,
+    )
+    if count != 1:
+        raise SystemExit(f"{recipe_file} does not contain context.{key} to update.")
+    recipe_file.write_text(text, encoding="utf-8")
+
+
+def update_recipe_git_rev(recipe_file: Path, commit_sha: str) -> None:
+    text = recipe_file.read_text(encoding="utf-8")
+    match = SOURCE_REV_RE.search(text)
+    if not match:
+        raise SystemExit(f"{recipe_file} does not define source.rev.")
+
+    rev_value = strip_quotes(match.group("value"))
+    template_match = TEMPLATE_ONLY_RE.match(rev_value)
+    if template_match:
+        update_context_value(recipe_file, template_match.group(1), commit_sha)
+        return
+
+    updated = (
+        text[: match.start()]
+        + f"{match.group(1)}{format_yaml_scalar_like(match.group('value'), commit_sha)}{match.group(3)}"
+        + text[match.end() :]
+    )
+    recipe_file.write_text(updated, encoding="utf-8")
+
+
+def update_recipe_sha256(recipe_file: Path, sha256: str) -> None:
+    reset_recipe_build_number(recipe_file)
+    text = recipe_file.read_text(encoding="utf-8")
     text, count = SHA256_RE.subn(
         lambda match: f"{match.group(1)}{sha256}{match.group(3)}",
         text,
@@ -418,6 +503,30 @@ def update_recipe_sha256(recipe_file: Path, sha256: str) -> None:
     if count != 1:
         raise SystemExit(f"{recipe_file} does not contain exactly one sha256 field to update.")
     recipe_file.write_text(text, encoding="utf-8")
+
+
+def update_recipe_source(
+    recipe_file: Path,
+    source: LocalRecipe,
+    release: ReleaseCandidate,
+    token: str | None,
+    sha256_fetcher: Callable[[str, str | None], str],
+    git_ref_resolver: Callable[[str, str, str | None], str],
+) -> str:
+    source_url = render_source_url_if_present(recipe_file)
+    if source_url is not None:
+        source_sha = sha256_fetcher(source_url, token)
+        update_recipe_sha256(recipe_file, source_sha)
+        return source_sha
+
+    recipe_text = recipe_file.read_text(encoding="utf-8")
+    if SOURCE_GIT_RE.search(recipe_text):
+        commit_sha = git_ref_resolver(source.repository, release.tag, token)
+        reset_recipe_build_number(recipe_file)
+        update_recipe_git_rev(recipe_file, commit_sha)
+        return ""
+
+    raise SystemExit(f"{recipe_file} does not define source.url or source.git.")
 
 
 def section_ranges(readme_text: str) -> list[tuple[int, int]]:
@@ -508,6 +617,7 @@ def create_recipe_copy(
     token: str | None,
     apply: bool,
     sha256_fetcher: Callable[[str, str | None], str] = source_sha256,
+    git_ref_resolver: Callable[[str, str, str | None], str] = github_tag_commit,
 ) -> CreatedRecipe:
     source = closest_recipe(local_recipes, release.version)
     destination = root / source.package / release.version.text
@@ -525,9 +635,14 @@ def create_recipe_copy(
             new_tag=release.tag,
         )
         recipe_file = destination / "recipe.yaml"
-        source_url = render_source_url(recipe_file)
-        source_sha = sha256_fetcher(source_url, token)
-        update_recipe_sha256(recipe_file, source_sha)
+        source_sha = update_recipe_source(
+            recipe_file,
+            source,
+            release,
+            token,
+            sha256_fetcher,
+            git_ref_resolver,
+        )
 
     return CreatedRecipe(
         package=source.package,
@@ -574,6 +689,7 @@ def check_upstream_releases(
     apply: bool,
     release_fetcher: Callable[[str, str | None], list[ReleaseCandidate]] = fetch_upstream_releases,
     sha256_fetcher: Callable[[str, str | None], str] = source_sha256,
+    git_ref_resolver: Callable[[str, str, str | None], str] = github_tag_commit,
 ) -> list[CreatedRecipe]:
     recipes_by_package = discover_recipes(root, packages)
     if packages:
@@ -609,6 +725,7 @@ def check_upstream_releases(
                     token,
                     apply=apply,
                     sha256_fetcher=sha256_fetcher,
+                    git_ref_resolver=git_ref_resolver,
                 )
             )
             if apply:

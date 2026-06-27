@@ -67,6 +67,39 @@ class UpstreamReleaseCheckerTests(unittest.TestCase):
 
         self.assertEqual([candidate.version.text for candidate in releases], ["1.2.6"])
 
+    def test_github_tag_commit_resolves_lightweight_and_annotated_tags(self) -> None:
+        original_request = upstream.github_request_json
+        tag_sha = "b" * 40
+        commit_sha = "c" * 40
+        annotated_commit_sha = "d" * 40
+        calls: list[tuple[str, str | None]] = []
+
+        def fake_request(url: str, token: str | None):
+            calls.append((url, token))
+            if url == "https://api.github.com/repos/example/foo/git/ref/tags/v1.2.3":
+                return {"object": {"type": "commit", "sha": commit_sha}}
+            if url == "https://api.github.com/repos/example/foo/git/ref/tags/v1.2.4":
+                return {"object": {"type": "tag", "sha": tag_sha}}
+            if url == f"https://api.github.com/repos/example/foo/git/tags/{tag_sha}":
+                return {"object": {"type": "commit", "sha": annotated_commit_sha}}
+            self.fail(f"unexpected GitHub request: {url}")
+
+        try:
+            upstream.github_request_json = fake_request
+            self.assertEqual(upstream.github_tag_commit("example/foo", "v1.2.3", "token"), commit_sha)
+            self.assertEqual(upstream.github_tag_commit("example/foo", "v1.2.4", "token"), annotated_commit_sha)
+        finally:
+            upstream.github_request_json = original_request
+
+        self.assertEqual(
+            calls,
+            [
+                ("https://api.github.com/repos/example/foo/git/ref/tags/v1.2.3", "token"),
+                ("https://api.github.com/repos/example/foo/git/ref/tags/v1.2.4", "token"),
+                (f"https://api.github.com/repos/example/foo/git/tags/{tag_sha}", "token"),
+            ],
+        )
+
     def test_release_selection_tracks_existing_lines_and_newer_lines_only(self) -> None:
         local_recipes = [
             self.local_recipe("openimageio", "2.5.19.1"),
@@ -193,6 +226,64 @@ source:
             self.assertIn(f"sha256: {'a' * 64}", new_recipe)
             self.assertIn("does not define an about.repository GitHub URL", stderr.getvalue())
             self.assertIn("using source repository example/foo", stderr.getvalue())
+
+    def test_apply_git_source_recipe_updates_rev_context_without_sha256(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            root = Path(tmp_raw)
+            recipe_dir = root / "shader-slang" / "2026.11"
+            recipe_dir.mkdir(parents=True)
+            (recipe_dir / "recipe.yaml").write_text(
+                """context:
+  version: "2026.11"
+  build_number: 7
+  upstream_rev: "1111111111111111111111111111111111111111"
+
+recipe:
+  name: shader-slang
+  version: ${{ version }}
+
+source:
+  git: https://github.com/shader-slang/slang.git
+  rev: ${{ upstream_rev }}
+  submodules: true
+
+about:
+  repository: https://github.com/shader-slang/slang
+""",
+                encoding="utf-8",
+            )
+
+            def fake_releases(repo: str, token: str | None) -> list[upstream.ReleaseCandidate]:
+                self.assertEqual(repo, "shader-slang/slang")
+                self.assertEqual(token, "token")
+                return [release("2026.12")]
+
+            def fake_sha256(url: str, token: str | None) -> str:
+                self.fail("git-source recipes should not fetch source.url sha256")
+
+            def fake_git_ref(repo: str, tag: str, token: str | None) -> str:
+                self.assertEqual(repo, "shader-slang/slang")
+                self.assertEqual(tag, "v2026.12")
+                self.assertEqual(token, "token")
+                return "a7fbf1ab0e9ddd18b0a9eaa675ddc95f63532fee"
+
+            created = upstream.check_upstream_releases(
+                root,
+                packages={"shader-slang"},
+                token="token",
+                apply=True,
+                release_fetcher=fake_releases,
+                sha256_fetcher=fake_sha256,
+                git_ref_resolver=fake_git_ref,
+            )
+
+            self.assertEqual([recipe.recipe for recipe in created], ["shader-slang/2026.12"])
+            new_recipe = (root / "shader-slang" / "2026.12" / "recipe.yaml").read_text(encoding="utf-8")
+            self.assertIn('version: "2026.12"', new_recipe)
+            self.assertIn("build_number: 0", new_recipe)
+            self.assertIn('upstream_rev: "a7fbf1ab0e9ddd18b0a9eaa675ddc95f63532fee"', new_recipe)
+            self.assertIn("rev: ${{ upstream_rev }}", new_recipe)
+            self.assertNotIn("1111111111111111111111111111111111111111", new_recipe)
 
     def test_missing_github_repository_warns_and_skips_recipe(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
