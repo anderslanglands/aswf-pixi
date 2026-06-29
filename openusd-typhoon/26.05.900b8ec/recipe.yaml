@@ -1,0 +1,491 @@
+context:
+  version: "26.05.900b8ec"
+  build_number: 0
+  upstream_branch: typhoon-anders
+  upstream_rev: 900b8ec097e61693efc7b0ae5febbaa4c84b45c4
+
+recipe:
+  name: openusd-typhoon
+  version: ${{ version }}
+
+source:
+  git: https://github.com/NVIDIA-Omniverse/OpenUSD.git
+  rev: ${{ upstream_rev }}
+  patches:
+    - link-python-to-executables.patch
+    - find-prefix-python-in-config.patch
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: openusd-typhoon-build
+    build:
+      script:
+        - if: unix
+          then: |
+            export CXXFLAGS="${CXXFLAGS//-fvisibility-inlines-hidden/}"
+            export CXXFLAGS="${CXXFLAGS//-ffunction-sections/}"
+            export CXXFLAGS="${CXXFLAGS//-pipe/}"
+            export CFLAGS="${CFLAGS//-ffunction-sections/}"
+            export CFLAGS="${CFLAGS//-pipe/}"
+
+            detected_jobs="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)"
+            build_jobs="${OPENUSD_BUILD_PARALLEL_LEVEL:-${CMAKE_BUILD_PARALLEL_LEVEL:-$detected_jobs}}"
+            case "$build_jobs" in
+              ''|*[!0-9]*)
+                echo "OpenUSD build parallelism must be an integer, got '$build_jobs'"
+                exit 1
+                ;;
+            esac
+            if [ "$build_jobs" -lt 1 ]; then
+              echo "OpenUSD build parallelism must be at least 1, got '$build_jobs'"
+              exit 1
+            fi
+            if [ "$build_jobs" -gt 24 ]; then
+              echo "OpenUSD build parallelism capped at 24 from '$build_jobs'"
+              build_jobs=24
+            fi
+            export CMAKE_BUILD_PARALLEL_LEVEL="$build_jobs"
+            echo "OpenUSD build parallelism: $build_jobs"
+
+            py_undefined_dynamic_lookup=OFF
+            case "${target_platform:-}" in
+              osx-*) py_undefined_dynamic_lookup=ON ;;
+            esac
+            echo "OpenUSD Python undefined dynamic lookup: $py_undefined_dynamic_lookup"
+
+            cmake -E rm -rf $SRC_DIR/../build-openusd
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DPXR_BUILD_MONOLITHIC=OFF \
+              -DPXR_ENABLE_PYTHON_SUPPORT=ON \
+              -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=$py_undefined_dynamic_lookup \
+              -DPXR_BUILD_DOCUMENTATION=OFF \
+              -DPXR_BUILD_HTML_DOCUMENTATION=OFF \
+              -DPXR_BUILD_PYTHON_DOCUMENTATION=OFF \
+              -DPXR_BUILD_TESTS=OFF \
+              -DPXR_BUILD_EXAMPLES=OFF \
+              -DPXR_BUILD_TUTORIALS=OFF \
+              -DPXR_BUILD_USD_TOOLS=ON \
+              -DPXR_BUILD_IMAGING=ON \
+              -DPXR_BUILD_USD_IMAGING=ON \
+              -DPXR_BUILD_USD_VALIDATION=ON \
+              -DPXR_BUILD_EXEC=ON \
+              -DPXR_BUILD_USDVIEW=ON \
+              -DPXR_ENABLE_GL_SUPPORT=ON \
+              -DPXR_ENABLE_METAL_SUPPORT=ON \
+              -DPXR_ENABLE_VULKAN_SUPPORT=OFF \
+              -DPXR_BUILD_OPENIMAGEIO_PLUGIN=ON \
+              -DPXR_BUILD_OPENCOLORIO_PLUGIN=ON \
+              -DPXR_BUILD_IMAGEIO_PLUGIN=ON \
+              -DPXR_BUILD_ALEMBIC_PLUGIN=OFF \
+              -DPXR_BUILD_DRACO_PLUGIN=ON \
+              -DPXR_BUILD_PRMAN_PLUGIN=OFF \
+              -DPXR_BUILD_EMBREE_PLUGIN=ON \
+              -DPXR_ENABLE_MATERIALX_SUPPORT=ON \
+              -DPXR_ENABLE_OSL_SUPPORT=OFF \
+              -DPXR_ENABLE_PTEX_SUPPORT=OFF \
+              -DPXR_ENABLE_OPENVDB_SUPPORT=ON \
+              -DPXR_ENABLE_HDF5_SUPPORT=OFF \
+              -DPXR_BUILD_MAYAPY_TESTS=OFF \
+              -DPXR_BUILD_ANIMX_TESTS=OFF \
+              -DPXR_STRICT_BUILD_MODE=OFF \
+              -DPXR_VALIDATE_GENERATED_CODE=OFF \
+              -DPXR_ENABLE_PRECOMPILED_HEADERS=OFF \
+              -DPXR_FIND_TBB_IN_CONFIG=ON \
+              -DTBB_ROOT=$PREFIX \
+              -DTBB_ROOT_DIR=$PREFIX \
+              -DOpenSubdiv_ROOT=$PREFIX \
+              -DOPENSUBDIV_ROOT_DIR=$PREFIX \
+              -DOpenImageIO_ROOT=$PREFIX \
+              -DOIIO_LOCATION=$PREFIX \
+              -DOpenColorIO_ROOT=$PREFIX \
+              -DMaterialX_ROOT=$PREFIX \
+              -DOPENVDB_LOCATION=$PREFIX \
+              -DOpenVDB_ROOT=$PREFIX \
+              -DDRACO_ROOT=$PREFIX \
+              -DEMBREE_LOCATION=$PREFIX \
+              -DOpenQMC_ROOT=$PREFIX \
+              -DPython3_EXECUTABLE=$PYTHON \
+              -DPython3_ROOT_DIR=$PREFIX \
+              -DPython3_FIND_STRATEGY=LOCATION \
+              -DPython3_FIND_REGISTRY=NEVER \
+              -DPython3_FIND_FRAMEWORK=NEVER \
+              -DPXR_PYTHON_SHEBANG=$PYTHON \
+              -B $SRC_DIR/../build-openusd \
+              -S .
+
+            cmake --build $SRC_DIR/../build-openusd --target install --parallel "$build_jobs"
+
+            mkdir -p "$PREFIX/etc/conda/activate.d" "$PREFIX/etc/conda/deactivate.d"
+            cat > "$PREFIX/etc/conda/activate.d/openusd.sh" <<'EOF'
+            if [ -z "${_OPENUSD_PYTHONPATH_SET:-}" ]; then
+              export _OPENUSD_PYTHONPATH_SET=1
+              if [ -n "${PYTHONPATH+x}" ]; then
+                export _OPENUSD_PYTHON_OLD_PYTHONPATH="${PYTHONPATH}"
+                export PYTHONPATH="${CONDA_PREFIX}/lib/python:${PYTHONPATH}"
+              else
+                unset _OPENUSD_PYTHON_OLD_PYTHONPATH
+                export PYTHONPATH="${CONDA_PREFIX}/lib/python"
+              fi
+            fi
+            if [ -z "${_OPENUSD_PLUGINPATH_SET:-}" ]; then
+              export _OPENUSD_PLUGINPATH_SET=1
+              if [ -n "${PXR_PLUGINPATH_NAME+x}" ]; then
+                export _OPENUSD_OLD_PLUGINPATH="${PXR_PLUGINPATH_NAME}"
+                export PXR_PLUGINPATH_NAME="${CONDA_PREFIX}/lib/usd:${PXR_PLUGINPATH_NAME}"
+              else
+                unset _OPENUSD_OLD_PLUGINPATH
+                export PXR_PLUGINPATH_NAME="${CONDA_PREFIX}/lib/usd"
+              fi
+            fi
+            export OPENUSD_PYTHON_ROOT="${CONDA_PREFIX}/lib/python"
+            EOF
+
+            cat > "$PREFIX/etc/conda/deactivate.d/openusd.sh" <<'EOF'
+            if [ -n "${_OPENUSD_PYTHONPATH_SET:-}" ]; then
+              if [ -n "${_OPENUSD_PYTHON_OLD_PYTHONPATH+x}" ]; then
+                export PYTHONPATH="${_OPENUSD_PYTHON_OLD_PYTHONPATH}"
+              else
+                unset PYTHONPATH
+              fi
+              unset _OPENUSD_PYTHONPATH_SET
+              unset _OPENUSD_PYTHON_OLD_PYTHONPATH
+            fi
+            if [ -n "${_OPENUSD_PLUGINPATH_SET:-}" ]; then
+              if [ -n "${_OPENUSD_OLD_PLUGINPATH+x}" ]; then
+                export PXR_PLUGINPATH_NAME="${_OPENUSD_OLD_PLUGINPATH}"
+              else
+                unset PXR_PLUGINPATH_NAME
+              fi
+              unset _OPENUSD_PLUGINPATH_SET
+              unset _OPENUSD_OLD_PLUGINPATH
+            fi
+            unset OPENUSD_PYTHON_ROOT
+            EOF
+        - if: win
+          then: |
+            set "CL=/utf-8 %CL%"
+            set "CXXFLAGS=%CXXFLAGS% /utf-8"
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            setlocal EnableDelayedExpansion
+
+            if "%OPENUSD_BUILD_PARALLEL_LEVEL%"=="" (
+              if "%CMAKE_BUILD_PARALLEL_LEVEL%"=="" (
+                set "BUILD_JOBS=%NUMBER_OF_PROCESSORS%"
+              ) else (
+                set "BUILD_JOBS=%CMAKE_BUILD_PARALLEL_LEVEL%"
+              )
+            ) else (
+              set "BUILD_JOBS=%OPENUSD_BUILD_PARALLEL_LEVEL%"
+            )
+            echo !BUILD_JOBS!| findstr /R "^[1-9][0-9]*$" >nul
+            if errorlevel 1 (
+              echo OpenUSD build parallelism must be an integer, got '!BUILD_JOBS!'
+              exit /b 1
+            )
+            if !BUILD_JOBS! LSS 1 (
+              echo OpenUSD build parallelism must be at least 1, got '!BUILD_JOBS!'
+              exit /b 1
+            )
+            if !BUILD_JOBS! GTR 24 (
+              echo OpenUSD build parallelism capped at 24 from '!BUILD_JOBS!'
+              set "BUILD_JOBS=24"
+            )
+            set "CMAKE_BUILD_PARALLEL_LEVEL=!BUILD_JOBS!"
+            echo OpenUSD build parallelism: !BUILD_JOBS!
+
+            cmake -E rm -rf %SRC_DIR%\..\build-openusd
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DPXR_BUILD_MONOLITHIC=OFF ^
+              -DPXR_ENABLE_PYTHON_SUPPORT=ON ^
+              -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=OFF ^
+              -DPXR_BUILD_DOCUMENTATION=OFF ^
+              -DPXR_BUILD_HTML_DOCUMENTATION=OFF ^
+              -DPXR_BUILD_PYTHON_DOCUMENTATION=OFF ^
+              -DPXR_BUILD_TESTS=OFF ^
+              -DPXR_BUILD_EXAMPLES=OFF ^
+              -DPXR_BUILD_TUTORIALS=OFF ^
+              -DPXR_BUILD_USD_TOOLS=ON ^
+              -DPXR_BUILD_IMAGING=ON ^
+              -DPXR_BUILD_USD_IMAGING=ON ^
+              -DPXR_BUILD_USD_VALIDATION=ON ^
+              -DPXR_BUILD_EXEC=ON ^
+              -DPXR_BUILD_USDVIEW=ON ^
+              -DPXR_ENABLE_GL_SUPPORT=ON ^
+              -DPXR_ENABLE_METAL_SUPPORT=OFF ^
+              -DPXR_ENABLE_VULKAN_SUPPORT=OFF ^
+              -DPXR_BUILD_OPENIMAGEIO_PLUGIN=ON ^
+              -DPXR_BUILD_OPENCOLORIO_PLUGIN=ON ^
+              -DPXR_BUILD_IMAGEIO_PLUGIN=ON ^
+              -DPXR_BUILD_ALEMBIC_PLUGIN=OFF ^
+              -DPXR_BUILD_DRACO_PLUGIN=ON ^
+              -DPXR_BUILD_PRMAN_PLUGIN=OFF ^
+              -DPXR_BUILD_EMBREE_PLUGIN=ON ^
+              -DPXR_ENABLE_MATERIALX_SUPPORT=ON ^
+              -DPXR_ENABLE_OSL_SUPPORT=OFF ^
+              -DPXR_ENABLE_PTEX_SUPPORT=OFF ^
+              -DPXR_ENABLE_OPENVDB_SUPPORT=ON ^
+              -DPXR_ENABLE_HDF5_SUPPORT=OFF ^
+              -DPXR_BUILD_MAYAPY_TESTS=OFF ^
+              -DPXR_BUILD_ANIMX_TESTS=OFF ^
+              -DPXR_STRICT_BUILD_MODE=OFF ^
+              -DPXR_VALIDATE_GENERATED_CODE=OFF ^
+              -DPXR_ENABLE_PRECOMPILED_HEADERS=OFF ^
+              -DPXR_FIND_TBB_IN_CONFIG=ON ^
+              -DTBB_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DTBB_ROOT_DIR=%LIBRARY_PREFIX_FWD% ^
+              -DOpenSubdiv_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DOPENSUBDIV_ROOT_DIR=%LIBRARY_PREFIX_FWD% ^
+              -DOpenImageIO_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DOIIO_LOCATION=%LIBRARY_PREFIX_FWD% ^
+              -DOpenColorIO_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DMaterialX_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DOPENVDB_LOCATION=%LIBRARY_PREFIX_FWD% ^
+              -DOpenVDB_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DDRACO_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DEMBREE_LOCATION=%LIBRARY_PREFIX_FWD% ^
+              -DOpenQMC_ROOT=%LIBRARY_PREFIX_FWD% ^
+              -DPython3_EXECUTABLE=%PYTHON% ^
+              -DPython3_ROOT_DIR=%PREFIX% ^
+              -DPython3_FIND_STRATEGY=LOCATION ^
+              -DPython3_FIND_REGISTRY=NEVER ^
+              -DPython3_FIND_FRAMEWORK=NEVER ^
+              -DPXR_PYTHON_SHEBANG=%PYTHON% ^
+              -B %SRC_DIR%\..\build-openusd ^
+              -S .
+            if %ERRORLEVEL% neq 0 exit /b 1
+
+            cmake --build %SRC_DIR%\..\build-openusd --target install --config Release --parallel !BUILD_JOBS!
+            if %ERRORLEVEL% neq 0 exit /b 1
+
+            rem Normalize generated metadata so rattler-build does not see mixed slash forms of %%PREFIX%%.
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $prefixFwd = $env:PREFIX -replace '\\', '/'; $prefixPattern = (($env:PREFIX -split '\\') | ForEach-Object { [regex]::Escape($_) }) -join '[\\/]'; $files = @(); $config = Join-Path $env:LIBRARY_PREFIX 'pxrConfig.cmake'; if (Test-Path $config) { $files += Get-Item $config }; $cmakeDir = Join-Path $env:LIBRARY_PREFIX 'cmake'; if (Test-Path $cmakeDir) { $files += Get-ChildItem -Path $cmakeDir -Filter '*.cmake' -Recurse -File }; foreach ($file in $files) { $text = [IO.File]::ReadAllText($file.FullName); $text = [regex]::Replace($text, $prefixPattern, $prefixFwd); $text = $text.Replace($prefixFwd + [char]92, $prefixFwd + '/'); [IO.File]::WriteAllText($file.FullName, $text) }"
+
+            if not exist "%PREFIX%\etc\conda\activate.d" mkdir "%PREFIX%\etc\conda\activate.d"
+            if not exist "%PREFIX%\etc\conda\deactivate.d" mkdir "%PREFIX%\etc\conda\deactivate.d"
+            (
+              echo @echo off
+              echo if not defined CONDA_BACKUP_OPENUSD_PATH ^(
+              echo   set "CONDA_BACKUP_OPENUSD_PATH=%%PATH%%"
+              echo   set "PATH=%%CONDA_PREFIX%%\Library\lib;%%PATH%%"
+              echo ^)
+              echo if defined PYTHONPATH ^(
+              echo   set "CONDA_BACKUP_OPENUSD_PYTHONPATH=%%PYTHONPATH%%"
+              echo   set "PYTHONPATH=%%CONDA_PREFIX%%\Library\lib\python;%%PYTHONPATH%%"
+              echo ^) else ^(
+              echo   set "CONDA_BACKUP_OPENUSD_PYTHONPATH="
+              echo   set "PYTHONPATH=%%CONDA_PREFIX%%\Library\lib\python"
+              echo ^)
+              echo if not defined CONDA_OPENUSD_PLUGINPATH_SET ^(
+              echo   set "CONDA_OPENUSD_PLUGINPATH_SET=1"
+              echo   if defined PXR_PLUGINPATH_NAME ^(
+              echo     set "CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME=%%PXR_PLUGINPATH_NAME%%"
+              echo     set "PXR_PLUGINPATH_NAME=%%CONDA_PREFIX%%\Library\lib\usd;%%PXR_PLUGINPATH_NAME%%"
+              echo   ^) else ^(
+              echo     set "CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME="
+              echo     set "PXR_PLUGINPATH_NAME=%%CONDA_PREFIX%%\Library\lib\usd"
+              echo   ^)
+              echo ^)
+              echo set "OPENUSD_PYTHON_ROOT=%%CONDA_PREFIX%%\Library\lib\python"
+            ) > "%PREFIX%\etc\conda\activate.d\openusd.bat"
+            (
+              echo if ^(-not ^(Test-Path Env:CONDA_BACKUP_OPENUSD_PATH^)^) {
+              echo   $env:CONDA_BACKUP_OPENUSD_PATH = $env:PATH
+              echo   $env:PATH = "$env:CONDA_PREFIX\Library\lib;$env:PATH"
+              echo }
+              echo if ^(Test-Path Env:PYTHONPATH^) {
+              echo   $env:CONDA_BACKUP_OPENUSD_PYTHONPATH = $env:PYTHONPATH
+              echo   $env:PYTHONPATH = "$env:CONDA_PREFIX\Library\lib\python;$env:PYTHONPATH"
+              echo } else {
+              echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_PYTHONPATH -ErrorAction SilentlyContinue
+              echo   $env:PYTHONPATH = "$env:CONDA_PREFIX\Library\lib\python"
+              echo }
+              echo if ^(-not ^(Test-Path Env:CONDA_OPENUSD_PLUGINPATH_SET^)^) {
+              echo   $env:CONDA_OPENUSD_PLUGINPATH_SET = "1"
+              echo   if ^(Test-Path Env:PXR_PLUGINPATH_NAME^) {
+              echo     $env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME = $env:PXR_PLUGINPATH_NAME
+              echo     $env:PXR_PLUGINPATH_NAME = "$env:CONDA_PREFIX\Library\lib\usd;$env:PXR_PLUGINPATH_NAME"
+              echo   } else {
+              echo     Remove-Item Env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME -ErrorAction SilentlyContinue
+              echo     $env:PXR_PLUGINPATH_NAME = "$env:CONDA_PREFIX\Library\lib\usd"
+              echo   }
+              echo }
+              echo $env:OPENUSD_PYTHON_ROOT = "$env:CONDA_PREFIX\Library\lib\python"
+            ) > "%PREFIX%\etc\conda\activate.d\openusd.ps1"
+            (
+              echo @echo off
+              echo if defined CONDA_BACKUP_OPENUSD_PATH ^(
+              echo   set "PATH=%%CONDA_BACKUP_OPENUSD_PATH%%"
+              echo ^)
+              echo set "CONDA_BACKUP_OPENUSD_PATH="
+              echo if defined CONDA_BACKUP_OPENUSD_PYTHONPATH ^(
+              echo   set "PYTHONPATH=%%CONDA_BACKUP_OPENUSD_PYTHONPATH%%"
+              echo ^) else ^(
+              echo   set "PYTHONPATH="
+              echo ^)
+              echo set "CONDA_BACKUP_OPENUSD_PYTHONPATH="
+              echo if defined CONDA_OPENUSD_PLUGINPATH_SET ^(
+              echo   if defined CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME ^(
+              echo     set "PXR_PLUGINPATH_NAME=%%CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME%%"
+              echo   ^) else ^(
+              echo     set "PXR_PLUGINPATH_NAME="
+              echo   ^)
+              echo   set "CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME="
+              echo   set "CONDA_OPENUSD_PLUGINPATH_SET="
+              echo ^)
+              echo set "OPENUSD_PYTHON_ROOT="
+            ) > "%PREFIX%\etc\conda\deactivate.d\openusd.bat"
+            (
+              echo if ^(Test-Path Env:CONDA_BACKUP_OPENUSD_PATH^) {
+              echo   $env:PATH = $env:CONDA_BACKUP_OPENUSD_PATH
+              echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_PATH -ErrorAction SilentlyContinue
+              echo }
+              echo if ^(Test-Path Env:CONDA_BACKUP_OPENUSD_PYTHONPATH^) {
+              echo   $env:PYTHONPATH = $env:CONDA_BACKUP_OPENUSD_PYTHONPATH
+              echo   Remove-Item Env:CONDA_BACKUP_OPENUSD_PYTHONPATH -ErrorAction SilentlyContinue
+              echo } else {
+              echo   Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
+              echo }
+              echo if ^(Test-Path Env:CONDA_OPENUSD_PLUGINPATH_SET^) {
+              echo   if ^(Test-Path Env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME^) {
+              echo     $env:PXR_PLUGINPATH_NAME = $env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME
+              echo     Remove-Item Env:CONDA_BACKUP_OPENUSD_PLUGINPATH_NAME -ErrorAction SilentlyContinue
+              echo   } else {
+              echo     Remove-Item Env:PXR_PLUGINPATH_NAME -ErrorAction SilentlyContinue
+              echo   }
+              echo   Remove-Item Env:CONDA_OPENUSD_PLUGINPATH_SET -ErrorAction SilentlyContinue
+              echo }
+              echo Remove-Item Env:OPENUSD_PYTHON_ROOT -ErrorAction SilentlyContinue
+            ) > "%PREFIX%\etc\conda\deactivate.d\openusd.ps1"
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+      host:
+        - blosc
+        - draco
+        - embree 4.4.*
+        - openqmc-dev ==0.7.1
+        - imath-dev 3.2.*
+        - jinja2
+        - libboost-devel
+        - materialx-dev 1.39.*
+        - materialx-render 1.39.*
+        - openimageio-dev 2.5.*
+        - opencolorio-dev 2.5.*
+        - opensubdiv-gpu-dev 3.7.*
+        - openvdb-dev 13.0.*
+        - pyopengl ==3.1.10
+        - pyside6
+        - python
+        - tbb-devel >=2022.3,<2023
+        - zlib
+        - if: linux
+          then:
+            - libegl-devel
+            - libgl-devel
+            - xorg-libx11
+            - xorg-libxext
+            - xorg-xorgproto
+
+  - package:
+      name: openusd-typhoon
+    inherit: openusd-typhoon-build
+    build:
+      string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+      files:
+        - "**"
+    requirements:
+      run:
+        - draco
+        - embree 4.4.*
+        - openqmc-dev ==0.7.1
+        - materialx-dev 1.39.*
+        - materialx-render 1.39.*
+        - openimageio-dev 2.5.*
+        - opencolorio-dev 2.5.*
+        - opensubdiv-gpu-dev 3.7.*
+        - openvdb-dev 13.0.*
+        - pyopengl ==3.1.10
+        - pyside6
+        - python
+        - tbb-devel >=2022.3,<2023
+        - if: linux
+          then:
+            - libgl
+            - xorg-libx11
+            - xorg-libxext
+      run_constraints:
+        - openusd <0a0
+        - openusd-minimal-lib <0a0
+        - openusd-minimal-dev <0a0
+        - openusd-minimal-tools <0a0
+        - openusd-minimal-python <0a0
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openusd-typhoon', upper_bound='x.x') }}
+    tests:
+      - script:
+          - usdcat --help
+          - if: unix
+            then:
+              - test -x "$PREFIX/bin/usdview"
+              - test -f "$PREFIX/pxrConfig.cmake"
+              - test -f "$PREFIX/cmake/pxrTargets.cmake"
+              - test -d "$PREFIX/lib/python/pxr"
+              - test -f "$PREFIX/etc/conda/activate.d/openusd.sh"
+              - export CONDA_PREFIX="$PREFIX" && . "$PREFIX/etc/conda/activate.d/openusd.sh" && python -c "from pxr import Tf, Usd, UsdImagingGL, UsdMtlx; assert Usd.GetVersion()"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/openusd_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_PREFIX%\pxrConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_PREFIX%\cmake\pxrTargets.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\python\pxr" exit /b 1
+              - if not exist "%LIBRARY_BIN%\usdview" if not exist "%LIBRARY_BIN%\usdview.cmd" if not exist "%LIBRARY_BIN%\usdview.exe" exit /b 1
+              - if not exist "%PREFIX%\etc\conda\activate.d\openusd.bat" exit /b 1
+              - set "CONDA_PREFIX=%PREFIX%" && call "%PREFIX%\etc\conda\activate.d\openusd.bat" && python -c "from pxr import Tf, Usd, UsdImagingGL, UsdMtlx; assert Usd.GetVersion()"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\openusd_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openusd_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - python
+
+about:
+  homepage: https://openusd.org
+  repository: https://github.com/NVIDIA-Omniverse/OpenUSD
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: NVIDIA Omniverse Typhoon branch build of Universal Scene Description
+
+extra:
+  allowed_publish_targets:
+    - test-label

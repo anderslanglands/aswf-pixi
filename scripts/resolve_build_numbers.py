@@ -194,6 +194,8 @@ def resolve_build_numbers(
 ) -> dict[str, str]:
     ci_matrix.validate_build_number(requested_build_number)
     ci_matrix.validate_publish_target(target)
+    for recipe in recipes:
+        ci_matrix.validate_recipe_publish_target(recipe, target)
 
     if requested_build_number and requested_build_number != ci_matrix.AUTO_BUILD_NUMBER:
         return {recipe.as_posix(): requested_build_number for recipe in recipes}

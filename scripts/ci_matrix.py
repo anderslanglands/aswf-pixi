@@ -20,6 +20,7 @@ RUNNERS = {
 DEFAULT_PLATFORMS = ["linux-64", "win-64", "osx-arm64"]
 
 OPENUSD_RECIPE = "openusd/26.05"
+OPENUSD_TYPHOON_RECIPE = "openusd-typhoon/26.05.900b8ec"
 
 RECIPE_SUPPORTED_PLATFORMS = {
     "optix-dev": {"linux-64", "win-64"},
@@ -154,6 +155,86 @@ def validate_publish_target(value: str) -> None:
         )
 
 
+def parse_recipe_publish_target(value: str) -> str:
+    value = value.strip()
+    if not value:
+        return value
+    if " #" in value:
+        value = value.split(" #", 1)[0].strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        return value[1:-1]
+    return value
+
+
+def recipe_allowed_publish_targets(recipe: Path) -> set[str] | None:
+    recipe_file = recipe / "recipe.yaml"
+    if not recipe_file.is_file():
+        raise SystemExit(f"Recipe directory {recipe} does not contain recipe.yaml.")
+    values: set[str] | None = None
+    in_extra = False
+    in_allowed_targets = False
+
+    for raw_line in recipe_file.read_text(encoding="utf-8").splitlines():
+        if not raw_line.strip() or raw_line.lstrip().startswith("#"):
+            continue
+
+        indent = len(raw_line) - len(raw_line.lstrip(" "))
+        line = raw_line.strip()
+
+        if indent == 0:
+            key = line.split(":", 1)[0]
+            in_extra = key == "extra"
+            in_allowed_targets = False
+            continue
+
+        if not in_extra:
+            continue
+
+        if indent == 2:
+            key, _, remainder = line.partition(":")
+            in_allowed_targets = key == "allowed_publish_targets"
+            if in_allowed_targets:
+                values = set()
+                remainder = remainder.strip()
+                if " #" in remainder:
+                    remainder = remainder.split(" #", 1)[0].strip()
+                if remainder.startswith("[") and remainder.endswith("]"):
+                    for item in remainder[1:-1].split(","):
+                        parsed = parse_recipe_publish_target(item)
+                        if parsed:
+                            values.add(parsed)
+            continue
+
+        if in_allowed_targets and indent == 4 and line.startswith("- "):
+            assert values is not None
+            parsed = parse_recipe_publish_target(line[2:])
+            if parsed:
+                values.add(parsed)
+
+    return values
+
+
+def validate_recipe_publish_target(recipe: Path, target: str) -> None:
+    allowed = recipe_allowed_publish_targets(recipe)
+    if allowed is None:
+        return
+
+    unknown = sorted(allowed - {"test-label", "default-label"})
+    if unknown:
+        raise SystemExit(
+            f"Recipe {recipe} has unsupported allowed_publish_targets: {', '.join(unknown)}."
+        )
+
+    if target == "artifact-only":
+        return
+
+    if target not in allowed:
+        allowed_targets = ", ".join(sorted(allowed)) or "none"
+        raise SystemExit(
+            f"Recipe {recipe} may only be published to {allowed_targets}; requested {target}."
+        )
+
+
 def parse_resolved_build_numbers(
     value: str,
     recipes: list[Path],
@@ -224,6 +305,20 @@ def matrix(
                 "runner": RUNNERS[platform],
                 "build_number": build_numbers[recipe_key],
             }
+            if recipe_key == OPENUSD_TYPHOON_RECIPE:
+                openusd_python_versions = read_simple_variant_values(recipe, "python")
+                for python in openusd_python_versions:
+                    python_tag = python.replace(".", "")
+                    include.append(
+                        {
+                            **base_item,
+                            "partition": f"py{python_tag}",
+                            "artifact": f"{package}-{version}-{platform}-py{python_tag}",
+                            "variant_args": f"python={python}",
+                        }
+                    )
+                continue
+
             if recipe_key == OPENUSD_RECIPE:
                 openusd_python_versions = read_simple_variant_values(recipe, "python")
                 include.append(
@@ -279,6 +374,8 @@ def main() -> None:
     recipes = parse_recipes(args.recipes)
     platforms = parse_platforms(args.platforms)
     validate_publish_target(args.publish_target)
+    for recipe in recipes:
+        validate_recipe_publish_target(recipe, args.publish_target)
     build_numbers = parse_resolved_build_numbers(
         args.resolved_build_numbers,
         recipes,

@@ -259,6 +259,15 @@ OpenUSD provides Pixar Universal Scene Description libraries, schemas, tools, Py
 - `openusd-minimal-python`: Minimal Python-enabled OpenUSD package containing runtime libraries, development files, tools, and `pxr` Python modules in one package. It uses only MaterialX, OpenSubdiv, TBB, and Python/Jinja dependencies and is mutually exclusive with the non-Python minimal split packages.
 - `openusd`: Full Python-enabled OpenUSD package containing runtime libraries, development files, tools, `pxr` Python modules, USD imaging, `usdview`, GUI dependencies, MaterialX render support, and supported plugins. It is mutually exclusive with all `openusd-minimal-*` packages.
 
+## OpenUSD Typhoon
+
+Recipe versions:
+- `26.05.900b8ec`
+
+OpenUSD Typhoon packages the NVIDIA Omniverse `typhoon-anders` branch at commit `900b8ec` as a test-label-only preview package. Rattler normalizes `+` and `-` separators in versions to `.`, so the version uses `26.05.900b8ec`. Typhoon builds use channels ordered as test label, Anders, then conda-forge with channel priority disabled so dependencies can fall back across labels.
+
+- `openusd-typhoon`: Full Python-enabled OpenUSD package derived from the latest full `openusd` package recipe. It contains runtime libraries, development files, tools, `pxr` Python modules, USD imaging, `usdview`, GUI dependencies, MaterialX render support, OpenQMC-backed hdEmbree support, and supported plugins. It is mutually exclusive with `openusd` and all `openusd-minimal-*` packages. Recipe metadata restricts publishing to `test-label`.
+
 ## OpenShadingLanguage
 
 Recipe versions:

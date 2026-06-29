@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import ci_matrix
+import publish_packages
 import resolve_build_numbers
 import smoke_consumers
 
@@ -201,6 +202,24 @@ class CiMatrixTests(unittest.TestCase):
         self.assertIn("name: Build ${{ matrix.recipe }} (${{ matrix.platform }}, ${{ matrix.partition }})", workflow)
         self.assertIn("name: Evaluate smoke for ${{ matrix.recipe }} (${{ matrix.platform }}, ${{ matrix.partition }}, ${{ inputs.publish_target }}, smoke=${{ inputs.run_smoke_tests }})", workflow)
         self.assertIn("VARIANT_ARGS: ${{ matrix.variant_args }}", workflow)
+        build_step_match = re.search(r"(?ms)^      - name: Build package\n(?P<body>.*?)(?=^      - name: )", workflow)
+        self.assertIsNotNone(build_step_match)
+        assert build_step_match is not None
+        build_step = build_step_match.group("body")
+        pre_typhoon, typhoon_and_rest = build_step.split('if [[ "$RECIPE" == openusd-typhoon/* ]]; then', 1)
+        typhoon_block, post_typhoon = typhoon_and_rest.split("\n          fi", 1)
+        self.assertIn("https://conda.anaconda.org/anderslanglands", pre_typhoon)
+        self.assertIn("conda-forge", pre_typhoon)
+        self.assertIn("channel_priority=strict", pre_typhoon)
+        self.assertNotIn("https://conda.anaconda.org/anderslanglands/label/test", pre_typhoon)
+        self.assertNotIn("channel_priority=disabled", pre_typhoon)
+        self.assertRegex(
+            typhoon_block,
+            r"(?s)https://conda\.anaconda\.org/anderslanglands/label/test.*"
+            r"https://conda\.anaconda\.org/anderslanglands.*conda-forge",
+        )
+        self.assertIn("channel_priority=disabled", typhoon_block)
+        self.assertIn('args+=(--channel "$channel")', post_typhoon)
         self.assertIn("args+=(--variant \"$variant_pair\")", workflow)
         match = re.search(r"(?ms)^      publish_target:\n(?P<body>(?:        .*\n)+)", workflow)
         self.assertIsNotNone(match)
@@ -285,6 +304,241 @@ class CiMatrixTests(unittest.TestCase):
             result["include"][-1]["artifact"],
             "openusd-26.05-linux-64-full-py314",
         )
+
+    def test_openusd_typhoon_matrix_splits_python_variants(self) -> None:
+        recipe = Path("openusd-typhoon/26.05.900b8ec")
+        result = ci_matrix.matrix(
+            [recipe],
+            ["linux-64"],
+            {recipe.as_posix(): "2"},
+        )
+
+        self.assertEqual(
+            [
+                (item["partition"], item["variant_args"], item["artifact"])
+                for item in result["include"]
+            ],
+            [
+                (
+                    "py310",
+                    "python=3.10",
+                    "openusd-typhoon-26.05.900b8ec-linux-64-py310",
+                ),
+                (
+                    "py311",
+                    "python=3.11",
+                    "openusd-typhoon-26.05.900b8ec-linux-64-py311",
+                ),
+                (
+                    "py312",
+                    "python=3.12",
+                    "openusd-typhoon-26.05.900b8ec-linux-64-py312",
+                ),
+                (
+                    "py313",
+                    "python=3.13",
+                    "openusd-typhoon-26.05.900b8ec-linux-64-py313",
+                ),
+                (
+                    "py314",
+                    "python=3.14",
+                    "openusd-typhoon-26.05.900b8ec-linux-64-py314",
+                ),
+            ],
+        )
+
+    def test_openusd_typhoon_root_build_task_uses_relaxed_test_label_channels(self) -> None:
+        manifest = (ROOT / "pixi.toml").read_text(encoding="utf-8")
+
+        self.assertIn(
+            "build-openusd-typhoon-26-05-900b8ec = \"rattler-build build --recipe openusd-typhoon/26.05.900b8ec/recipe.yaml --channel https://conda.anaconda.org/anderslanglands/label/test --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority disabled",
+            manifest,
+        )
+
+    def test_openusd_typhoon_consumer_manifest_uses_relaxed_test_label_channels(self) -> None:
+        manifest = (ROOT / "openusd-typhoon" / "26.05.900b8ec" / "pixi.toml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            """channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]""",
+            manifest,
+        )
+        self.assertIn('channel-priority = "disabled"', manifest)
+
+    def test_openusd_typhoon_recipe_is_test_label_only(self) -> None:
+        recipe = ROOT / "openusd-typhoon" / "26.05.900b8ec"
+        recipe_text = (recipe / "recipe.yaml").read_text(encoding="utf-8")
+
+        self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"test-label"})
+        self.assertEqual(resolve_build_numbers.recipe_package_names(recipe), ["openusd-typhoon"])
+        self.assertIn("upstream_branch: typhoon-anders", recipe_text)
+        self.assertIn("git: https://github.com/NVIDIA-Omniverse/OpenUSD.git", recipe_text)
+        self.assertIn("upstream_rev: 900b8ec097e61693efc7b0ae5febbaa4c84b45c4", recipe_text)
+        self.assertIn("rev: ${{ upstream_rev }}", recipe_text)
+        host_match = re.search(
+            r"(?ms)requirements:\n      build:.*?      host:\n(?P<body>.*?)(?=\n\n  - package:\n      name: openusd-typhoon)",
+            recipe_text,
+        )
+        run_match = re.search(
+            r"(?ms)- package:\n      name: openusd-typhoon.*?requirements:\n      run:\n(?P<body>.*?)(?=\n      run_constraints:)",
+            recipe_text,
+        )
+        self.assertIsNotNone(host_match)
+        self.assertIsNotNone(run_match)
+        assert host_match is not None
+        assert run_match is not None
+        for requirements in [host_match.group("body"), run_match.group("body")]:
+            self.assertIn("        - embree 4.4.*", requirements)
+            self.assertIn("        - openqmc-dev ==0.7.1", requirements)
+            openimageio_requirements = [
+                line.strip()
+                for line in requirements.splitlines()
+                if line.strip().startswith("- openimageio")
+            ]
+            self.assertEqual(openimageio_requirements, ["- openimageio-dev 2.5.*"])
+            self.assertIn("        - pyopengl ==3.1.10", requirements)
+            self.assertNotIn("numpy", requirements)
+        self.assertIn("-DOpenQMC_ROOT=$PREFIX", recipe_text)
+        self.assertIn("-DOpenQMC_ROOT=%LIBRARY_PREFIX_FWD%", recipe_text)
+        self.assertNotIn("openusd_build_set", recipe_text)
+        self.assertNotRegex(recipe_text, r"(?m)^      name: openusd$")
+        self.assertNotRegex(recipe_text, r"name: openusd-minimal")
+
+    def test_openusd_recipes_cap_high_parallelism_instead_of_failing(self) -> None:
+        cases = [
+            (ROOT / "openusd" / "26.05" / "recipe.yaml", 3),
+            (ROOT / "openusd-typhoon" / "26.05.900b8ec" / "recipe.yaml", 1),
+        ]
+
+        for recipe, staging_builds in cases:
+            recipe_text = recipe.read_text(encoding="utf-8")
+            unix_snippets = re.findall(
+                r'(?ms)^            detected_jobs=.*?^            echo "OpenUSD build parallelism: \$build_jobs"$',
+                recipe_text,
+            )
+            self.assertEqual(len(unix_snippets), staging_builds)
+            self.assertEqual(recipe_text.count('--parallel "$build_jobs"'), staging_builds)
+
+            for index, raw_snippet in enumerate(unix_snippets):
+                snippet = "\n".join(
+                    line[12:] if line.startswith(" " * 12) else line
+                    for line in raw_snippet.splitlines()
+                )
+                script = snippet + '\nprintf "RESULT=%s\\n" "$CMAKE_BUILD_PARALLEL_LEVEL"\n'
+                for env_name in ["OPENUSD_BUILD_PARALLEL_LEVEL", "CMAKE_BUILD_PARALLEL_LEVEL"]:
+                    with self.subTest(recipe=recipe.relative_to(ROOT).as_posix(), snippet=index, env=env_name):
+                        env = dict(os.environ)
+                        env.pop("OPENUSD_BUILD_PARALLEL_LEVEL", None)
+                        env.pop("CMAKE_BUILD_PARALLEL_LEVEL", None)
+                        env[env_name] = "64"
+                        completed = subprocess.run(
+                            ["bash", "-e", "-c", script],
+                            env=env,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                        )
+
+                        self.assertEqual(completed.returncode, 0, completed.stderr)
+                        self.assertIn("OpenUSD build parallelism capped at 24 from '64'", completed.stdout)
+                        self.assertIn("OpenUSD build parallelism: 24", completed.stdout)
+                        self.assertIn("RESULT=24", completed.stdout)
+
+            with self.subTest(recipe=recipe.relative_to(ROOT).as_posix(), platform="win"):
+                self.assertNotIn("OpenUSD build parallelism must be between 1 and 24", recipe_text)
+                self.assertEqual(recipe_text.count("setlocal EnableDelayedExpansion"), staging_builds)
+                self.assertEqual(recipe_text.count("if !BUILD_JOBS! GTR 24 ("), staging_builds)
+                self.assertEqual(recipe_text.count('set "BUILD_JOBS=24"'), staging_builds)
+                self.assertEqual(recipe_text.count('set "CMAKE_BUILD_PARALLEL_LEVEL=!BUILD_JOBS!"'), staging_builds)
+                self.assertEqual(recipe_text.count("--parallel !BUILD_JOBS!"), staging_builds)
+
+    def test_recipe_publish_policy_allows_test_label_and_artifact_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            recipe = Path(tmp_raw) / "preview" / "1.0.0"
+            recipe.mkdir(parents=True)
+            (recipe / "recipe.yaml").write_text(
+                """recipe:
+  name: preview
+  version: 1.0.0
+
+extra:
+  allowed_publish_targets: ["test-label"] # preview-only package
+""",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"test-label"})
+            ci_matrix.validate_recipe_publish_target(recipe, "test-label")
+            ci_matrix.validate_recipe_publish_target(recipe, "artifact-only")
+            with self.assertRaisesRegex(SystemExit, "may only be published to test-label"):
+                ci_matrix.validate_recipe_publish_target(recipe, "default-label")
+
+    def test_recipe_publish_policy_rejects_unknown_targets(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            recipe = Path(tmp_raw) / "preview" / "1.0.0"
+            recipe.mkdir(parents=True)
+            (recipe / "recipe.yaml").write_text(
+                """recipe:
+  name: preview
+  version: 1.0.0
+
+extra:
+  allowed_publish_targets:
+    - test-label
+    - "staging-label" # unsupported target
+""",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(SystemExit, "unsupported allowed_publish_targets: staging-label"):
+                ci_matrix.validate_recipe_publish_target(recipe, "test-label")
+
+    def test_ci_matrix_cli_rejects_default_label_disallowed_by_recipe(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            recipe = tmp / "preview" / "1.0.0"
+            recipe.mkdir(parents=True)
+            (recipe / "recipe.yaml").write_text(
+                """recipe:
+  name: preview
+  version: 1.0.0
+
+extra:
+  allowed_publish_targets:
+    - test-label
+""",
+                encoding="utf-8",
+            )
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "ci_matrix.py"),
+                    "--recipes",
+                    "preview/1.0.0",
+                    "--platforms",
+                    "linux-64",
+                    "--build-number",
+                    "4",
+                    "--publish-target",
+                    "default-label",
+                ],
+                cwd=tmp,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn(
+                "Recipe preview/1.0.0 may only be published to test-label; requested default-label.",
+                completed.stderr,
+            )
 
     def test_openusd_partition_variants_render_expected_outputs(self) -> None:
         rattler_build = shutil.which("rattler-build")
@@ -651,6 +905,29 @@ outputs:
             self.assertEqual(json.loads(completed.stdout), {"foo/1.0.0": "7", "foo/1.1.0": "7"})
 
 
+    def test_resolve_build_numbers_rejects_default_label_disallowed_by_recipe(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            recipe = self.make_recipe(Path(tmp_raw))
+            with (recipe / "recipe.yaml").open("a", encoding="utf-8") as handle:
+                handle.write("""
+extra:
+  allowed_publish_targets:
+    - test-label
+""")
+
+            def fail_fetch(_: str) -> list[dict[str, object]]:
+                raise AssertionError("publish policy should reject before network lookup")
+
+            with self.assertRaisesRegex(SystemExit, "may only be published to test-label"):
+                resolve_build_numbers.resolve_build_numbers(
+                    [recipe],
+                    ["linux-64"],
+                    "default-label",
+                    "",
+                    fail_fetch,
+                )
+
+
     def test_explicit_build_number_resolver_cli_does_not_need_network(self) -> None:
         completed = subprocess.run(
             [
@@ -760,7 +1037,170 @@ outputs:
             )
 
 
+class PublishPackagesTests(unittest.TestCase):
+    @staticmethod
+    def make_typhoon_artifacts(tmp: Path) -> Path:
+        artifact_dir = tmp / "artifacts" / "job" / "linux-64"
+        artifact_dir.mkdir(parents=True)
+        package = artifact_dir / "openusd-typhoon-26.05.900b8ec-py312h123_0.conda"
+        package.write_bytes(b"placeholder")
+        manifest = tmp / "artifacts" / "job" / "manifest.json"
+        manifest.write_text(
+            json.dumps(
+                {
+                    "recipe": "openusd-typhoon/26.05.900b8ec",
+                    "platform": "linux-64",
+                    "packages": [
+                        {
+                            "path": "linux-64/openusd-typhoon-26.05.900b8ec-py312h123_0.conda",
+                            "file_name": "openusd-typhoon-26.05.900b8ec-py312h123_0.conda",
+                            "subdir": "linux-64",
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        return package
+
+    def test_package_paths_rejects_default_label_disallowed_by_recipe(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            recipe = tmp / "preview" / "1.0.0"
+            recipe.mkdir(parents=True)
+            (recipe / "recipe.yaml").write_text(
+                """recipe:
+  name: preview
+  version: 1.0.0
+
+extra:
+  allowed_publish_targets:
+    - test-label
+""",
+                encoding="utf-8",
+            )
+            artifact_dir = tmp / "artifacts" / "job" / "linux-64"
+            artifact_dir.mkdir(parents=True)
+            package = artifact_dir / "preview-1.0.0-h123_0.conda"
+            package.write_bytes(b"placeholder")
+            manifest = tmp / "artifacts" / "job" / "manifest.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "recipe": "preview/1.0.0",
+                        "platform": "linux-64",
+                        "packages": [
+                            {
+                                "path": "linux-64/preview-1.0.0-h123_0.conda",
+                                "file_name": "preview-1.0.0-h123_0.conda",
+                                "subdir": "linux-64",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            cwd = Path.cwd()
+            try:
+                os.chdir(tmp)
+                self.assertEqual(publish_packages.package_paths(tmp / "artifacts", "test-label"), [package])
+                with self.assertRaisesRegex(SystemExit, "may only be published to test-label"):
+                    publish_packages.package_paths(tmp / "artifacts", "default-label")
+            finally:
+                os.chdir(cwd)
+
+    def test_publish_packages_cli_allows_real_typhoon_recipe_to_test_label(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            package = self.make_typhoon_artifacts(tmp)
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/publish_packages.py",
+                    "--target",
+                    "test-label",
+                    "--root",
+                    str(tmp / "artifacts"),
+                    "--dry-run",
+                ],
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn("--channel test", completed.stdout)
+            self.assertNotIn("--channel main", completed.stdout)
+            self.assertIn(str(package), completed.stdout)
+
+    def test_publish_packages_cli_rejects_default_label_for_real_typhoon_recipe(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            self.make_typhoon_artifacts(tmp)
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/publish_packages.py",
+                    "--target",
+                    "default-label",
+                    "--root",
+                    str(tmp / "artifacts"),
+                    "--dry-run",
+                ],
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn(
+                "Recipe openusd-typhoon/26.05.900b8ec may only be published to test-label; requested default-label.",
+                completed.stderr,
+            )
+
+
 class SmokeConsumersTests(unittest.TestCase):
+    def test_channel_priority_for_recipe_relaxes_openusd_typhoon_only(self) -> None:
+        self.assertEqual(
+            smoke_consumers.channel_priority_for_recipe(Path("openusd-typhoon/26.05.900b8ec")),
+            "disabled",
+        )
+        self.assertEqual(smoke_consumers.channel_priority_for_recipe(Path("openusd/26.05")), "strict")
+        self.assertEqual(smoke_consumers.channel_priority_for_recipe(Path("openusd-typhoon")), "strict")
+
+    def test_write_manifest_uses_requested_channel_priority(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            manifest = Path(tmp_raw) / "pixi.toml"
+
+            smoke_consumers.write_manifest(
+                manifest,
+                {"name": "openusd-typhoon", "version": "26.05.900b8ec", "build": "py312h123_0"},
+                "linux-64",
+                [
+                    "https://conda.anaconda.org/anderslanglands/label/test",
+                    "https://conda.anaconda.org/anderslanglands",
+                    "conda-forge",
+                ],
+                "disabled",
+                False,
+            )
+
+            rendered = manifest.read_text(encoding="utf-8")
+            self.assertIn(
+                """channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]""",
+                rendered,
+            )
+            self.assertIn('channel-priority = "disabled"', rendered)
+
     def test_run_cmake_consumer_runs_ctest_after_build(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
             tmp = Path(tmp_raw)

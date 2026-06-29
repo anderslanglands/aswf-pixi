@@ -48,11 +48,18 @@ def channels_for_target(target: str, local_channel: str | None) -> list[str]:
     return CHANNELS[target]
 
 
+def channel_priority_for_recipe(recipe: Path) -> str:
+    if len(recipe.parts) >= 2 and recipe.parts[-2] == "openusd-typhoon":
+        return "disabled"
+    return "strict"
+
+
 def write_manifest(
     path: Path,
     package: dict[str, object],
     platform: str,
     channels: list[str],
+    channel_priority: str,
     run_cmake_consumer: bool,
 ) -> None:
     channel_lines = "\n".join(f'  "{channel}",' for channel in channels)
@@ -67,7 +74,7 @@ channels = [
 {channel_lines}
 ]
 platforms = ["{platform}"]
-channel-priority = "strict"
+channel-priority = "{channel_priority}"
 
 [dependencies]
 {package['name']} = {{ version = "=={package['version']}", build = "{package['build']}" }}{extra_deps}
@@ -328,12 +335,13 @@ def main() -> None:
     artifact_manifest = load_artifact_manifest(Path(args.artifact_manifest), recipe, args.platform)
     root_package = recipe.parts[-2]
     channels = channels_for_target(args.target, args.local_channel)
+    channel_priority = channel_priority_for_recipe(recipe)
     for package in artifact_manifest["packages"]:
         tmp = Path(tempfile.mkdtemp(prefix=f"{package['name']}-{package['version']}-smoke-"))
         try:
             run_consumer = package_needs_consumer_test(root_package, package, recipe)
             manifest = tmp / "pixi.toml"
-            write_manifest(manifest, package, args.platform, channels, run_consumer)
+            write_manifest(manifest, package, args.platform, channels, channel_priority, run_consumer)
             pixi("install", "--manifest-path", str(manifest))
             check_installed_package(manifest, package, target=args.target, local_channel=args.local_channel)
             if root_package == "optix-dev" and package["name"] == "optix-dev" and args.platform == "win-64":

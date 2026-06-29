@@ -9,6 +9,8 @@ import os
 import subprocess
 from pathlib import Path
 
+import ci_matrix
+
 
 CHANNELS = {
     "test-label": "test",
@@ -16,7 +18,7 @@ CHANNELS = {
 }
 
 
-def package_paths(root: Path) -> list[Path]:
+def package_paths(root: Path, target: str) -> list[Path]:
     paths: list[Path] = []
     seen: set[tuple[str, str]] = set()
     manifests = sorted(root.rglob("manifest.json"))
@@ -25,6 +27,11 @@ def package_paths(root: Path) -> list[Path]:
 
     for manifest_path in manifests:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        recipe = Path(str(manifest.get("recipe", "")))
+        if recipe.is_absolute() or ".." in recipe.parts or len(recipe.parts) != 2:
+            raise SystemExit(f"Unsafe recipe path in {manifest_path}: {recipe}")
+        ci_matrix.validate_recipe_publish_target(recipe, target)
+
         for package in manifest.get("packages", []):
             rel_path = Path(package["path"])
             if rel_path.is_absolute() or ".." in rel_path.parts:
@@ -56,7 +63,7 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    packages = package_paths(Path(args.root))
+    packages = package_paths(Path(args.root), args.target)
 
     if not args.dry_run and not os.environ.get("ANACONDA_API_KEY"):
         raise SystemExit("ANACONDA_API_KEY is not set.")

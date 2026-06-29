@@ -37,9 +37,13 @@ outputs:
                 exit 1
                 ;;
             esac
-            if [ "$build_jobs" -lt 1 ] || [ "$build_jobs" -gt 24 ]; then
-              echo "OpenUSD build parallelism must be between 1 and 24, got '$build_jobs'"
+            if [ "$build_jobs" -lt 1 ]; then
+              echo "OpenUSD build parallelism must be at least 1, got '$build_jobs'"
               exit 1
+            fi
+            if [ "$build_jobs" -gt 24 ]; then
+              echo "OpenUSD build parallelism capped at 24 from '$build_jobs'"
+              build_jobs=24
             fi
             export CMAKE_BUILD_PARALLEL_LEVEL="$build_jobs"
             echo "OpenUSD build parallelism: $build_jobs"
@@ -127,6 +131,7 @@ outputs:
             set "CL=/utf-8 %CL%"
             set "CXXFLAGS=%CXXFLAGS% /utf-8"
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            setlocal EnableDelayedExpansion
 
             if "%OPENUSD_BUILD_PARALLEL_LEVEL%"=="" (
               if "%CMAKE_BUILD_PARALLEL_LEVEL%"=="" (
@@ -137,18 +142,21 @@ outputs:
             ) else (
               set "BUILD_JOBS=%OPENUSD_BUILD_PARALLEL_LEVEL%"
             )
-            echo %BUILD_JOBS%| findstr /R "^[1-9][0-9]*$" >nul
+            echo !BUILD_JOBS!| findstr /R "^[1-9][0-9]*$" >nul
             if errorlevel 1 (
-              echo OpenUSD build parallelism must be an integer, got '%BUILD_JOBS%'
+              echo OpenUSD build parallelism must be an integer, got '!BUILD_JOBS!'
               exit /b 1
             )
-            if %BUILD_JOBS% LSS 1 exit /b 1
-            if %BUILD_JOBS% GTR 24 (
-              echo OpenUSD build parallelism must be between 1 and 24, got '%BUILD_JOBS%'
+            if !BUILD_JOBS! LSS 1 (
+              echo OpenUSD build parallelism must be at least 1, got '!BUILD_JOBS!'
               exit /b 1
             )
-            set "CMAKE_BUILD_PARALLEL_LEVEL=%BUILD_JOBS%"
-            echo OpenUSD build parallelism: %BUILD_JOBS%
+            if !BUILD_JOBS! GTR 24 (
+              echo OpenUSD build parallelism capped at 24 from '!BUILD_JOBS!'
+              set "BUILD_JOBS=24"
+            )
+            set "CMAKE_BUILD_PARALLEL_LEVEL=!BUILD_JOBS!"
+            echo OpenUSD build parallelism: !BUILD_JOBS!
 
             cmake -E rm -rf %SRC_DIR%\..\build-minimal
 
@@ -204,7 +212,7 @@ outputs:
               -S .
             if %ERRORLEVEL% neq 0 exit /b 1
 
-            cmake --build %SRC_DIR%\..\build-minimal --target install --config Release --parallel %BUILD_JOBS%
+            cmake --build %SRC_DIR%\..\build-minimal --target install --config Release --parallel !BUILD_JOBS!
             if %ERRORLEVEL% neq 0 exit /b 1
 
             rem Normalize generated metadata so rattler-build does not see mixed slash forms of %%PREFIX%%.
@@ -307,9 +315,13 @@ outputs:
                 exit 1
                 ;;
             esac
-            if [ "$build_jobs" -lt 1 ] || [ "$build_jobs" -gt 24 ]; then
-              echo "OpenUSD build parallelism must be between 1 and 24, got '$build_jobs'"
+            if [ "$build_jobs" -lt 1 ]; then
+              echo "OpenUSD build parallelism must be at least 1, got '$build_jobs'"
               exit 1
+            fi
+            if [ "$build_jobs" -gt 24 ]; then
+              echo "OpenUSD build parallelism capped at 24 from '$build_jobs'"
+              build_jobs=24
             fi
             export CMAKE_BUILD_PARALLEL_LEVEL="$build_jobs"
             echo "OpenUSD build parallelism: $build_jobs"
@@ -431,6 +443,7 @@ outputs:
             set "CL=/utf-8 %CL%"
             set "CXXFLAGS=%CXXFLAGS% /utf-8"
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            setlocal EnableDelayedExpansion
 
             if "%OPENUSD_BUILD_PARALLEL_LEVEL%"=="" (
               if "%CMAKE_BUILD_PARALLEL_LEVEL%"=="" (
@@ -441,18 +454,21 @@ outputs:
             ) else (
               set "BUILD_JOBS=%OPENUSD_BUILD_PARALLEL_LEVEL%"
             )
-            echo %BUILD_JOBS%| findstr /R "^[1-9][0-9]*$" >nul
+            echo !BUILD_JOBS!| findstr /R "^[1-9][0-9]*$" >nul
             if errorlevel 1 (
-              echo OpenUSD build parallelism must be an integer, got '%BUILD_JOBS%'
+              echo OpenUSD build parallelism must be an integer, got '!BUILD_JOBS!'
               exit /b 1
             )
-            if %BUILD_JOBS% LSS 1 exit /b 1
-            if %BUILD_JOBS% GTR 24 (
-              echo OpenUSD build parallelism must be between 1 and 24, got '%BUILD_JOBS%'
+            if !BUILD_JOBS! LSS 1 (
+              echo OpenUSD build parallelism must be at least 1, got '!BUILD_JOBS!'
               exit /b 1
             )
-            set "CMAKE_BUILD_PARALLEL_LEVEL=%BUILD_JOBS%"
-            echo OpenUSD build parallelism: %BUILD_JOBS%
+            if !BUILD_JOBS! GTR 24 (
+              echo OpenUSD build parallelism capped at 24 from '!BUILD_JOBS!'
+              set "BUILD_JOBS=24"
+            )
+            set "CMAKE_BUILD_PARALLEL_LEVEL=!BUILD_JOBS!"
+            echo OpenUSD build parallelism: !BUILD_JOBS!
 
             cmake -E rm -rf %SRC_DIR%\..\build-minimal-python
 
@@ -515,7 +531,7 @@ outputs:
               -S .
             if %ERRORLEVEL% neq 0 exit /b 1
 
-            cmake --build %SRC_DIR%\..\build-minimal-python --target install --config Release --parallel %BUILD_JOBS%
+            cmake --build %SRC_DIR%\..\build-minimal-python --target install --config Release --parallel !BUILD_JOBS!
             if %ERRORLEVEL% neq 0 exit /b 1
 
             rem Normalize generated metadata so rattler-build does not see mixed slash forms of %%PREFIX%%.
@@ -650,9 +666,13 @@ outputs:
                 exit 1
                 ;;
             esac
-            if [ "$build_jobs" -lt 1 ] || [ "$build_jobs" -gt 24 ]; then
-              echo "OpenUSD build parallelism must be between 1 and 24, got '$build_jobs'"
+            if [ "$build_jobs" -lt 1 ]; then
+              echo "OpenUSD build parallelism must be at least 1, got '$build_jobs'"
               exit 1
+            fi
+            if [ "$build_jobs" -gt 24 ]; then
+              echo "OpenUSD build parallelism capped at 24 from '$build_jobs'"
+              build_jobs=24
             fi
             export CMAKE_BUILD_PARALLEL_LEVEL="$build_jobs"
             echo "OpenUSD build parallelism: $build_jobs"
@@ -782,6 +802,7 @@ outputs:
             set "CL=/utf-8 %CL%"
             set "CXXFLAGS=%CXXFLAGS% /utf-8"
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            setlocal EnableDelayedExpansion
 
             if "%OPENUSD_BUILD_PARALLEL_LEVEL%"=="" (
               if "%CMAKE_BUILD_PARALLEL_LEVEL%"=="" (
@@ -792,18 +813,21 @@ outputs:
             ) else (
               set "BUILD_JOBS=%OPENUSD_BUILD_PARALLEL_LEVEL%"
             )
-            echo %BUILD_JOBS%| findstr /R "^[1-9][0-9]*$" >nul
+            echo !BUILD_JOBS!| findstr /R "^[1-9][0-9]*$" >nul
             if errorlevel 1 (
-              echo OpenUSD build parallelism must be an integer, got '%BUILD_JOBS%'
+              echo OpenUSD build parallelism must be an integer, got '!BUILD_JOBS!'
               exit /b 1
             )
-            if %BUILD_JOBS% LSS 1 exit /b 1
-            if %BUILD_JOBS% GTR 24 (
-              echo OpenUSD build parallelism must be between 1 and 24, got '%BUILD_JOBS%'
+            if !BUILD_JOBS! LSS 1 (
+              echo OpenUSD build parallelism must be at least 1, got '!BUILD_JOBS!'
               exit /b 1
             )
-            set "CMAKE_BUILD_PARALLEL_LEVEL=%BUILD_JOBS%"
-            echo OpenUSD build parallelism: %BUILD_JOBS%
+            if !BUILD_JOBS! GTR 24 (
+              echo OpenUSD build parallelism capped at 24 from '!BUILD_JOBS!'
+              set "BUILD_JOBS=24"
+            )
+            set "CMAKE_BUILD_PARALLEL_LEVEL=!BUILD_JOBS!"
+            echo OpenUSD build parallelism: !BUILD_JOBS!
 
             cmake -E rm -rf %SRC_DIR%\..\build-openusd
 
@@ -873,7 +897,7 @@ outputs:
               -S .
             if %ERRORLEVEL% neq 0 exit /b 1
 
-            cmake --build %SRC_DIR%\..\build-openusd --target install --config Release --parallel %BUILD_JOBS%
+            cmake --build %SRC_DIR%\..\build-openusd --target install --config Release --parallel !BUILD_JOBS!
             if %ERRORLEVEL% neq 0 exit /b 1
 
             rem Normalize generated metadata so rattler-build does not see mixed slash forms of %%PREFIX%%.

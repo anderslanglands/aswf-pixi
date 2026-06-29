@@ -1,0 +1,12 @@
+[workspace]
+name = "openusd-typhoon-26.05.900b8ec-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "disabled"
+
+[dependencies]
+openusd-typhoon = "==26.05.900b8ec"

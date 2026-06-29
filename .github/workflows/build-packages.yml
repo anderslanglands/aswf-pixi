@@ -108,13 +108,30 @@ jobs:
             test_mode=skip
           fi
 
+          channels=(
+            https://conda.anaconda.org/anderslanglands
+            conda-forge
+          )
+          channel_priority=strict
+          if [[ "$RECIPE" == openusd-typhoon/* ]]; then
+            channels=(
+              https://conda.anaconda.org/anderslanglands/label/test
+              https://conda.anaconda.org/anderslanglands
+              conda-forge
+            )
+            channel_priority=disabled
+          fi
+
           args=(
             rattler-build build
             --recipe "$RECIPE/recipe.yaml"
             --target-platform "$PLATFORM"
-            --channel https://conda.anaconda.org/anderslanglands
-            --channel conda-forge
-            --channel-priority strict
+          )
+          for channel in "${channels[@]}"; do
+            args+=(--channel "$channel")
+          done
+          args+=(
+            --channel-priority "$channel_priority"
             --output-dir "$OUTPUT_DIR"
             --package-format conda
             --test "$test_mode"
