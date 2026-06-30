@@ -213,6 +213,7 @@ SeExpr is an embeddable expression evaluation engine for graphics applications.
 Recipe versions:
 - `2026.11`
 - `2026.12`
+- `2026.12.1`
 
 Shader Slang is a shading language and compiler for real-time graphics, with code generation for APIs such as Vulkan, Direct3D, Metal, CUDA, and CPU-oriented workflows.
 
