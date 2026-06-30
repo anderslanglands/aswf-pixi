@@ -20,7 +20,7 @@ RUNNERS = {
 DEFAULT_PLATFORMS = ["linux-64", "win-64", "osx-arm64"]
 
 OPENUSD_RECIPE = "openusd/26.05"
-OPENUSD_TYPHOON_RECIPE = "openusd-typhoon/26.05.3be04db"
+OPENUSD_TYPHOON_RECIPE = "openusd-typhoon/26.05.0beaac8"
 
 RECIPE_SUPPORTED_PLATFORMS = {
     "optix-dev": {"linux-64", "win-64"},
