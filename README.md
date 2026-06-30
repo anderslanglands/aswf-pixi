@@ -263,9 +263,9 @@ OpenUSD provides Pixar Universal Scene Description libraries, schemas, tools, Py
 ## OpenUSD Typhoon
 
 Recipe versions:
-- `26.05.900b8ec`
+- `26.05.3be04db`
 
-OpenUSD Typhoon packages the NVIDIA Omniverse `typhoon-anders` branch at commit `900b8ec` as a test-label-only preview package. Rattler normalizes `+` and `-` separators in versions to `.`, so the version uses `26.05.900b8ec`. Typhoon builds use channels ordered as test label, Anders, then conda-forge with channel priority disabled so dependencies can fall back across labels.
+OpenUSD Typhoon packages the NVIDIA Omniverse `typhoon-anders` branch at commit `3be04db59` as a test-label-only preview package. Rattler normalizes `+` and `-` separators in versions to `.`, so the version uses `26.05.3be04db`. Typhoon builds use channels ordered as test label, Anders, then conda-forge with channel priority disabled so dependencies can fall back across labels.
 
 - `openusd-typhoon`: Full Python-enabled OpenUSD package derived from the latest full `openusd` package recipe. It contains runtime libraries, development files, tools, `pxr` Python modules, USD imaging, `usdview`, GUI dependencies, MaterialX render support, OpenQMC-backed hdEmbree support, and supported plugins. It is mutually exclusive with `openusd` and all `openusd-minimal-*` packages. Recipe metadata restricts publishing to `test-label`.
 
