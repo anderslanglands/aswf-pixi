@@ -228,6 +228,7 @@ Shader Slang is a shading language and compiler for real-time graphics, with cod
 Recipe versions:
 - `2.5.19.1`
 - `3.0.19.1`
+- `3.0.20.0`
 - `3.1.14.0`
 - `3.1.14.1`
 
