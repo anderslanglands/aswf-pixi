@@ -1,0 +1,1284 @@
+context:
+  version: "3.1.15.0"
+  build_number: 0
+
+recipe:
+  name: openimageio
+  version: ${{ version }}
+
+source:
+  url: https://github.com/AcademySoftwareFoundation/OpenImageIO/releases/download/v${{ version }}/OpenImageIO-${{ version }}.tar.gz
+  sha256: 2c17eb34aa9d645629caf26a1c90e14556ae558f429e1ff6f0e41fbe4c80d42e
+  patches:
+    - patches/cmake-4-private-plugin-linking.patch
+    - patches/heif-plugin-init-symbol.patch
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: openimageio-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DOIIO_BUILD_TESTS=OFF \
+              -DOIIO_BUILD_TOOLS=OFF \
+              -DBUILD_DOCS=OFF \
+              -DINSTALL_DOCS=OFF \
+              -DINSTALL_FONTS=OFF \
+              -DEMBEDPLUGINS=ON \
+              -DPLUGIN_SEARCH_PATH=$PREFIX/lib \
+              -DUSE_PYTHON=OFF \
+              -DUSE_QT=OFF \
+              -DUSE_libuhdr=ON \
+              -DUSE_JXL=OFF \
+              -DUSE_Freetype=OFF \
+              -DUSE_OpenCV=OFF \
+              -DUSE_DCMTK=OFF \
+              -DUSE_FFmpeg=OFF \
+              -DUSE_GIF=OFF \
+              -DUSE_Libheif=OFF \
+              -DUSE_LibRaw=OFF \
+              -DUSE_OpenJPEG=OFF \
+              -DUSE_openjph=OFF \
+              -DUSE_OpenVDB=OFF \
+              -DUSE_Ptex=OFF \
+              -DUSE_WebP=OFF \
+              -DUSE_R3DSDK=OFF \
+              -DUSE_Nuke=OFF \
+              -DENABLE_bmp=ON \
+              -DENABLE_cineon=ON \
+              -DENABLE_dds=ON \
+              -DENABLE_dicom=OFF \
+              -DENABLE_dpx=ON \
+              -DENABLE_ffmpeg=OFF \
+              -DENABLE_fits=ON \
+              -DENABLE_gif=OFF \
+              -DENABLE_heif=OFF \
+              -DENABLE_hdr=ON \
+              -DENABLE_ico=ON \
+              -DENABLE_iff=ON \
+              -DENABLE_jpeg=ON \
+              -DENABLE_jpeg2000=OFF \
+              -DENABLE_jpegxl=OFF \
+              -DENABLE_null=ON \
+              -DENABLE_openexr=ON \
+              -DENABLE_openvdb=OFF \
+              -DENABLE_png=ON \
+              -DENABLE_pnm=ON \
+              -DENABLE_psd=ON \
+              -DENABLE_ptex=OFF \
+              -DENABLE_r3d=OFF \
+              -DENABLE_raw=OFF \
+              -DENABLE_rla=ON \
+              -DENABLE_sgi=ON \
+              -DENABLE_softimage=ON \
+              -DENABLE_targa=ON \
+              -DENABLE_term=ON \
+              -DENABLE_tiff=ON \
+              -DENABLE_webp=OFF \
+              -DENABLE_zfile=ON \
+              -B $SRC_DIR/../build \
+              -S .
+
+            cmake --build $SRC_DIR/../build --target install
+
+            mkdir -p "$PREFIX/etc/conda/activate.d" "$PREFIX/etc/conda/deactivate.d"
+            cat > "$PREFIX/etc/conda/activate.d/openimageio-plugin-path.sh" <<'EOF'
+            if [ -n "${OPENIMAGEIO_PLUGIN_PATH+x}" ]; then
+                export CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH="$OPENIMAGEIO_PLUGIN_PATH"
+                export OPENIMAGEIO_PLUGIN_PATH="$CONDA_PREFIX/lib:$OPENIMAGEIO_PLUGIN_PATH"
+            else
+                unset CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH
+                export OPENIMAGEIO_PLUGIN_PATH="$CONDA_PREFIX/lib"
+            fi
+            if [ -n "${OIIO_LIBRARY_PATH+x}" ]; then
+                export CONDA_BACKUP_OIIO_LIBRARY_PATH="$OIIO_LIBRARY_PATH"
+                export OIIO_LIBRARY_PATH="$CONDA_PREFIX/lib:$OIIO_LIBRARY_PATH"
+            else
+                unset CONDA_BACKUP_OIIO_LIBRARY_PATH
+                export OIIO_LIBRARY_PATH="$CONDA_PREFIX/lib"
+            fi
+            EOF
+            cat > "$PREFIX/etc/conda/deactivate.d/openimageio-plugin-path.sh" <<'EOF'
+            if [ -n "${CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH+x}" ]; then
+                export OPENIMAGEIO_PLUGIN_PATH="$CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH"
+                unset CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH
+            else
+                unset OPENIMAGEIO_PLUGIN_PATH
+            fi
+            if [ -n "${CONDA_BACKUP_OIIO_LIBRARY_PATH+x}" ]; then
+                export OIIO_LIBRARY_PATH="$CONDA_BACKUP_OIIO_LIBRARY_PATH"
+                unset CONDA_BACKUP_OIIO_LIBRARY_PATH
+            else
+                unset OIIO_LIBRARY_PATH
+            fi
+            EOF
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "LIBRARY_BIN_FWD=%LIBRARY_BIN:\=/%"
+            set "CL=/utf-8 %CL%"
+            set "CXXFLAGS=%CXXFLAGS% /utf-8"
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DUSE_CCACHE=OFF ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DBUILD_TESTING=OFF ^
+              -DOIIO_BUILD_TESTS=OFF ^
+              -DOIIO_BUILD_TOOLS=OFF ^
+              -DBUILD_DOCS=OFF ^
+              -DINSTALL_DOCS=OFF ^
+              -DINSTALL_FONTS=OFF ^
+              -DEMBEDPLUGINS=ON ^
+              -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN_FWD% ^
+              -DUSE_PYTHON=OFF ^
+              -DUSE_QT=OFF ^
+              -DUSE_libuhdr=ON ^
+              -DUSE_JXL=OFF ^
+              -DUSE_Freetype=OFF ^
+              -DUSE_OpenCV=OFF ^
+              -DUSE_DCMTK=OFF ^
+              -DUSE_FFmpeg=OFF ^
+              -DUSE_GIF=OFF ^
+              -DUSE_Libheif=OFF ^
+              -DUSE_LibRaw=OFF ^
+              -DUSE_OpenJPEG=OFF ^
+              -DUSE_openjph=OFF ^
+              -DUSE_OpenVDB=OFF ^
+              -DUSE_Ptex=OFF ^
+              -DUSE_WebP=OFF ^
+              -DUSE_R3DSDK=OFF ^
+              -DUSE_Nuke=OFF ^
+              -DENABLE_bmp=ON ^
+              -DENABLE_cineon=ON ^
+              -DENABLE_dds=ON ^
+              -DENABLE_dicom=OFF ^
+              -DENABLE_dpx=ON ^
+              -DENABLE_ffmpeg=OFF ^
+              -DENABLE_fits=ON ^
+              -DENABLE_gif=OFF ^
+              -DENABLE_heif=OFF ^
+              -DENABLE_hdr=ON ^
+              -DENABLE_ico=ON ^
+              -DENABLE_iff=ON ^
+              -DENABLE_jpeg=ON ^
+              -DENABLE_jpeg2000=OFF ^
+              -DENABLE_jpegxl=OFF ^
+              -DENABLE_null=ON ^
+              -DENABLE_openexr=ON ^
+              -DENABLE_openvdb=OFF ^
+              -DENABLE_png=ON ^
+              -DENABLE_pnm=ON ^
+              -DENABLE_psd=ON ^
+              -DENABLE_ptex=OFF ^
+              -DENABLE_r3d=OFF ^
+              -DENABLE_raw=OFF ^
+              -DENABLE_rla=ON ^
+              -DENABLE_sgi=ON ^
+              -DENABLE_softimage=ON ^
+              -DENABLE_targa=ON ^
+              -DENABLE_term=ON ^
+              -DENABLE_tiff=ON ^
+              -DENABLE_webp=OFF ^
+              -DENABLE_zfile=ON ^
+              -B %SRC_DIR%\..\build ^
+              -S .
+            if %ERRORLEVEL% neq 0 exit /b 1
+
+            cmake --build %SRC_DIR%\..\build --target install --config Release
+            if %ERRORLEVEL% neq 0 exit /b 1
+
+            rem Normalize generated metadata so rattler-build does not see mixed slash forms of %%PREFIX%%.
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $prefixFwd = $env:PREFIX -replace '\\', '/'; $prefixPattern = (($env:PREFIX -split '\\') | ForEach-Object { [regex]::Escape($_) }) -join '[\\/]'; $files = @(); $cmakeDir = Join-Path $env:LIBRARY_LIB 'cmake/OpenImageIO'; if (Test-Path $cmakeDir) { $files += Get-ChildItem -Path $cmakeDir -Filter '*.cmake' -File }; $pc = Join-Path $env:LIBRARY_LIB 'pkgconfig/OpenImageIO.pc'; if (Test-Path $pc) { $files += Get-Item $pc }; foreach ($file in $files) { $text = [IO.File]::ReadAllText($file.FullName); $text = [regex]::Replace($text, $prefixPattern, $prefixFwd); $text = $text.Replace($prefixFwd + [char]92, $prefixFwd + '/'); $text = $text.Replace([char]92 + 'bin', '/bin'); [IO.File]::WriteAllText($file.FullName, $text) }"
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $config = Join-Path $env:LIBRARY_LIB 'cmake/OpenImageIO/OpenImageIOConfig.cmake'; Add-Content -LiteralPath $config -Value @('', 'if (MSVC)', '    target_compile_options(OpenImageIO::OpenImageIO INTERFACE /utf-8)', '    target_compile_options(OpenImageIO::OpenImageIO_Util INTERFACE /utf-8)', 'endif ()')"
+
+            if not exist "%PREFIX%\etc\conda\activate.d" mkdir "%PREFIX%\etc\conda\activate.d"
+            if not exist "%PREFIX%\etc\conda\deactivate.d" mkdir "%PREFIX%\etc\conda\deactivate.d"
+            (
+              echo @echo off
+              echo if defined OPENIMAGEIO_PLUGIN_PATH ^(
+              echo   set "CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH=%%OPENIMAGEIO_PLUGIN_PATH%%"
+              echo   set "OPENIMAGEIO_PLUGIN_PATH=%%CONDA_PREFIX%%\Library\bin;%%OPENIMAGEIO_PLUGIN_PATH%%"
+              echo ^) else ^(
+              echo   set "CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH="
+              echo   set "OPENIMAGEIO_PLUGIN_PATH=%%CONDA_PREFIX%%\Library\bin"
+              echo ^)
+              echo if defined OIIO_LIBRARY_PATH ^(
+              echo   set "CONDA_BACKUP_OIIO_LIBRARY_PATH=%%OIIO_LIBRARY_PATH%%"
+              echo   set "OIIO_LIBRARY_PATH=%%CONDA_PREFIX%%\Library\bin;%%OIIO_LIBRARY_PATH%%"
+              echo ^) else ^(
+              echo   set "CONDA_BACKUP_OIIO_LIBRARY_PATH="
+              echo   set "OIIO_LIBRARY_PATH=%%CONDA_PREFIX%%\Library\bin"
+              echo ^)
+            ) > "%PREFIX%\etc\conda\activate.d\openimageio-plugin-path.bat"
+            (
+              echo @echo off
+              echo if defined CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH ^(
+              echo   set "OPENIMAGEIO_PLUGIN_PATH=%%CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH%%"
+              echo   set "CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH="
+              echo ^) else ^(
+              echo   set "OPENIMAGEIO_PLUGIN_PATH="
+              echo ^)
+              echo if defined CONDA_BACKUP_OIIO_LIBRARY_PATH ^(
+              echo   set "OIIO_LIBRARY_PATH=%%CONDA_BACKUP_OIIO_LIBRARY_PATH%%"
+              echo   set "CONDA_BACKUP_OIIO_LIBRARY_PATH="
+              echo ^) else ^(
+              echo   set "OIIO_LIBRARY_PATH="
+              echo ^)
+            ) > "%PREFIX%\etc\conda\deactivate.d\openimageio-plugin-path.bat"
+            (
+              echo if ^(Test-Path Env:OPENIMAGEIO_PLUGIN_PATH^) {
+              echo   $env:CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH = $env:OPENIMAGEIO_PLUGIN_PATH
+              echo   $env:OPENIMAGEIO_PLUGIN_PATH = "$env:CONDA_PREFIX\Library\bin;$env:OPENIMAGEIO_PLUGIN_PATH"
+              echo } else {
+              echo   Remove-Item Env:CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH -ErrorAction SilentlyContinue
+              echo   $env:OPENIMAGEIO_PLUGIN_PATH = "$env:CONDA_PREFIX\Library\bin"
+              echo }
+              echo if ^(Test-Path Env:OIIO_LIBRARY_PATH^) {
+              echo   $env:CONDA_BACKUP_OIIO_LIBRARY_PATH = $env:OIIO_LIBRARY_PATH
+              echo   $env:OIIO_LIBRARY_PATH = "$env:CONDA_PREFIX\Library\bin;$env:OIIO_LIBRARY_PATH"
+              echo } else {
+              echo   Remove-Item Env:CONDA_BACKUP_OIIO_LIBRARY_PATH -ErrorAction SilentlyContinue
+              echo   $env:OIIO_LIBRARY_PATH = "$env:CONDA_PREFIX\Library\bin"
+              echo }
+            ) > "%PREFIX%\etc\conda\activate.d\openimageio-plugin-path.ps1"
+            (
+              echo if ^(Test-Path Env:CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH^) {
+              echo   $env:OPENIMAGEIO_PLUGIN_PATH = $env:CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH
+              echo   Remove-Item Env:CONDA_BACKUP_OPENIMAGEIO_PLUGIN_PATH -ErrorAction SilentlyContinue
+              echo } else {
+              echo   Remove-Item Env:OPENIMAGEIO_PLUGIN_PATH -ErrorAction SilentlyContinue
+              echo }
+              echo if ^(Test-Path Env:CONDA_BACKUP_OIIO_LIBRARY_PATH^) {
+              echo   $env:OIIO_LIBRARY_PATH = $env:CONDA_BACKUP_OIIO_LIBRARY_PATH
+              echo   Remove-Item Env:CONDA_BACKUP_OIIO_LIBRARY_PATH -ErrorAction SilentlyContinue
+              echo } else {
+              echo   Remove-Item Env:OIIO_LIBRARY_PATH -ErrorAction SilentlyContinue
+              echo }
+            ) > "%PREFIX%\etc\conda\deactivate.d\openimageio-plugin-path.ps1"
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - fmt
+        - imath-dev 3.2.*
+        - libjpeg-turbo
+        - libpng
+        - libtiff
+        - libuhdr-dev 1.4.*
+        - openexr-dev 3.4.*
+        - opencolorio-dev 2.5.*
+        - tsl_robin_map 1.4.*
+        - zlib
+
+  - staging:
+      name: openimageio-tools-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-tools
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DOIIO_BUILD_TESTS=OFF \
+              -DOIIO_BUILD_TOOLS=ON \
+              -DBUILD_DOCS=OFF \
+              -DINSTALL_DOCS=OFF \
+              -DINSTALL_FONTS=OFF \
+              -DEMBEDPLUGINS=OFF \
+              -DPLUGIN_SEARCH_PATH=$PREFIX/lib \
+              -DUSE_PYTHON=OFF \
+              -DUSE_QT=OFF \
+              -DUSE_libuhdr=OFF \
+              -DUSE_JXL=OFF \
+              -DUSE_Freetype=OFF \
+              -DUSE_OpenCV=OFF \
+              -DUSE_DCMTK=OFF \
+              -DUSE_FFmpeg=OFF \
+              -DUSE_GIF=OFF \
+              -DUSE_Libheif=OFF \
+              -DUSE_LibRaw=OFF \
+              -DUSE_OpenJPEG=OFF \
+              -DUSE_openjph=OFF \
+              -DUSE_OpenVDB=OFF \
+              -DUSE_Ptex=OFF \
+              -DUSE_WebP=OFF \
+              -DUSE_R3DSDK=OFF \
+              -DUSE_Nuke=OFF \
+              -DENABLE_iv=OFF \
+              -DENABLE_testtex=OFF \
+              -DENABLE_bmp=OFF \
+              -DENABLE_cineon=OFF \
+              -DENABLE_dds=OFF \
+              -DENABLE_dicom=OFF \
+              -DENABLE_dpx=OFF \
+              -DENABLE_ffmpeg=OFF \
+              -DENABLE_fits=OFF \
+              -DENABLE_gif=OFF \
+              -DENABLE_heif=OFF \
+              -DENABLE_hdr=OFF \
+              -DENABLE_ico=OFF \
+              -DENABLE_iff=OFF \
+              -DENABLE_jpeg=OFF \
+              -DENABLE_jpeg2000=OFF \
+              -DENABLE_jpegxl=OFF \
+              -DENABLE_null=OFF \
+              -DENABLE_openexr=OFF \
+              -DENABLE_openvdb=OFF \
+              -DENABLE_png=OFF \
+              -DENABLE_pnm=OFF \
+              -DENABLE_psd=OFF \
+              -DENABLE_ptex=OFF \
+              -DENABLE_r3d=OFF \
+              -DENABLE_raw=OFF \
+              -DENABLE_rla=OFF \
+              -DENABLE_sgi=OFF \
+              -DENABLE_softimage=OFF \
+              -DENABLE_targa=OFF \
+              -DENABLE_term=OFF \
+              -DENABLE_tiff=OFF \
+              -DENABLE_webp=OFF \
+              -DENABLE_zfile=OFF \
+              -B $SRC_DIR/../build-tools \
+              -S .
+
+            cmake --build $SRC_DIR/../build-tools --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-tools
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "LIBRARY_BIN_FWD=%LIBRARY_BIN:\=/%"
+            set "CL=/utf-8 %CL%"
+            set "CXXFLAGS=%CXXFLAGS% /utf-8"
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DUSE_CCACHE=OFF ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DBUILD_TESTING=OFF ^
+              -DOIIO_BUILD_TESTS=OFF ^
+              -DOIIO_BUILD_TOOLS=ON ^
+              -DBUILD_DOCS=OFF ^
+              -DINSTALL_DOCS=OFF ^
+              -DINSTALL_FONTS=OFF ^
+              -DEMBEDPLUGINS=OFF ^
+              -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN_FWD% ^
+              -DUSE_PYTHON=OFF ^
+              -DUSE_QT=OFF ^
+              -DUSE_libuhdr=OFF ^
+              -DUSE_JXL=OFF ^
+              -DUSE_Freetype=OFF ^
+              -DUSE_OpenCV=OFF ^
+              -DUSE_DCMTK=OFF ^
+              -DUSE_FFmpeg=OFF ^
+              -DUSE_GIF=OFF ^
+              -DUSE_Libheif=OFF ^
+              -DUSE_LibRaw=OFF ^
+              -DUSE_OpenJPEG=OFF ^
+              -DUSE_openjph=OFF ^
+              -DUSE_OpenVDB=OFF ^
+              -DUSE_Ptex=OFF ^
+              -DUSE_WebP=OFF ^
+              -DUSE_R3DSDK=OFF ^
+              -DUSE_Nuke=OFF ^
+              -DENABLE_iv=OFF ^
+              -DENABLE_testtex=OFF ^
+              -DENABLE_bmp=OFF ^
+              -DENABLE_cineon=OFF ^
+              -DENABLE_dds=OFF ^
+              -DENABLE_dicom=OFF ^
+              -DENABLE_dpx=OFF ^
+              -DENABLE_ffmpeg=OFF ^
+              -DENABLE_fits=OFF ^
+              -DENABLE_gif=OFF ^
+              -DENABLE_heif=OFF ^
+              -DENABLE_hdr=OFF ^
+              -DENABLE_ico=OFF ^
+              -DENABLE_iff=OFF ^
+              -DENABLE_jpeg=OFF ^
+              -DENABLE_jpeg2000=OFF ^
+              -DENABLE_jpegxl=OFF ^
+              -DENABLE_null=OFF ^
+              -DENABLE_openexr=OFF ^
+              -DENABLE_openvdb=OFF ^
+              -DENABLE_png=OFF ^
+              -DENABLE_pnm=OFF ^
+              -DENABLE_psd=OFF ^
+              -DENABLE_ptex=OFF ^
+              -DENABLE_r3d=OFF ^
+              -DENABLE_raw=OFF ^
+              -DENABLE_rla=OFF ^
+              -DENABLE_sgi=OFF ^
+              -DENABLE_softimage=OFF ^
+              -DENABLE_targa=OFF ^
+              -DENABLE_term=OFF ^
+              -DENABLE_tiff=OFF ^
+              -DENABLE_webp=OFF ^
+              -DENABLE_zfile=OFF ^
+              -B %SRC_DIR%\..\build-tools ^
+              -S .
+            if %ERRORLEVEL% neq 0 exit /b 1
+
+            cmake --build %SRC_DIR%\..\build-tools --target install --config Release
+            if %ERRORLEVEL% neq 0 exit /b 1
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - fmt
+        - imath-dev 3.2.*
+        - libjpeg-turbo
+        - libtiff
+        - openexr-dev 3.4.*
+        - opencolorio-dev 2.5.*
+        - tsl_robin_map 1.4.*
+        - zlib
+
+  - staging:
+      name: openimageio-python-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-python
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DOIIO_BUILD_TESTS=OFF \
+              -DOIIO_BUILD_TOOLS=OFF \
+              -DBUILD_DOCS=OFF \
+              -DINSTALL_DOCS=OFF \
+              -DINSTALL_FONTS=OFF \
+              -DEMBEDPLUGINS=OFF \
+              -DPLUGIN_SEARCH_PATH=$PREFIX/lib \
+              -DUSE_PYTHON=ON \
+              -DPYTHON_VERSION="${{ python }}" \
+              -DPython3_EXECUTABLE=$PYTHON \
+              -DUSE_QT=OFF \
+              -DUSE_libuhdr=OFF \
+              -DUSE_JXL=OFF \
+              -DUSE_Freetype=OFF \
+              -DUSE_OpenCV=OFF \
+              -DUSE_DCMTK=OFF \
+              -DUSE_FFmpeg=OFF \
+              -DUSE_GIF=OFF \
+              -DUSE_Libheif=OFF \
+              -DUSE_LibRaw=OFF \
+              -DUSE_OpenJPEG=OFF \
+              -DUSE_openjph=OFF \
+              -DUSE_OpenVDB=OFF \
+              -DUSE_Ptex=OFF \
+              -DUSE_WebP=OFF \
+              -DUSE_R3DSDK=OFF \
+              -DUSE_Nuke=OFF \
+              -DENABLE_bmp=OFF \
+              -DENABLE_cineon=OFF \
+              -DENABLE_dds=OFF \
+              -DENABLE_dicom=OFF \
+              -DENABLE_dpx=OFF \
+              -DENABLE_ffmpeg=OFF \
+              -DENABLE_fits=OFF \
+              -DENABLE_gif=OFF \
+              -DENABLE_heif=OFF \
+              -DENABLE_hdr=OFF \
+              -DENABLE_ico=OFF \
+              -DENABLE_iff=OFF \
+              -DENABLE_jpeg=OFF \
+              -DENABLE_jpeg2000=OFF \
+              -DENABLE_jpegxl=OFF \
+              -DENABLE_null=OFF \
+              -DENABLE_openexr=OFF \
+              -DENABLE_openvdb=OFF \
+              -DENABLE_png=OFF \
+              -DENABLE_pnm=OFF \
+              -DENABLE_psd=OFF \
+              -DENABLE_ptex=OFF \
+              -DENABLE_r3d=OFF \
+              -DENABLE_raw=OFF \
+              -DENABLE_rla=OFF \
+              -DENABLE_sgi=OFF \
+              -DENABLE_softimage=OFF \
+              -DENABLE_targa=OFF \
+              -DENABLE_term=OFF \
+              -DENABLE_tiff=OFF \
+              -DENABLE_webp=OFF \
+              -DENABLE_zfile=OFF \
+              -B $SRC_DIR/../build-python \
+              -S .
+
+            cmake --build $SRC_DIR/../build-python --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-python
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "LIBRARY_BIN_FWD=%LIBRARY_BIN:\=/%"
+            set "CL=/utf-8 %CL%"
+            set "CXXFLAGS=%CXXFLAGS% /utf-8"
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DUSE_CCACHE=OFF ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DBUILD_TESTING=OFF ^
+              -DOIIO_BUILD_TESTS=OFF ^
+              -DOIIO_BUILD_TOOLS=OFF ^
+              -DBUILD_DOCS=OFF ^
+              -DINSTALL_DOCS=OFF ^
+              -DINSTALL_FONTS=OFF ^
+              -DEMBEDPLUGINS=OFF ^
+              -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN_FWD% ^
+              -DUSE_PYTHON=ON ^
+              -DPYTHON_VERSION="${{ python }}" ^
+              -DPython3_EXECUTABLE=%PYTHON% ^
+              -DUSE_QT=OFF ^
+              -DUSE_libuhdr=OFF ^
+              -DUSE_JXL=OFF ^
+              -DUSE_Freetype=OFF ^
+              -DUSE_OpenCV=OFF ^
+              -DUSE_DCMTK=OFF ^
+              -DUSE_FFmpeg=OFF ^
+              -DUSE_GIF=OFF ^
+              -DUSE_Libheif=OFF ^
+              -DUSE_LibRaw=OFF ^
+              -DUSE_OpenJPEG=OFF ^
+              -DUSE_openjph=OFF ^
+              -DUSE_OpenVDB=OFF ^
+              -DUSE_Ptex=OFF ^
+              -DUSE_WebP=OFF ^
+              -DUSE_R3DSDK=OFF ^
+              -DUSE_Nuke=OFF ^
+              -DENABLE_bmp=OFF ^
+              -DENABLE_cineon=OFF ^
+              -DENABLE_dds=OFF ^
+              -DENABLE_dicom=OFF ^
+              -DENABLE_dpx=OFF ^
+              -DENABLE_ffmpeg=OFF ^
+              -DENABLE_fits=OFF ^
+              -DENABLE_gif=OFF ^
+              -DENABLE_heif=OFF ^
+              -DENABLE_hdr=OFF ^
+              -DENABLE_ico=OFF ^
+              -DENABLE_iff=OFF ^
+              -DENABLE_jpeg=OFF ^
+              -DENABLE_jpeg2000=OFF ^
+              -DENABLE_jpegxl=OFF ^
+              -DENABLE_null=OFF ^
+              -DENABLE_openexr=OFF ^
+              -DENABLE_openvdb=OFF ^
+              -DENABLE_png=OFF ^
+              -DENABLE_pnm=OFF ^
+              -DENABLE_psd=OFF ^
+              -DENABLE_ptex=OFF ^
+              -DENABLE_r3d=OFF ^
+              -DENABLE_raw=OFF ^
+              -DENABLE_rla=OFF ^
+              -DENABLE_sgi=OFF ^
+              -DENABLE_softimage=OFF ^
+              -DENABLE_targa=OFF ^
+              -DENABLE_term=OFF ^
+              -DENABLE_tiff=OFF ^
+              -DENABLE_webp=OFF ^
+              -DENABLE_zfile=OFF ^
+              -B %SRC_DIR%\..\build-python ^
+              -S .
+            if %ERRORLEVEL% neq 0 exit /b 1
+
+            cmake --build %SRC_DIR%\..\build-python --target install --config Release
+            if %ERRORLEVEL% neq 0 exit /b 1
+
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $lib = Join-Path $env:LIBRARY_PREFIX 'lib'; $sources = Get-ChildItem -Path $lib -Directory -Filter 'python*' | ForEach-Object { Join-Path $_.FullName 'site-packages/OpenImageIO' } | Where-Object { Test-Path $_ }; foreach ($src in $sources) { New-Item -ItemType Directory -Force -Path $env:SP_DIR | Out-Null; $dest = Join-Path $env:SP_DIR 'OpenImageIO'; if (Test-Path $dest) { Remove-Item -LiteralPath $dest -Recurse -Force }; Move-Item -LiteralPath $src -Destination $dest }"
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - fmt
+        - imath-dev 3.2.*
+        - libjpeg-turbo
+        - libtiff
+        - openexr-dev 3.4.*
+        - opencolorio-dev 2.5.*
+        - pybind11
+        - python
+        - tsl_robin_map 1.4.*
+        - zlib
+
+  - staging:
+      name: openimageio-plugins-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-plugins
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_TESTING=OFF \
+              -DOIIO_BUILD_TESTS=OFF \
+              -DOIIO_BUILD_TOOLS=OFF \
+              -DBUILD_DOCS=OFF \
+              -DINSTALL_DOCS=OFF \
+              -DINSTALL_FONTS=OFF \
+              -DEMBEDPLUGINS=OFF \
+              -DPLUGIN_SEARCH_PATH=$PREFIX/lib \
+              -DUSE_PYTHON=OFF \
+              -DUSE_QT=OFF \
+              -DUSE_libuhdr=OFF \
+              -DUSE_JXL=ON \
+              -DUSE_Freetype=OFF \
+              -DUSE_OpenCV=OFF \
+              -DUSE_DCMTK=ON \
+              -DUSE_FFmpeg=ON \
+              -DUSE_GIF=ON \
+              -DUSE_Libheif=ON \
+              -DUSE_LibRaw=ON \
+              -DUSE_OpenJPEG=ON \
+              -DUSE_openjph=ON \
+              -DUSE_OpenVDB=ON \
+              -DUSE_Ptex=OFF \
+              -DUSE_WebP=ON \
+              -DUSE_R3DSDK=OFF \
+              -DUSE_Nuke=OFF \
+              -DENABLE_bmp=OFF \
+              -DENABLE_cineon=OFF \
+              -DENABLE_dds=OFF \
+              -DENABLE_dpx=OFF \
+              -DENABLE_fits=OFF \
+              -DENABLE_hdr=OFF \
+              -DENABLE_ico=OFF \
+              -DENABLE_iff=OFF \
+              -DENABLE_jpeg=OFF \
+              -DENABLE_null=OFF \
+              -DENABLE_openexr=OFF \
+              -DENABLE_png=OFF \
+              -DENABLE_pnm=OFF \
+              -DENABLE_psd=OFF \
+              -DENABLE_rla=OFF \
+              -DENABLE_sgi=OFF \
+              -DENABLE_softimage=OFF \
+              -DENABLE_targa=OFF \
+              -DENABLE_term=OFF \
+              -DENABLE_tiff=OFF \
+              -DENABLE_zfile=OFF \
+              -DENABLE_dicom=ON \
+              -DENABLE_ffmpeg=ON \
+              -DENABLE_gif=ON \
+              -DENABLE_heif=ON \
+              -DENABLE_jpeg2000=ON \
+              -DENABLE_jpegxl=ON \
+              -DENABLE_openvdb=ON \
+              -DENABLE_raw=ON \
+              -DENABLE_webp=ON \
+              -DENABLE_ptex=OFF \
+              -DENABLE_r3d=OFF \
+              -DOpenVDB_ROOT=$PREFIX \
+              -DTBB_ROOT=$PREFIX \
+              -B $SRC_DIR/../build-plugins \
+              -S .
+
+            cmake --build $SRC_DIR/../build-plugins --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build-plugins
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "LIBRARY_BIN_FWD=%LIBRARY_BIN:\=/%"
+            set "CL=/utf-8 %CL%"
+            set "CXXFLAGS=%CXXFLAGS% /utf-8"
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DUSE_CCACHE=OFF ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DBUILD_TESTING=OFF ^
+              -DOIIO_BUILD_TESTS=OFF ^
+              -DOIIO_BUILD_TOOLS=OFF ^
+              -DBUILD_DOCS=OFF ^
+              -DINSTALL_DOCS=OFF ^
+              -DINSTALL_FONTS=OFF ^
+              -DEMBEDPLUGINS=OFF ^
+              -DPLUGIN_SEARCH_PATH=%LIBRARY_BIN_FWD% ^
+              -DUSE_PYTHON=OFF ^
+              -DUSE_QT=OFF ^
+              -DUSE_libuhdr=OFF ^
+              -DUSE_JXL=ON ^
+              -DUSE_Freetype=OFF ^
+              -DUSE_OpenCV=OFF ^
+              -DUSE_DCMTK=ON ^
+              -DUSE_FFmpeg=ON ^
+              -DUSE_GIF=ON ^
+              -DUSE_Libheif=ON ^
+              -DUSE_LibRaw=ON ^
+              -DUSE_OpenJPEG=ON ^
+              -DUSE_openjph=ON ^
+              -DUSE_OpenVDB=ON ^
+              -DUSE_Ptex=OFF ^
+              -DUSE_WebP=ON ^
+              -DUSE_R3DSDK=OFF ^
+              -DUSE_Nuke=OFF ^
+              -DENABLE_bmp=OFF ^
+              -DENABLE_cineon=OFF ^
+              -DENABLE_dds=OFF ^
+              -DENABLE_dpx=OFF ^
+              -DENABLE_fits=OFF ^
+              -DENABLE_hdr=OFF ^
+              -DENABLE_ico=OFF ^
+              -DENABLE_iff=OFF ^
+              -DENABLE_jpeg=OFF ^
+              -DENABLE_null=OFF ^
+              -DENABLE_openexr=OFF ^
+              -DENABLE_png=OFF ^
+              -DENABLE_pnm=OFF ^
+              -DENABLE_psd=OFF ^
+              -DENABLE_rla=OFF ^
+              -DENABLE_sgi=OFF ^
+              -DENABLE_softimage=OFF ^
+              -DENABLE_targa=OFF ^
+              -DENABLE_term=OFF ^
+              -DENABLE_tiff=OFF ^
+              -DENABLE_zfile=OFF ^
+              -DENABLE_dicom=ON ^
+              -DENABLE_ffmpeg=ON ^
+              -DENABLE_gif=ON ^
+              -DENABLE_heif=ON ^
+              -DENABLE_jpeg2000=ON ^
+              -DENABLE_jpegxl=ON ^
+              -DENABLE_openvdb=ON ^
+              -DENABLE_raw=ON ^
+              -DENABLE_webp=ON ^
+              -DENABLE_ptex=OFF ^
+              -DENABLE_r3d=OFF ^
+              -DOpenVDB_ROOT=%LIBRARY_PREFIX% ^
+              -DTBB_ROOT=%LIBRARY_PREFIX% ^
+              -B %SRC_DIR%\..\build-plugins ^
+              -S .
+            if %ERRORLEVEL% neq 0 exit /b 1
+
+            cmake --build %SRC_DIR%\..\build-plugins --target install --config Release
+            if %ERRORLEVEL% neq 0 exit /b 1
+
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; New-Item -ItemType Directory -Force -Path $env:LIBRARY_BIN | Out-Null; Get-ChildItem -Path $env:LIBRARY_LIB -Filter '*.imageio.dll' -File | ForEach-Object { Move-Item -LiteralPath $_.FullName -Destination (Join-Path $env:LIBRARY_BIN $_.Name) -Force }"
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - blosc
+        - bzip2
+        - dcmtk
+        - ffmpeg
+        - fmt
+        - giflib
+        - imath-dev 3.2.*
+        - libboost-devel
+        - libheif
+        - libjpeg-turbo
+        - libjxl
+        - libpng
+        - libraw
+        - libtiff
+        - libxml2-devel
+        - libwebp
+        - openexr-dev 3.4.*
+        - openjpeg
+        - openjph
+        - openvdb-dev 13.0.*
+        - opencolorio-dev 2.5.*
+        - tsl_robin_map 1.4.*
+        - tbb-devel >=2022.3,<2023
+        - zlib
+
+  - package:
+      name: openimageio-lib
+    inherit: openimageio-build
+    build:
+      files:
+        - lib/libOpenImageIO*.so*
+        - lib/libOpenImageIO*.dylib*
+        - Library/bin/OpenImageIO*.dll
+        - etc/conda/activate.d/openimageio-plugin-path.*
+        - etc/conda/deactivate.d/openimageio-plugin-path.*
+    requirements:
+      run:
+        - imath-lib 3.2.*
+        - libjpeg-turbo
+        - libpng
+        - libtiff
+        - libuhdr-lib 1.4.*
+        - libzlib
+        - openexr-lib 3.4.*
+        - opencolorio-lib 2.5.*
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openimageio-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/OpenImageIO/imageio.h
+              - lib/cmake/OpenImageIO/OpenImageIOConfig.cmake
+              - Library/include/OpenImageIO/imageio.h
+              - Library/lib/cmake/OpenImageIO/OpenImageIOConfig.cmake
+      - script:
+          - if: linux
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libOpenImageIO.so*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: osx
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libOpenImageIO*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: win
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'OpenImageIO.dll')); assert paths; ctypes.WinDLL(paths[0])"
+          - python -c "import os; from pathlib import Path; expected = os.path.normcase(os.path.normpath(str(os.environ.get('LIBRARY_BIN', Path(os.environ['PREFIX']) / 'lib')))); configured = [os.path.normcase(os.path.normpath(p)) for p in os.environ.get('OIIO_LIBRARY_PATH', '').split(os.pathsep) if p]; assert expected in configured, (expected, configured)"
+        requirements:
+          run:
+            - python
+      - script:
+          - python tests/check_core_roundtrip.py
+        files:
+          recipe:
+            - tests/check_core_roundtrip.py
+        requirements:
+          run:
+            - python
+            - ${{ pin_subpackage('openimageio-tools', exact=True) }}
+
+  - package:
+      name: openimageio-dev
+    inherit: openimageio-build
+    build:
+      files:
+        - include/OpenImageIO/**
+        - lib/cmake/OpenImageIO/**
+        - lib/pkgconfig/OpenImageIO.pc
+        - Library/include/OpenImageIO/**
+        - Library/lib/OpenImageIO*.lib
+        - Library/lib/cmake/OpenImageIO/**
+        - Library/lib/pkgconfig/OpenImageIO.pc
+    requirements:
+      run:
+        - ${{ pin_subpackage('openimageio-lib', exact=True) }}
+        - imath-dev 3.2.*
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openimageio-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - OpenImageIO/imageio.h
+            - OpenImageIO/oiioversion.h
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenImageIO/OpenImageIOConfig.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/openimageio_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OpenImageIO\OpenImageIOConfig.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\openimageio_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openimageio_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: openimageio-tools
+    inherit: openimageio-tools-build
+    build:
+      files:
+        - bin/iconvert
+        - bin/idiff
+        - bin/igrep
+        - bin/iinfo
+        - bin/maketx
+        - bin/oiiotool
+        - Library/bin/iconvert.exe
+        - Library/bin/idiff.exe
+        - Library/bin/igrep.exe
+        - Library/bin/iinfo.exe
+        - Library/bin/maketx.exe
+        - Library/bin/oiiotool.exe
+    requirements:
+      run:
+        - ${{ pin_subpackage('openimageio-lib', exact=True) }}
+    tests:
+      - script:
+          - oiiotool --help
+          - iinfo --help
+          - iconvert --help
+          - idiff --help
+          - igrep --help
+          - maketx --help
+      - script:
+          - python tests/check_core_roundtrip.py
+        files:
+          recipe:
+            - tests/check_core_roundtrip.py
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: openimageio-python
+    inherit: openimageio-python-build
+    build:
+      string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+      files:
+        - lib/python*/site-packages/OpenImageIO/**
+        - Library/lib/python*/site-packages/OpenImageIO/**
+        - Lib/site-packages/OpenImageIO/**
+    requirements:
+      run:
+        - python
+        - ${{ pin_subpackage('openimageio-lib', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - OpenImageIO
+      - script:
+          - python -c "import OpenImageIO as oiio; assert oiio.VERSION_STRING == '${{ version }}'"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: openimageio-format-gif
+    inherit:
+      from: openimageio-plugins-build
+      run_exports: false
+    build:
+      files:
+        - lib/gif.imageio.*
+        - Library/bin/gif.imageio.dll
+    requirements:
+      run:
+        - ${{ pin_subpackage('openimageio-lib', exact=True) }}
+        - giflib
+    tests:
+      - script:
+          - python tests/check_formats.py gif --roundtrip gif
+        files:
+          recipe:
+            - tests/check_formats.py
+        requirements:
+          run:
+            - python
+            - ${{ pin_subpackage('openimageio-tools', exact=True) }}
+
+  - package:
+      name: openimageio-format-webp
+    inherit:
+      from: openimageio-plugins-build
+      run_exports: false
+    build:
+      files:
+        - lib/webp.imageio.*
+        - Library/bin/webp.imageio.dll
+    requirements:
+      run:
+        - ${{ pin_subpackage('openimageio-lib', exact=True) }}
+        - libwebp
+    tests:
+      - script:
+          - python tests/check_formats.py webp --roundtrip webp
+        files:
+          recipe:
+            - tests/check_formats.py
+        requirements:
+          run:
+            - python
+            - ${{ pin_subpackage('openimageio-tools', exact=True) }}
+
+  - package:
+      name: openimageio-format-jpeg2000
+    inherit:
+      from: openimageio-plugins-build
+      run_exports: false
+    build:
+      files:
+        - lib/jpeg2000.imageio.*
+        - Library/bin/jpeg2000.imageio.dll
+    requirements:
+      run:
+        - ${{ pin_subpackage('openimageio-lib', exact=True) }}
+        - openjpeg
+        - openjph
+    tests:
+      - script:
+          - python tests/check_formats.py jpeg2000 --read-fixture jpeg2000
+        files:
+          recipe:
+            - tests/check_formats.py
+        requirements:
+          run:
+            - python
+            - ${{ pin_subpackage('openimageio-tools', exact=True) }}
+
+  - package:
+      name: openimageio-format-jpegxl
+    inherit:
+      from: openimageio-plugins-build
+      run_exports: false
+    build:
+      files:
+        - lib/jpegxl.imageio.*
+        - Library/bin/jpegxl.imageio.dll
+    requirements:
+      run:
+        - ${{ pin_subpackage('openimageio-lib', exact=True) }}
+        - libjxl
+    tests:
+      - script:
+          - python tests/check_formats.py jpegxl --roundtrip jpegxl
+        files:
+          recipe:
+            - tests/check_formats.py
+        requirements:
+          run:
+            - python
+            - ${{ pin_subpackage('openimageio-tools', exact=True) }}
+
+  - package:
+      name: openimageio-format-heif
+    inherit:
+      from: openimageio-plugins-build
+      run_exports: false
+    build:
+      files:
+        - lib/heif.imageio.*
+        - Library/bin/heif.imageio.dll
+    requirements:
+      run:
+        - ${{ pin_subpackage('openimageio-lib', exact=True) }}
+        - libheif
+    tests:
+      - script:
+          - python tests/check_formats.py heif --roundtrip heif
+        files:
+          recipe:
+            - tests/check_formats.py
+        requirements:
+          run:
+            - python
+            - ${{ pin_subpackage('openimageio-tools', exact=True) }}
+
+  - package:
+      name: openimageio-format-raw
+    inherit:
+      from: openimageio-plugins-build
+      run_exports: false
+    build:
+      files:
+        - lib/raw.imageio.*
+        - Library/bin/raw.imageio.dll
+    requirements:
+      run:
+        - ${{ pin_subpackage('openimageio-lib', exact=True) }}
+        - libraw
+    tests:
+      - script:
+          - python tests/check_formats.py raw
+        files:
+          recipe:
+            - tests/check_formats.py
+        requirements:
+          run:
+            - python
+            - ${{ pin_subpackage('openimageio-tools', exact=True) }}
+
+  - package:
+      name: openimageio-format-dicom
+    inherit:
+      from: openimageio-plugins-build
+      run_exports: false
+    build:
+      files:
+        - lib/dicom.imageio.*
+        - Library/bin/dicom.imageio.dll
+    requirements:
+      run:
+        - ${{ pin_subpackage('openimageio-lib', exact=True) }}
+        - dcmtk
+        - libxml2
+    tests:
+      - script:
+          - python tests/check_formats.py dicom
+        files:
+          recipe:
+            - tests/check_formats.py
+        requirements:
+          run:
+            - python
+            - ${{ pin_subpackage('openimageio-tools', exact=True) }}
+
+  - package:
+      name: openimageio-format-ffmpeg
+    inherit:
+      from: openimageio-plugins-build
+      run_exports: false
+    build:
+      files:
+        - lib/ffmpeg.imageio.*
+        - Library/bin/ffmpeg.imageio.dll
+    requirements:
+      run:
+        - ${{ pin_subpackage('openimageio-lib', exact=True) }}
+        - bzip2
+        - ffmpeg
+    tests:
+      - script:
+          - python tests/check_formats.py ffmpeg
+        files:
+          recipe:
+            - tests/check_formats.py
+        requirements:
+          run:
+            - python
+            - ${{ pin_subpackage('openimageio-tools', exact=True) }}
+
+  - package:
+      name: openimageio-format-openvdb
+    inherit:
+      from: openimageio-plugins-build
+      run_exports: false
+    build:
+      files:
+        - lib/openvdb.imageio.*
+        - Library/bin/openvdb.imageio.dll
+    requirements:
+      run:
+        - ${{ pin_subpackage('openimageio-lib', exact=True) }}
+        - openvdb-lib 13.0.*
+    tests:
+      - script:
+          - python tests/check_formats.py openvdb
+          - if: linux
+            then:
+              - ldd "$PREFIX/lib/openvdb.imageio.so" | grep openvdb
+          - if: osx
+            then:
+              - for f in "$PREFIX"/lib/openvdb.imageio.*; do otool -L "$f" | grep openvdb; done
+        files:
+          recipe:
+            - tests/check_formats.py
+        requirements:
+          run:
+            - python
+            - ${{ pin_subpackage('openimageio-tools', exact=True) }}
+
+  - package:
+      name: openimageio
+    requirements:
+      run:
+        - ${{ pin_subpackage('openimageio-lib', exact=True) }}
+        - ${{ pin_subpackage('openimageio-dev', exact=True) }}
+        - ${{ pin_subpackage('openimageio-tools', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('openimageio-lib', upper_bound='x.x') }}
+    tests:
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenImageIO/OpenImageIOConfig.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/openimageio_consumer
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OpenImageIO\OpenImageIOConfig.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - cmake --build build --config Release
+              - build\openimageio_consumer.exe
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/openimageio_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+      - script:
+          - python tests/check_core_roundtrip.py
+          - python -c "import importlib.util; assert importlib.util.find_spec('OpenImageIO') is None"
+        files:
+          recipe:
+            - tests/check_core_roundtrip.py
+        requirements:
+          run:
+            - python
+
+about:
+  homepage: https://openimageio.org
+  repository: https://github.com/AcademySoftwareFoundation/OpenImageIO
+  license: Apache-2.0
+  license_file: LICENSE.md
+  summary: Image I/O library and tools for texture, VFX, and animation pipelines
