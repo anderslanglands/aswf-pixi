@@ -797,6 +797,9 @@ outputs:
       from: materialx-render-build
       run_exports: false
     build:
+      skip:
+        - if: materialx_build_set != "cpp"
+          then: true
       files:
         - lib/libMaterialXRender.so*
         - lib/libMaterialXRenderGlsl.so*
@@ -886,6 +889,9 @@ outputs:
       from: materialx-render-osl-build
       run_exports: false
     build:
+      skip:
+        - if: materialx_build_set != "cpp"
+          then: true
       files:
         - lib/libMaterialXRenderOsl.so*
         - lib/libMaterialXRenderOsl*.dylib*
@@ -944,6 +950,10 @@ outputs:
 
   - package:
       name: materialx-render-mdl
+    build:
+      skip:
+        - if: materialx_build_set != "cpp"
+          then: true
     requirements:
       run:
         - ${{ pin_subpackage('materialx-dev', exact=True) }}
@@ -978,6 +988,9 @@ outputs:
       from: materialx-render-slang-build
       run_exports: false
     build:
+      skip:
+        - if: materialx_build_set != "cpp"
+          then: true
       files:
         - lib/libMaterialXRenderSlang.so*
         - lib/libMaterialXRenderSlang*.dylib*
@@ -1036,6 +1049,9 @@ outputs:
       from: materialx-guitools-build
       run_exports: false
     build:
+      skip:
+        - if: materialx_build_set != "cpp"
+          then: true
       files:
         - bin/MaterialXView
         - bin/MaterialXGraphEditor
@@ -1081,6 +1097,9 @@ outputs:
       name: materialx-python
     inherit: materialx-python-build
     build:
+      skip:
+        - if: materialx_build_set != "python"
+          then: true
       string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
       files:
         - lib/python*/site-packages/MaterialX/**
@@ -1114,6 +1133,10 @@ outputs:
 
   - package:
       name: materialx
+    build:
+      skip:
+        - if: materialx_build_set != "python"
+          then: true
     requirements:
       run:
         - ${{ pin_subpackage('materialx-lib', exact=True) }}

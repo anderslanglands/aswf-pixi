@@ -88,6 +88,7 @@ def main() -> None:
     parser.add_argument("--output-dir", default="output")
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--build-number", default="")
+    parser.add_argument("--include-package", action="append", default=[])
     args = parser.parse_args()
 
     if args.build_number and not BUILD_NUMBER_RE.fullmatch(args.build_number):
@@ -99,6 +100,17 @@ def main() -> None:
 
     output_dir = Path(args.output_dir)
     packages = collect_packages(output_dir, args.platform)
+    include_packages = set(args.include_package)
+    if include_packages:
+        package_names = {str(metadata["name"]) for _, metadata in packages}
+        missing = sorted(include_packages - package_names)
+        if missing:
+            raise SystemExit(f"Requested package(s) were not found in build output: {', '.join(missing)}")
+        packages = [
+            (path, metadata)
+            for path, metadata in packages
+            if str(metadata["name"]) in include_packages
+        ]
     records = validate_packages(
         packages,
         recipe=recipe,

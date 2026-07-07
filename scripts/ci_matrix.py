@@ -22,6 +22,27 @@ DEFAULT_PLATFORMS = ["linux-64", "win-64", "osx-arm64"]
 OPENUSD_RECIPE = "openusd/26.05"
 OPENUSD_TYPHOON_RECIPE = "openusd-typhoon/26.05.3.2aa94b0ab"
 
+MATERIALX_PARALLEL_PYTHON_RECIPES = {"materialx/1.39.4", "materialx/1.39.5"}
+MATERIALX_CPP_MANIFEST_PACKAGES = {
+    "materialx/1.39.4": (
+        "materialx-lib",
+        "materialx-dev",
+        "materialx-render",
+        "materialx-render-osl",
+        "materialx-render-mdl",
+        "materialx-guitools",
+    ),
+    "materialx/1.39.5": (
+        "materialx-lib",
+        "materialx-dev",
+        "materialx-render",
+        "materialx-render-osl",
+        "materialx-render-mdl",
+        "materialx-render-slang",
+        "materialx-guitools",
+    ),
+}
+
 RECIPE_SUPPORTED_PLATFORMS = {
     "optix-dev": {"linux-64", "win-64"},
 }
@@ -304,7 +325,36 @@ def matrix(
                 "platform": platform,
                 "runner": RUNNERS[platform],
                 "build_number": build_numbers[recipe_key],
+                "manifest_packages": "",
             }
+            if recipe_key in MATERIALX_PARALLEL_PYTHON_RECIPES:
+                materialx_python_versions = read_simple_variant_values(recipe, "python")
+                include.append(
+                    {
+                        **base_item,
+                        "partition": "cpp",
+                        "artifact": f"{package}-{version}-{platform}-cpp",
+                        "variant_args": "materialx_build_set=cpp",
+                        "manifest_packages": " ".join(MATERIALX_CPP_MANIFEST_PACKAGES[recipe_key]),
+                    }
+                )
+                default_python = materialx_python_versions[0]
+                for python in materialx_python_versions:
+                    python_tag = python.replace(".", "")
+                    manifest_packages = ["materialx-python"]
+                    if python == default_python:
+                        manifest_packages.append("materialx")
+                    include.append(
+                        {
+                            **base_item,
+                            "partition": f"py{python_tag}",
+                            "artifact": f"{package}-{version}-{platform}-py{python_tag}",
+                            "variant_args": f"materialx_build_set=python python={python}",
+                            "manifest_packages": " ".join(manifest_packages),
+                        }
+                    )
+                continue
+
             if recipe_key == OPENUSD_TYPHOON_RECIPE:
                 openusd_python_versions = read_simple_variant_values(recipe, "python")
                 for python in openusd_python_versions:

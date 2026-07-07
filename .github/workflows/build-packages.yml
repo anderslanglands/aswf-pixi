@@ -162,13 +162,25 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
           BUILD_NUMBER: ${{ matrix.build_number }}
           OUTPUT_DIR: ${{ steps.package-output.outputs.dir }}
+          MANIFEST_PACKAGES: ${{ matrix.manifest_packages }}
         run: |
-          pixi run -- python scripts/collect_artifacts.py \
-            --recipe "$RECIPE" \
-            --platform "$PLATFORM" \
-            --output-dir "$OUTPUT_DIR" \
-            --manifest "$OUTPUT_DIR/manifest.json" \
+          args=(
+            python scripts/collect_artifacts.py
+            --recipe "$RECIPE"
+            --platform "$PLATFORM"
+            --output-dir "$OUTPUT_DIR"
+            --manifest "$OUTPUT_DIR/manifest.json"
             --build-number "$BUILD_NUMBER"
+          )
+
+          if [[ -n "$MANIFEST_PACKAGES" ]]; then
+            read -r -a package_names <<< "$MANIFEST_PACKAGES"
+            for package_name in "${package_names[@]}"; do
+              args+=(--include-package "$package_name")
+            done
+          fi
+
+          pixi run -- "${args[@]}"
 
       - name: Smoke test local Windows OptiX package
         if: ${{ matrix.recipe == 'optix-dev/9.1.0' && matrix.platform == 'win-64' }}
