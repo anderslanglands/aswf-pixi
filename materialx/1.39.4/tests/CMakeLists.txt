@@ -13,4 +13,36 @@ target_link_libraries(materialx_consumer
         MaterialXGenShader
         MaterialXGenGlsl
         MaterialXGenMsl
+        MaterialXGenOsl
+        MaterialXGenMdl
 )
+
+if(TARGET MaterialXRender AND TARGET MaterialXRenderGlsl)
+    add_executable(materialx_render_consumer materialx_render_consumer.cpp)
+    target_compile_features(materialx_render_consumer PRIVATE cxx_std_17)
+    target_link_libraries(materialx_render_consumer
+        PRIVATE
+            MaterialXRender
+            MaterialXRenderGlsl
+    )
+endif()
+
+if(TARGET MaterialXRenderOsl)
+    add_executable(materialx_render_osl_consumer materialx_render_osl_consumer.cpp)
+    target_compile_features(materialx_render_osl_consumer PRIVATE cxx_std_17)
+    target_link_libraries(materialx_render_osl_consumer
+        PRIVATE
+            MaterialXRenderOsl
+            MaterialXGenOsl
+    )
+endif()
+
+if(APPLE AND TARGET MaterialXRenderMsl)
+    enable_language(OBJCXX)
+    add_executable(materialx_render_msl_consumer materialx_render_msl_consumer.mm)
+    target_compile_features(materialx_render_msl_consumer PRIVATE cxx_std_17)
+    target_link_libraries(materialx_render_msl_consumer
+        PRIVATE
+            MaterialXRenderMsl
+    )
+endif()

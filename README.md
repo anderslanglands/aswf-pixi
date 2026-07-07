@@ -120,12 +120,12 @@ Recipe versions:
 
 MaterialX is an open standard for transferring rich material and look-development content.
 
-- `materialx-lib`: Shared MaterialX runtime libraries plus installed MaterialX libraries and resources. Includes the GLSL, MSL, OSL, MDL, and Slang generator libraries; render modules remain opt-in.
+- `materialx-lib`: Shared MaterialX runtime libraries plus installed MaterialX libraries and resources. Includes the GLSL, MSL, OSL, and MDL generator libraries; 1.39.5 also includes Slang generator libraries. Render modules remain opt-in.
 - `materialx-dev`: C++ headers, CMake package files, and Windows import libraries for the base and generator targets. Depends on the matching `materialx-lib`.
 - `materialx-render`: Core render library plus platform render backends such as GLSL/OpenGL, hardware helpers, macOS MSL/Metal when available, render resources, headers, and supplemental CMake targets. Depends on the matching `materialx-dev` and Linux OpenGL/X11 development packages.
-- `materialx-render-osl`: OSL render backend plus generated OSO support files and `MaterialXGenOsl_LibsToOso`. Depends on `materialx-render`, OpenShadingLanguage, and OpenImageIO.
-- `materialx-render-mdl`: MDL convenience package for consumers that want MaterialX MDL generation together with the MDL SDK toolchain. Upstream MaterialX 1.39.5 does not install a `MaterialXRenderMdl` library.
-- `materialx-render-slang`: Slang render backend. Depends on `materialx-render` and `shader-slang-dev 2026.11`; the recipe fetches the matching `shader-slang/slang-rhi` source at the pinned Slang submodule revision, packages the public RHI headers, and consumes the `slang` CMake package exported by `shader-slang-dev`.
+- `materialx-render-osl`: OSL render backend. For 1.39.5 this also includes generated OSO support files and `MaterialXGenOsl_LibsToOso`. Depends on `materialx-render`, OpenShadingLanguage, and OpenImageIO.
+- `materialx-render-mdl`: MDL convenience package for consumers that want MaterialX MDL generation together with the MDL SDK toolchain. Upstream MaterialX 1.39.x does not install a `MaterialXRenderMdl` library.
+- `materialx-render-slang`: Slang render backend, available for 1.39.5 and newer recipe versions that include upstream Slang renderer sources; 1.39.4 does not provide this package. Depends on `materialx-render` and `shader-slang-dev 2026.11`; the recipe fetches the matching `shader-slang/slang-rhi` source at the pinned Slang submodule revision, packages the public RHI headers, and consumes the `slang` CMake package exported by `shader-slang-dev`.
 - `materialx-guitools`: MaterialX viewer and graph editor executables. Depends on `materialx-render`; the recipe uses a git checkout with submodules because the release tarball does not include the GUI submodule payloads.
 - `materialx-python`: Python bindings for MaterialX, built for Python 3.10 through 3.14. Depends on the matching `materialx-lib`. Generator Python modules are included; render Python modules and upstream helper scripts that require disabled render modules are not included.
 - `materialx`: Default metapackage for complete base consumers. Depends on the matching `materialx-lib`, `materialx-dev`, and compatible `materialx-python`; render, renderer-specific dependencies, and GUI tools are opt-in.

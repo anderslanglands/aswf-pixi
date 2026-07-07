@@ -17,6 +17,18 @@ materialx-dev = "==1.39.4"
 [feature.materialx-python.dependencies]
 materialx-python = "==1.39.4"
 
+[feature.materialx-render.dependencies]
+materialx-render = "==1.39.4"
+
+[feature.materialx-render-osl.dependencies]
+materialx-render-osl = "==1.39.4"
+
+[feature.materialx-render-mdl.dependencies]
+materialx-render-mdl = "==1.39.4"
+
+[feature.materialx-guitools.dependencies]
+materialx-guitools = "==1.39.4"
+
 [feature.materialx.dependencies]
 materialx = "==1.39.4"
 
@@ -24,4 +36,8 @@ materialx = "==1.39.4"
 materialx-lib = ["materialx-lib"]
 materialx-dev = ["materialx-dev"]
 materialx-python = ["materialx-python"]
+materialx-render = ["materialx-render"]
+materialx-render-osl = ["materialx-render-osl"]
+materialx-render-mdl = ["materialx-render-mdl"]
+materialx-guitools = ["materialx-guitools"]
 materialx = ["materialx"]
