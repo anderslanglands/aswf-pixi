@@ -13,10 +13,6 @@ source:
     submodules: true
     patches:
       - patches/fix-render-slang-gcc15.patch
-  - git: https://github.com/shader-slang/slang-rhi.git
-    rev: ${{ slang_rhi_rev }}
-    target_directory: slang-rhi
-
 build:
   number: ${{ build_number }}
 
@@ -437,6 +433,10 @@ outputs:
 
   - staging:
       name: materialx-render-slang-build
+    source:
+      - git: https://github.com/shader-slang/slang-rhi.git
+        rev: ${{ slang_rhi_rev }}
+        target_directory: slang-rhi
     build:
       script:
         - if: unix
