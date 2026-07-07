@@ -1,5 +1,5 @@
 [workspace]
-name = "openusd-typhoon-26.05.2.05126acbb-consumer"
+name = "openusd-typhoon-26.05.3.2aa94b0ab-consumer"
 channels = [
   "https://conda.anaconda.org/anderslanglands/label/test",
   "https://conda.anaconda.org/anderslanglands",
@@ -9,4 +9,4 @@ platforms = ["linux-64"]
 channel-priority = "disabled"
 
 [dependencies]
-openusd-typhoon = "==26.05.2.05126acbb"
+openusd-typhoon = "==26.05.3.2aa94b0ab"
