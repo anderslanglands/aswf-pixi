@@ -60,7 +60,7 @@ endif()
 _materialx_add_optional_library(MaterialXRender MaterialXRender)
 if(TARGET MaterialXRender)
     set_target_properties(MaterialXRender PROPERTIES
-        INTERFACE_LINK_LIBRARIES "MaterialXGenShader;MaterialXGenHw")
+        INTERFACE_LINK_LIBRARIES "MaterialXGenShader")
 endif()
 
 _materialx_add_optional_library(MaterialXRenderHw MaterialXRenderHw)
