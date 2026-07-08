@@ -20,7 +20,7 @@ RUNNERS = {
 DEFAULT_PLATFORMS = ["linux-64", "win-64", "osx-arm64"]
 
 OPENUSD_RECIPE = "openusd/26.05"
-OPENUSD_TYPHOON_RECIPE = "openusd-typhoon/26.05.4.6d9726091"
+OPENUSD_TYPHOON_RECIPE = "openusd-typhoon/26.05.5.6be07687d"
 
 MATERIALX_PARALLEL_PYTHON_RECIPES = {"materialx/1.39.4", "materialx/1.39.5"}
 MATERIALX_CPP_MANIFEST_PACKAGES = {
