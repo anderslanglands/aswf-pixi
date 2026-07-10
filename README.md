@@ -53,6 +53,15 @@ gh workflow run build-packages.yml \
 
 # Packages
 
+## FLIP Evaluator
+
+Recipe versions:
+- `1.7`
+
+FLIP Evaluator provides the FLIP image difference metric as a Python extension and command-line tool.
+
+- `flip-evaluator`: Python extension module and `flip` command-line tool, built for Python 3.10 through 3.14.
+
 ## Imath
 
 Recipe versions:

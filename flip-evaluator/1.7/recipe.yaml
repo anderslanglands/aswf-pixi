@@ -1,0 +1,54 @@
+context:
+  version: "1.7"
+  build_number: 0
+
+package:
+  name: flip-evaluator
+  version: ${{ version }}
+
+source:
+  - url: https://files.pythonhosted.org/packages/00/dc/39cc51468562899883b43d04b9754c634798e6f7f8ffcd3b984743da041c/flip_evaluator-${{ version }}.tar.gz
+    sha256: 88204ec5000fa90b26e00f6f21e8d73f18e5afac7e8a23cb0803b117b3da081b
+
+build:
+  number: ${{ build_number }}
+  string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+  script:
+    - if: unix
+      then: $PYTHON -m pip install . --no-deps --no-build-isolation -vv
+    - if: win
+      then: "%PYTHON% -m pip install . --no-deps --no-build-isolation -vv"
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  host:
+    - nanobind
+    - pip
+    - python
+    - scikit-build-core
+  run:
+    - if: linux
+      then: libgomp
+    - python
+
+tests:
+  - python:
+      imports:
+        - flip_evaluator
+        - flip_evaluator.flip_python_api
+  - script:
+      - flip -h
+      - python -c "import flip_evaluator, pathlib; assert pathlib.Path(flip_evaluator.__file__).name == '__init__.py'"
+    requirements:
+      run:
+        - python
+
+about:
+  homepage: https://github.com/NVlabs/flip
+  repository: https://github.com/NVlabs/flip
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Difference evaluator for alternating rendered images

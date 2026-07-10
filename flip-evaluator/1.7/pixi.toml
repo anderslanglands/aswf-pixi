@@ -1,0 +1,15 @@
+[workspace]
+name = "flip-evaluator-1.7-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.flip-evaluator.dependencies]
+flip-evaluator = "==1.7"
+
+[environments]
+flip-evaluator = ["flip-evaluator"]
