@@ -17,7 +17,16 @@ build:
     - if: unix
       then: $PYTHON -m pip install . --no-deps --no-build-isolation -vv
     - if: win
-      then: "%PYTHON% -m pip install . --no-deps --no-build-isolation -vv"
+      then: |
+        "%PYTHON%" -m pip install . --no-deps --no-build-isolation -vv
+
+        if exist "%PREFIX%\Scripts\flip.exe" del "%PREFIX%\Scripts\flip.exe"
+        if not exist "%PREFIX%\Scripts" mkdir "%PREFIX%\Scripts"
+        (
+          echo @echo off
+          echo "%%~dp0..\python.exe" -m flip_evaluator.flip_python_api %%*
+          echo exit /b %%ERRORLEVEL%%
+        ) > "%PREFIX%\Scripts\flip.bat"
 
 requirements:
   build:
