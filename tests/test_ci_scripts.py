@@ -307,7 +307,7 @@ class CiMatrixTests(unittest.TestCase):
         )
 
     def test_openusd_typhoon_matrix_splits_python_variants(self) -> None:
-        recipe = Path("openusd-typhoon/26.05.6.72fa115c7")
+        recipe = Path("openusd-typhoon/26.05.7.ebc59aadd")
         result = ci_matrix.matrix(
             [recipe],
             ["linux-64"],
@@ -323,27 +323,27 @@ class CiMatrixTests(unittest.TestCase):
                 (
                     "py310",
                     "python=3.10",
-                    "openusd-typhoon-26.05.6.72fa115c7-linux-64-py310",
+                    "openusd-typhoon-26.05.7.ebc59aadd-linux-64-py310",
                 ),
                 (
                     "py311",
                     "python=3.11",
-                    "openusd-typhoon-26.05.6.72fa115c7-linux-64-py311",
+                    "openusd-typhoon-26.05.7.ebc59aadd-linux-64-py311",
                 ),
                 (
                     "py312",
                     "python=3.12",
-                    "openusd-typhoon-26.05.6.72fa115c7-linux-64-py312",
+                    "openusd-typhoon-26.05.7.ebc59aadd-linux-64-py312",
                 ),
                 (
                     "py313",
                     "python=3.13",
-                    "openusd-typhoon-26.05.6.72fa115c7-linux-64-py313",
+                    "openusd-typhoon-26.05.7.ebc59aadd-linux-64-py313",
                 ),
                 (
                     "py314",
                     "python=3.14",
-                    "openusd-typhoon-26.05.6.72fa115c7-linux-64-py314",
+                    "openusd-typhoon-26.05.7.ebc59aadd-linux-64-py314",
                 ),
             ],
         )
@@ -362,17 +362,18 @@ class CiMatrixTests(unittest.TestCase):
         self.assertNotIn("build-openusd-typhoon-26-05-3-2aa94b0ab", tasks)
         self.assertNotIn("build-openusd-typhoon-26-05-4-6d9726091", tasks)
         self.assertNotIn("build-openusd-typhoon-26-05-5-6be07687d", tasks)
+        self.assertNotIn("build-openusd-typhoon-26-05-6-72fa115c7", tasks)
         self.assertEqual(
             tasks["build-openusd-typhoon"],
-            {"depends-on": ["build-openusd-typhoon-26-05-6-72fa115c7"]},
+            {"depends-on": ["build-openusd-typhoon-26-05-7-ebc59aadd"]},
         )
-        build_task = tasks["build-openusd-typhoon-26-05-6-72fa115c7"]
-        self.assertIn("--recipe openusd-typhoon/26.05.6.72fa115c7/recipe.yaml", build_task)
+        build_task = tasks["build-openusd-typhoon-26-05-7-ebc59aadd"]
+        self.assertIn("--recipe openusd-typhoon/26.05.7.ebc59aadd/recipe.yaml", build_task)
         self.assertIn("--channel https://conda.anaconda.org/anderslanglands/label/test", build_task)
         self.assertIn("--channel-priority disabled", build_task)
 
     def test_openusd_typhoon_consumer_manifest_uses_relaxed_test_label_channels(self) -> None:
-        recipe_version = "26.05.6.72fa115c7"
+        recipe_version = "26.05.7.ebc59aadd"
         manifest = tomllib.loads(
             (ROOT / "openusd-typhoon" / recipe_version / "pixi.toml").read_text(encoding="utf-8")
         )
@@ -389,7 +390,7 @@ class CiMatrixTests(unittest.TestCase):
         self.assertEqual(manifest["dependencies"]["openusd-typhoon"], f"=={recipe_version}")
 
     def test_openusd_typhoon_recipe_is_test_label_only(self) -> None:
-        recipe = ROOT / "openusd-typhoon" / "26.05.6.72fa115c7"
+        recipe = ROOT / "openusd-typhoon" / "26.05.7.ebc59aadd"
         recipe_text = (recipe / "recipe.yaml").read_text(encoding="utf-8")
 
         version_match = re.search(r'(?m)^  version: "(?P<version>[^"]+)"$', recipe_text)
@@ -399,7 +400,7 @@ class CiMatrixTests(unittest.TestCase):
         assert version_match is not None
         assert upstream_rev_match is not None
         self.assertEqual(version_match.group("version"), recipe.name)
-        self.assertEqual(upstream_rev_match.group("rev"), "72fa115c7a1ddba6f3cf48a1450d5ff138d30441")
+        self.assertEqual(upstream_rev_match.group("rev"), "ebc59aadda51911e2f1628fc4b1b490a1cfd5fa6")
         self.assertTrue(upstream_rev_match.group("rev").startswith(recipe.name.rsplit(".", 1)[-1]))
 
         self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"test-label"})
@@ -440,7 +441,7 @@ class CiMatrixTests(unittest.TestCase):
     def test_openusd_recipes_cap_high_parallelism_instead_of_failing(self) -> None:
         cases = [
             (ROOT / "openusd" / "26.05" / "recipe.yaml", 3),
-            (ROOT / "openusd-typhoon" / "26.05.6.72fa115c7" / "recipe.yaml", 1),
+            (ROOT / "openusd-typhoon" / "26.05.7.ebc59aadd" / "recipe.yaml", 1),
         ]
 
         for recipe, staging_builds in cases:
@@ -1070,18 +1071,18 @@ class PublishPackagesTests(unittest.TestCase):
     def make_typhoon_artifacts(tmp: Path) -> Path:
         artifact_dir = tmp / "artifacts" / "job" / "linux-64"
         artifact_dir.mkdir(parents=True)
-        package = artifact_dir / "openusd-typhoon-26.05.6.72fa115c7-py312h123_0.conda"
+        package = artifact_dir / "openusd-typhoon-26.05.7.ebc59aadd-py312h123_0.conda"
         package.write_bytes(b"placeholder")
         manifest = tmp / "artifacts" / "job" / "manifest.json"
         manifest.write_text(
             json.dumps(
                 {
-                    "recipe": "openusd-typhoon/26.05.6.72fa115c7",
+                    "recipe": "openusd-typhoon/26.05.7.ebc59aadd",
                     "platform": "linux-64",
                     "packages": [
                         {
-                            "path": "linux-64/openusd-typhoon-26.05.6.72fa115c7-py312h123_0.conda",
-                            "file_name": "openusd-typhoon-26.05.6.72fa115c7-py312h123_0.conda",
+                            "path": "linux-64/openusd-typhoon-26.05.7.ebc59aadd-py312h123_0.conda",
+                            "file_name": "openusd-typhoon-26.05.7.ebc59aadd-py312h123_0.conda",
                             "subdir": "linux-64",
                         }
                     ],
@@ -1187,7 +1188,7 @@ extra:
 
             self.assertNotEqual(completed.returncode, 0)
             self.assertIn(
-                "Recipe openusd-typhoon/26.05.6.72fa115c7 may only be published to test-label; requested default-label.",
+                "Recipe openusd-typhoon/26.05.7.ebc59aadd may only be published to test-label; requested default-label.",
                 completed.stderr,
             )
 
@@ -1195,7 +1196,7 @@ extra:
 class SmokeConsumersTests(unittest.TestCase):
     def test_channel_priority_for_recipe_relaxes_openusd_typhoon_only(self) -> None:
         self.assertEqual(
-            smoke_consumers.channel_priority_for_recipe(Path("openusd-typhoon/26.05.6.72fa115c7")),
+            smoke_consumers.channel_priority_for_recipe(Path("openusd-typhoon/26.05.7.ebc59aadd")),
             "disabled",
         )
         self.assertEqual(smoke_consumers.channel_priority_for_recipe(Path("openusd/26.05")), "strict")
@@ -1207,7 +1208,7 @@ class SmokeConsumersTests(unittest.TestCase):
 
             smoke_consumers.write_manifest(
                 manifest,
-                {"name": "openusd-typhoon", "version": "26.05.6.72fa115c7", "build": "py312h123_0"},
+                {"name": "openusd-typhoon", "version": "26.05.7.ebc59aadd", "build": "py312h123_0"},
                 "linux-64",
                 [
                     "https://conda.anaconda.org/anderslanglands/label/test",
