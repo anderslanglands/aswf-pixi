@@ -113,7 +113,7 @@ jobs:
             conda-forge
           )
           channel_priority=strict
-          if [[ "$RECIPE" == openusd-typhoon/* ]]; then
+          if [[ "$RECIPE" == openusd-typhoon/* || "$RECIPE" == goldeneye/* ]]; then
             channels=(
               https://conda.anaconda.org/anderslanglands/label/test
               https://conda.anaconda.org/anderslanglands

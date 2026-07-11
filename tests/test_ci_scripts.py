@@ -207,7 +207,7 @@ class CiMatrixTests(unittest.TestCase):
         self.assertIsNotNone(build_step_match)
         assert build_step_match is not None
         build_step = build_step_match.group("body")
-        pre_typhoon, typhoon_and_rest = build_step.split('if [[ "$RECIPE" == openusd-typhoon/* ]]; then', 1)
+        pre_typhoon, typhoon_and_rest = build_step.split('if [[ "$RECIPE" == openusd-typhoon/* || "$RECIPE" == goldeneye/* ]]; then', 1)
         typhoon_block, post_typhoon = typhoon_and_rest.split("\n          fi", 1)
         self.assertIn("https://conda.anaconda.org/anderslanglands", pre_typhoon)
         self.assertIn("conda-forge", pre_typhoon)
@@ -348,6 +348,28 @@ class CiMatrixTests(unittest.TestCase):
             ],
         )
 
+    def test_goldeneye_matrix_splits_python_variants(self) -> None:
+        recipe = Path("goldeneye/0.1.0")
+        result = ci_matrix.matrix(
+            [recipe],
+            ["linux-64"],
+            {recipe.as_posix(): "2"},
+        )
+
+        self.assertEqual(
+            [
+                (item["partition"], item["variant_args"], item["artifact"])
+                for item in result["include"]
+            ],
+            [
+                ("py310", "python=3.10", "goldeneye-0.1.0-linux-64-py310"),
+                ("py311", "python=3.11", "goldeneye-0.1.0-linux-64-py311"),
+                ("py312", "python=3.12", "goldeneye-0.1.0-linux-64-py312"),
+                ("py313", "python=3.13", "goldeneye-0.1.0-linux-64-py313"),
+                ("py314", "python=3.14", "goldeneye-0.1.0-linux-64-py314"),
+            ],
+        )
+
     def test_openusd_typhoon_root_build_task_uses_relaxed_test_label_channels(self) -> None:
         manifest = tomllib.loads((ROOT / "pixi.toml").read_text(encoding="utf-8"))
         tasks = manifest["tasks"]
@@ -370,6 +392,19 @@ class CiMatrixTests(unittest.TestCase):
         )
         build_task = tasks["build-openusd-typhoon-26-05-8-4bdd4b656"]
         self.assertIn("--recipe openusd-typhoon/26.05.8.4bdd4b656/recipe.yaml", build_task)
+        self.assertIn("--channel https://conda.anaconda.org/anderslanglands/label/test", build_task)
+        self.assertIn("--channel-priority disabled", build_task)
+
+    def test_goldeneye_root_build_task_uses_relaxed_test_label_channels(self) -> None:
+        manifest = tomllib.loads((ROOT / "pixi.toml").read_text(encoding="utf-8"))
+        tasks = manifest["tasks"]
+
+        self.assertEqual(
+            tasks["build-goldeneye"],
+            {"depends-on": ["build-goldeneye-0-1-0"]},
+        )
+        build_task = tasks["build-goldeneye-0-1-0"]
+        self.assertIn("--recipe goldeneye/0.1.0/recipe.yaml", build_task)
         self.assertIn("--channel https://conda.anaconda.org/anderslanglands/label/test", build_task)
         self.assertIn("--channel-priority disabled", build_task)
 
@@ -486,6 +521,17 @@ class CiMatrixTests(unittest.TestCase):
                 self.assertEqual(recipe_text.count('set "BUILD_JOBS=24"'), staging_builds)
                 self.assertEqual(recipe_text.count('set "CMAKE_BUILD_PARALLEL_LEVEL=!BUILD_JOBS!"'), staging_builds)
                 self.assertEqual(recipe_text.count("--parallel !BUILD_JOBS!"), staging_builds)
+
+    def test_goldeneye_recipe_is_test_label_only(self) -> None:
+        recipe = ROOT / "goldeneye" / "0.1.0"
+        recipe_text = (recipe / "recipe.yaml").read_text(encoding="utf-8")
+
+        self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"test-label"})
+        self.assertEqual(resolve_build_numbers.recipe_package_names(recipe), ["goldeneye"])
+        self.assertIn("git: https://github.com/anderslanglands/goldeneye.git", recipe_text)
+        self.assertIn("upstream_rev: a51cfaf43f8814a76e593fe7c44f7b8e5a6a12ac", recipe_text)
+        self.assertIn("openusd-typhoon", recipe_text)
+        self.assertIn("tomli", recipe_text)
 
     def test_recipe_publish_policy_allows_test_label_and_artifact_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
@@ -1195,9 +1241,13 @@ extra:
 
 
 class SmokeConsumersTests(unittest.TestCase):
-    def test_channel_priority_for_recipe_relaxes_openusd_typhoon_only(self) -> None:
+    def test_channel_priority_for_recipe_relaxes_test_label_dependency_recipes(self) -> None:
         self.assertEqual(
             smoke_consumers.channel_priority_for_recipe(Path("openusd-typhoon/26.05.8.4bdd4b656")),
+            "disabled",
+        )
+        self.assertEqual(
+            smoke_consumers.channel_priority_for_recipe(Path("goldeneye/0.1.0")),
             "disabled",
         )
         self.assertEqual(smoke_consumers.channel_priority_for_recipe(Path("openusd/26.05")), "strict")
@@ -1230,6 +1280,119 @@ class SmokeConsumersTests(unittest.TestCase):
                 rendered,
             )
             self.assertIn('channel-priority = "disabled"', rendered)
+
+    def test_run_goldeneye_checks_exercises_cli_and_pytest_plugin(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            manifest = tmp / "pixi.toml"
+            manifest.write_text("", encoding="utf-8")
+
+            calls: list[tuple[str, ...]] = []
+            original_pixi = smoke_consumers.pixi
+
+            def fake_pixi(*args: str) -> None:
+                calls.append(args)
+
+            try:
+                smoke_consumers.pixi = fake_pixi
+                smoke_consumers.run_goldeneye_checks(manifest, tmp)
+            finally:
+                smoke_consumers.pixi = original_pixi
+
+            self.assertEqual(
+                calls[0],
+                ("run", "--manifest-path", str(manifest), "goldeneye", "--help"),
+            )
+            self.assertEqual(
+                calls[1],
+                (
+                    "run",
+                    "--manifest-path",
+                    str(manifest),
+                    "goldeneye",
+                    "init",
+                    str(tmp / "smoke-goldeneye.toml"),
+                ),
+            )
+            self.assertIn(
+                ("run", "--manifest-path", str(manifest), "python", "-m", "pytest", "--help"),
+                calls,
+            )
+            self.assertIn(
+                ("run", "--manifest-path", str(manifest), "usdrender", "--help"),
+                calls,
+            )
+            python_checks = [call for call in calls if call[:4] == ("run", "--manifest-path", str(manifest), "python")]
+            self.assertTrue(any("flip_evaluator" in call[-1] for call in python_checks))
+            self.assertTrue(any("from pxr import Usd" in call[-1] for call in python_checks))
+            self.assertTrue(any("goldeneye.view_server" in call[-1] for call in python_checks))
+            self.assertTrue(any("entry_points(group='pytest11')" in call[-1] for call in python_checks))
+
+    def test_main_dispatches_goldeneye_packages_to_python_smoke_checks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            tmp = Path(tmp_raw)
+            manifest = tmp / "manifest.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "recipe": "goldeneye/0.1.0",
+                        "platform": "linux-64",
+                        "packages": [
+                            {
+                                "name": "goldeneye",
+                                "version": "0.1.0",
+                                "build": "py310h123_0",
+                                "build_number": 0,
+                                "subdir": "linux-64",
+                                "file_name": "goldeneye-0.1.0-py310h123_0.conda",
+                                "path": "linux-64/goldeneye-0.1.0-py310h123_0.conda",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            calls: list[tuple[Path, Path]] = []
+            original_argv = sys.argv
+            original_pixi = smoke_consumers.pixi
+            original_check_installed = smoke_consumers.check_installed_package
+            original_run_goldeneye = smoke_consumers.run_goldeneye_checks
+
+            def fake_pixi(*args: str) -> None:
+                return None
+
+            def fake_check_installed_package(*args: object, **kwargs: object) -> None:
+                return None
+
+            def fake_run_goldeneye_checks(manifest_path: Path, tmp_path: Path) -> None:
+                calls.append((manifest_path, tmp_path))
+
+            try:
+                sys.argv = [
+                    "smoke_consumers.py",
+                    "--recipe",
+                    "goldeneye/0.1.0",
+                    "--platform",
+                    "linux-64",
+                    "--target",
+                    "test-label",
+                    "--artifact-manifest",
+                    str(manifest),
+                ]
+                smoke_consumers.pixi = fake_pixi
+                smoke_consumers.check_installed_package = fake_check_installed_package
+                smoke_consumers.run_goldeneye_checks = fake_run_goldeneye_checks
+                smoke_consumers.main()
+            finally:
+                sys.argv = original_argv
+                smoke_consumers.pixi = original_pixi
+                smoke_consumers.check_installed_package = original_check_installed
+                smoke_consumers.run_goldeneye_checks = original_run_goldeneye
+
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(calls[0][0].name, "pixi.toml")
+            self.assertTrue(calls[0][1].name.startswith("goldeneye-0.1.0-smoke-"))
 
     def test_run_cmake_consumer_runs_ctest_after_build(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:

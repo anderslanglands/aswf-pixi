@@ -62,6 +62,15 @@ FLIP Evaluator provides the FLIP image difference metric as a Python extension a
 
 - `flip-evaluator`: Python extension module and `flip` command-line tool, built for Python 3.10 through 3.14.
 
+## GoldenEye
+
+Recipe versions:
+- `0.1.0`
+
+GoldenEye is a pytest-based runner for USD render regression suites, with image comparison and HTML report viewing.
+
+- `goldeneye`: Python command-line tool and pytest plugin, built for Python 3.10 through 3.14. It depends on `flip-evaluator ==1.7` and `openusd-typhoon` so the default Typhoon renderer works out of the box. Because `openusd-typhoon` is test-label-only, recipe metadata restricts `goldeneye` publishing to `test-label`.
+
 ## Imath
 
 Recipe versions:

@@ -369,6 +369,20 @@ def matrix(
                     )
                 continue
 
+            if package == "goldeneye":
+                goldeneye_python_versions = read_simple_variant_values(recipe, "python")
+                for python in goldeneye_python_versions:
+                    python_tag = python.replace(".", "")
+                    include.append(
+                        {
+                            **base_item,
+                            "partition": f"py{python_tag}",
+                            "artifact": f"{package}-{version}-{platform}-py{python_tag}",
+                            "variant_args": f"python={python}",
+                        }
+                    )
+                continue
+
             if recipe_key == OPENUSD_RECIPE:
                 openusd_python_versions = read_simple_variant_values(recipe, "python")
                 include.append(

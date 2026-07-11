@@ -49,7 +49,7 @@ def channels_for_target(target: str, local_channel: str | None) -> list[str]:
 
 
 def channel_priority_for_recipe(recipe: Path) -> str:
-    if len(recipe.parts) >= 2 and recipe.parts[-2] == "openusd-typhoon":
+    if len(recipe.parts) >= 2 and recipe.parts[-2] in {"goldeneye", "openusd-typhoon"}:
         return "disabled"
     return "strict"
 
@@ -308,6 +308,29 @@ def run_optix_dev_windows_checks(manifest: Path, recipe: Path) -> None:
     )
 
 
+def run_goldeneye_checks(manifest: Path, tmp: Path) -> None:
+    config_path = tmp / "smoke-goldeneye.toml"
+    pixi("run", "--manifest-path", str(manifest), "goldeneye", "--help")
+    pixi("run", "--manifest-path", str(manifest), "goldeneye", "init", str(config_path))
+    pixi("run", "--manifest-path", str(manifest), "python", "-m", "pytest", "--help")
+    pixi("run", "--manifest-path", str(manifest), "usdrender", "--help")
+    pixi(
+        "run",
+        "--manifest-path",
+        str(manifest),
+        "python",
+        "-c",
+        (
+            "import importlib.metadata as m; "
+            "import flip_evaluator; "
+            "from pxr import Usd; "
+            "import goldeneye.config, goldeneye.view_server; "
+            "eps = m.entry_points(group='pytest11'); "
+            "assert any(ep.name == 'goldeneye' for ep in eps)"
+        ),
+    )
+
+
 def load_artifact_manifest(path: Path, recipe: Path, platform: str) -> dict[str, object]:
     manifest = json.loads(path.read_text(encoding="utf-8"))
     if manifest["recipe"] != recipe.as_posix():
@@ -346,6 +369,8 @@ def main() -> None:
             check_installed_package(manifest, package, target=args.target, local_channel=args.local_channel)
             if root_package == "optix-dev" and package["name"] == "optix-dev" and args.platform == "win-64":
                 run_optix_dev_windows_checks(manifest, recipe)
+            if root_package == "goldeneye" and package["name"] == "goldeneye":
+                run_goldeneye_checks(manifest, tmp)
             if run_consumer:
                 run_cmake_consumer(manifest, recipe, root_package, package, tmp)
         finally:

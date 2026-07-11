@@ -1,0 +1,13 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index 54fbff6..3bc511c 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -7,7 +7,7 @@ name = "goldeneye"
+ version = "0.1.0"
+ description = "Reusable USD render regression runner and report viewer"
+ readme = "README.md"
+-requires-python = ">=3.11"
++requires-python = ">=3.10"
+ license = "Apache-2.0"
+ authors = [{ name = "Anders Langlands" }]
+ dependencies = [
