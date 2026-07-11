@@ -522,11 +522,13 @@ class CiMatrixTests(unittest.TestCase):
                 self.assertEqual(recipe_text.count('set "CMAKE_BUILD_PARALLEL_LEVEL=!BUILD_JOBS!"'), staging_builds)
                 self.assertEqual(recipe_text.count("--parallel !BUILD_JOBS!"), staging_builds)
 
-    def test_goldeneye_recipe_is_test_label_only(self) -> None:
+    def test_goldeneye_recipe_allows_default_label(self) -> None:
         recipe = ROOT / "goldeneye" / "0.1.0"
         recipe_text = (recipe / "recipe.yaml").read_text(encoding="utf-8")
 
-        self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"test-label"})
+        self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"default-label", "test-label"})
+        ci_matrix.validate_recipe_publish_target(recipe, "test-label")
+        ci_matrix.validate_recipe_publish_target(recipe, "default-label")
         self.assertEqual(resolve_build_numbers.recipe_package_names(recipe), ["goldeneye"])
         self.assertIn("git: https://github.com/anderslanglands/goldeneye.git", recipe_text)
         self.assertIn("upstream_rev: a51cfaf43f8814a76e593fe7c44f7b8e5a6a12ac", recipe_text)
@@ -1252,6 +1254,31 @@ class SmokeConsumersTests(unittest.TestCase):
         )
         self.assertEqual(smoke_consumers.channel_priority_for_recipe(Path("openusd/26.05")), "strict")
         self.assertEqual(smoke_consumers.channel_priority_for_recipe(Path("openusd-typhoon")), "strict")
+
+    def test_channels_for_recipe_target_uses_main_then_test_for_default_goldeneye(self) -> None:
+        self.assertEqual(
+            smoke_consumers.channels_for_recipe_target("default-label", None, Path("goldeneye/0.1.0")),
+            [
+                "https://conda.anaconda.org/anderslanglands",
+                "https://conda.anaconda.org/anderslanglands/label/test",
+                "conda-forge",
+            ],
+        )
+        self.assertEqual(
+            smoke_consumers.channels_for_recipe_target("default-label", None, Path("openusd/26.05")),
+            [
+                "https://conda.anaconda.org/anderslanglands",
+                "conda-forge",
+            ],
+        )
+        self.assertEqual(
+            smoke_consumers.channels_for_recipe_target("test-label", None, Path("goldeneye/0.1.0")),
+            [
+                "https://conda.anaconda.org/anderslanglands/label/test",
+                "https://conda.anaconda.org/anderslanglands",
+                "conda-forge",
+            ],
+        )
 
     def test_write_manifest_uses_requested_channel_priority(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:

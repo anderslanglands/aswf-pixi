@@ -48,6 +48,18 @@ def channels_for_target(target: str, local_channel: str | None) -> list[str]:
     return CHANNELS[target]
 
 
+def channels_for_recipe_target(target: str, local_channel: str | None, recipe: Path) -> list[str]:
+    if target == "default-label" and len(recipe.parts) >= 2 and recipe.parts[-2] == "goldeneye":
+        if local_channel:
+            raise SystemExit("--local-channel is only valid with --target local-artifacts.")
+        return [
+            "https://conda.anaconda.org/anderslanglands",
+            "https://conda.anaconda.org/anderslanglands/label/test",
+            "conda-forge",
+        ]
+    return channels_for_target(target, local_channel)
+
+
 def channel_priority_for_recipe(recipe: Path) -> str:
     if len(recipe.parts) >= 2 and recipe.parts[-2] in {"goldeneye", "openusd-typhoon"}:
         return "disabled"
@@ -357,7 +369,7 @@ def main() -> None:
 
     artifact_manifest = load_artifact_manifest(Path(args.artifact_manifest), recipe, args.platform)
     root_package = recipe.parts[-2]
-    channels = channels_for_target(args.target, args.local_channel)
+    channels = channels_for_recipe_target(args.target, args.local_channel, recipe)
     channel_priority = channel_priority_for_recipe(recipe)
     for package in artifact_manifest["packages"]:
         tmp = Path(tempfile.mkdtemp(prefix=f"{package['name']}-{package['version']}-smoke-"))

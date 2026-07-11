@@ -66,3 +66,4 @@ about:
 extra:
   allowed_publish_targets:
     - test-label
+    - default-label

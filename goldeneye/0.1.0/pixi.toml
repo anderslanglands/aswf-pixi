@@ -1,8 +1,8 @@
 [workspace]
 name = "goldeneye-0.1.0-consumer"
 channels = [
-  "https://conda.anaconda.org/anderslanglands/label/test",
   "https://conda.anaconda.org/anderslanglands",
+  "https://conda.anaconda.org/anderslanglands/label/test",
   "conda-forge",
 ]
 platforms = ["linux-64"]
