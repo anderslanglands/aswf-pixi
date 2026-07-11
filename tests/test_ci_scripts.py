@@ -474,6 +474,22 @@ class CiMatrixTests(unittest.TestCase):
         self.assertNotRegex(recipe_text, r"(?m)^      name: openusd$")
         self.assertNotRegex(recipe_text, r"name: openusd-minimal")
 
+    def test_openusd_python_314_variants_use_standard_abi(self) -> None:
+        cases = [
+            (ROOT / "openusd" / "26.05" / "recipe.yaml", 4),
+            (ROOT / "openusd-typhoon" / "26.05.8.4bdd4b656" / "recipe.yaml", 2),
+        ]
+        constraint = (
+            '        - if: python == "3.14"\n'
+            "          then:\n"
+            "            - python_abi 3.14.* *_cp314"
+        )
+
+        for recipe, expected_count in cases:
+            recipe_text = recipe.read_text(encoding="utf-8")
+            self.assertEqual(recipe_text.count(constraint), expected_count)
+            self.assertNotIn("*_cp314t", recipe_text)
+
     def test_openusd_recipes_cap_high_parallelism_instead_of_failing(self) -> None:
         cases = [
             (ROOT / "openusd" / "26.05" / "recipe.yaml", 3),

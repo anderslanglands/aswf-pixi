@@ -276,6 +276,8 @@ Recipe versions:
 
 OpenUSD provides Pixar Universal Scene Description libraries, schemas, tools, Python modules, and imaging integrations.
 
+Python-enabled OpenUSD packages constrain Python 3.14 to the normal `cp314` ABI rather than conda-forge's free-threaded `cp314t` variant.
+
 - `openusd-minimal-lib`: Minimal non-Python runtime libraries and plugin resources. Depends only on MaterialX, OpenSubdiv, and TBB runtime packages.
 - `openusd-minimal-dev`: Minimal non-Python headers, CMake package files, and Windows import libraries. Depends on the matching `openusd-minimal-lib` plus MaterialX/OpenSubdiv/TBB development packages.
 - `openusd-minimal-tools`: Minimal non-Python command-line tools such as `usdcat`. Depends on the matching `openusd-minimal-lib`.
@@ -288,6 +290,8 @@ Recipe versions:
 - `26.05.8.4bdd4b656`
 
 OpenUSD Typhoon packages the NVIDIA Omniverse `typhoon-anders` branch at commit `4bdd4b656` as a test-label-only preview package. The Typhoon version format is `26.05.<recipe-build-serial>.<short-commit>`, where the serial starts at `1` and increments for each new Typhoon package definition; the current version is `26.05.8.4bdd4b656`. Rattler normalizes `+` and `-` separators in versions to `.`, so the version uses dot separators. Typhoon builds use channels ordered as test label, Anders, then conda-forge with channel priority disabled so dependencies can fall back across labels.
+
+OpenUSD Typhoon uses the same Python 3.14 normal `cp314` ABI constraint as OpenUSD, rather than allowing conda-forge's free-threaded `cp314t` variant.
 
 - `openusd-typhoon`: Full Python-enabled OpenUSD package derived from the latest full `openusd` package recipe. It contains runtime libraries, development files, tools, `pxr` Python modules, USD imaging, `usdview`, GUI dependencies, MaterialX render support, OpenQMC-backed hdEmbree support, and supported plugins. It is mutually exclusive with `openusd` and all `openusd-minimal-*` packages. Recipe metadata restricts publishing to `test-label`.
 

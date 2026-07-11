@@ -644,6 +644,9 @@ outputs:
         - materialx-dev 1.39.*
         - opensubdiv 3.7.*
         - python
+        - if: python == "3.14"
+          then:
+            - python_abi 3.14.* *_cp314
         - tbb-devel >=2022.3,<2023
 
   - staging:
@@ -1021,6 +1024,9 @@ outputs:
         - pyopengl
         - pyside6
         - python
+        - if: python == "3.14"
+          then:
+            - python_abi 3.14.* *_cp314
         - tbb-devel >=2022.3,<2023
         - zlib
         - if: linux
@@ -1202,6 +1208,9 @@ outputs:
         - materialx-dev 1.39.*
         - opensubdiv-dev 3.7.*
         - python
+        - if: python == "3.14"
+          then:
+            - python_abi 3.14.* *_cp314
         - tbb-devel >=2022.3,<2023
       run_constraints:
         - openusd <0a0
@@ -1270,6 +1279,9 @@ outputs:
         - pyopengl
         - pyside6
         - python
+        - if: python == "3.14"
+          then:
+            - python_abi 3.14.* *_cp314
         - tbb-devel >=2022.3,<2023
         - if: linux
           then:
