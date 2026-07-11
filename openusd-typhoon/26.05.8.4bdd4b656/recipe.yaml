@@ -1,8 +1,8 @@
 context:
-  version: "26.05.7.ebc59aadd"
+  version: "26.05.8.4bdd4b656"
   build_number: 0
   upstream_branch: typhoon-anders
-  upstream_rev: ebc59aadda51911e2f1628fc4b1b490a1cfd5fa6
+  upstream_rev: 4bdd4b6561529720164f7d2f1e865382a797a38b
 
 recipe:
   name: openusd-typhoon
