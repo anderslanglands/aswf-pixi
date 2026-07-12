@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shlex
 import shutil
 from pathlib import Path
 import subprocess
@@ -349,7 +350,7 @@ class CiMatrixTests(unittest.TestCase):
         )
 
     def test_goldeneye_matrix_splits_python_variants(self) -> None:
-        recipe = Path("goldeneye/0.1.0")
+        recipe = Path("goldeneye/0.2.0")
         result = ci_matrix.matrix(
             [recipe],
             ["linux-64"],
@@ -362,11 +363,11 @@ class CiMatrixTests(unittest.TestCase):
                 for item in result["include"]
             ],
             [
-                ("py310", "python=3.10", "goldeneye-0.1.0-linux-64-py310"),
-                ("py311", "python=3.11", "goldeneye-0.1.0-linux-64-py311"),
-                ("py312", "python=3.12", "goldeneye-0.1.0-linux-64-py312"),
-                ("py313", "python=3.13", "goldeneye-0.1.0-linux-64-py313"),
-                ("py314", "python=3.14", "goldeneye-0.1.0-linux-64-py314"),
+                ("py310", "python=3.10", "goldeneye-0.2.0-linux-64-py310"),
+                ("py311", "python=3.11", "goldeneye-0.2.0-linux-64-py311"),
+                ("py312", "python=3.12", "goldeneye-0.2.0-linux-64-py312"),
+                ("py313", "python=3.13", "goldeneye-0.2.0-linux-64-py313"),
+                ("py314", "python=3.14", "goldeneye-0.2.0-linux-64-py314"),
             ],
         )
 
@@ -401,12 +402,20 @@ class CiMatrixTests(unittest.TestCase):
 
         self.assertEqual(
             tasks["build-goldeneye"],
-            {"depends-on": ["build-goldeneye-0-1-0"]},
+            {"depends-on": ["build-goldeneye-0-2-0"]},
         )
-        build_task = tasks["build-goldeneye-0-1-0"]
-        self.assertIn("--recipe goldeneye/0.1.0/recipe.yaml", build_task)
-        self.assertIn("--channel https://conda.anaconda.org/anderslanglands/label/test", build_task)
-        self.assertIn("--channel-priority disabled", build_task)
+        build_task = shlex.split(tasks["build-goldeneye-0-2-0"])
+        self.assertEqual(build_task[:4], ["rattler-build", "build", "--recipe", "goldeneye/0.2.0/recipe.yaml"])
+        self.assertEqual(
+            [build_task[index + 1] for index, item in enumerate(build_task) if item == "--channel"],
+            [
+                "https://conda.anaconda.org/anderslanglands/label/test",
+                "https://conda.anaconda.org/anderslanglands",
+                "conda-forge",
+            ],
+        )
+        self.assertEqual(build_task.count("--channel-priority"), 1)
+        self.assertEqual(build_task[build_task.index("--channel-priority") + 1], "disabled")
 
     def test_openusd_typhoon_consumer_manifest_uses_relaxed_test_label_channels(self) -> None:
         recipe_version = "26.05.8.4bdd4b656"
@@ -538,18 +547,52 @@ class CiMatrixTests(unittest.TestCase):
                 self.assertEqual(recipe_text.count('set "CMAKE_BUILD_PARALLEL_LEVEL=!BUILD_JOBS!"'), staging_builds)
                 self.assertEqual(recipe_text.count("--parallel !BUILD_JOBS!"), staging_builds)
 
-    def test_goldeneye_recipe_allows_default_label(self) -> None:
-        recipe = ROOT / "goldeneye" / "0.1.0"
-        recipe_text = (recipe / "recipe.yaml").read_text(encoding="utf-8")
+    def test_goldeneye_recipes_allow_default_label(self) -> None:
+        expected_revs = {
+            "0.1.0": "a51cfaf43f8814a76e593fe7c44f7b8e5a6a12ac",
+            "0.2.0": "faee4c0ac53df38c9c252b23ab0f54205657bcf6",
+        }
 
-        self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"default-label", "test-label"})
-        ci_matrix.validate_recipe_publish_target(recipe, "test-label")
-        ci_matrix.validate_recipe_publish_target(recipe, "default-label")
-        self.assertEqual(resolve_build_numbers.recipe_package_names(recipe), ["goldeneye"])
-        self.assertIn("git: https://github.com/anderslanglands/goldeneye.git", recipe_text)
-        self.assertIn("upstream_rev: a51cfaf43f8814a76e593fe7c44f7b8e5a6a12ac", recipe_text)
-        self.assertIn("openusd-typhoon", recipe_text)
-        self.assertIn("tomli", recipe_text)
+        def top_level_block(recipe_text: str, section: str) -> list[str]:
+            lines = recipe_text.splitlines()
+            start = lines.index(f"{section}:") + 1
+            end = start
+            while end < len(lines) and (not lines[end] or lines[end].startswith(" ")):
+                end += 1
+            return lines[start:end]
+
+        def two_space_block(lines: list[str], section: str) -> list[str]:
+            start = lines.index(f"  {section}:") + 1
+            end = start
+            while end < len(lines) and (not lines[end] or lines[end].startswith("    ")):
+                end += 1
+            return lines[start:end]
+
+        for version, upstream_rev in expected_revs.items():
+            with self.subTest(version=version):
+                recipe = ROOT / "goldeneye" / version
+                recipe_text = (recipe / "recipe.yaml").read_text(encoding="utf-8")
+                context = top_level_block(recipe_text, "context")
+                source = top_level_block(recipe_text, "source")
+                run_requirements = two_space_block(top_level_block(recipe_text, "requirements"), "run")
+                patches = two_space_block(source, "patches")
+                run_dependencies = {line.strip()[2:].strip() for line in run_requirements if line.strip().startswith("- ")}
+
+                self.assertIn(f'  version: "{version}"', context)
+                self.assertIn(f"  upstream_rev: {upstream_rev}", context)
+                self.assertIn("  git: https://github.com/anderslanglands/goldeneye.git", source)
+                self.assertIn("  rev: ${{ upstream_rev }}", source)
+                self.assertEqual(
+                    [line.strip()[2:].strip() for line in patches if line.strip().startswith("- ")],
+                    ["allow-python-3.10.patch", "python-3.10-tomli.patch"],
+                )
+
+                self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"default-label", "test-label"})
+                ci_matrix.validate_recipe_publish_target(recipe, "test-label")
+                ci_matrix.validate_recipe_publish_target(recipe, "default-label")
+                self.assertEqual(resolve_build_numbers.recipe_package_names(recipe), ["goldeneye"])
+                self.assertIn("openusd-typhoon", run_dependencies)
+                self.assertIn("tomli", run_dependencies)
 
     def test_recipe_publish_policy_allows_test_label_and_artifact_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
@@ -1264,22 +1307,23 @@ class SmokeConsumersTests(unittest.TestCase):
             smoke_consumers.channel_priority_for_recipe(Path("openusd-typhoon/26.05.8.4bdd4b656")),
             "disabled",
         )
-        self.assertEqual(
-            smoke_consumers.channel_priority_for_recipe(Path("goldeneye/0.1.0")),
-            "disabled",
-        )
+        for recipe in [Path("goldeneye/0.1.0"), Path("goldeneye/0.2.0")]:
+            with self.subTest(recipe=recipe.as_posix()):
+                self.assertEqual(smoke_consumers.channel_priority_for_recipe(recipe), "disabled")
         self.assertEqual(smoke_consumers.channel_priority_for_recipe(Path("openusd/26.05")), "strict")
         self.assertEqual(smoke_consumers.channel_priority_for_recipe(Path("openusd-typhoon")), "strict")
 
     def test_channels_for_recipe_target_uses_main_then_test_for_default_goldeneye(self) -> None:
-        self.assertEqual(
-            smoke_consumers.channels_for_recipe_target("default-label", None, Path("goldeneye/0.1.0")),
-            [
-                "https://conda.anaconda.org/anderslanglands",
-                "https://conda.anaconda.org/anderslanglands/label/test",
-                "conda-forge",
-            ],
-        )
+        for recipe in [Path("goldeneye/0.1.0"), Path("goldeneye/0.2.0")]:
+            with self.subTest(recipe=recipe.as_posix(), target="default-label"):
+                self.assertEqual(
+                    smoke_consumers.channels_for_recipe_target("default-label", None, recipe),
+                    [
+                        "https://conda.anaconda.org/anderslanglands",
+                        "https://conda.anaconda.org/anderslanglands/label/test",
+                        "conda-forge",
+                    ],
+                )
         self.assertEqual(
             smoke_consumers.channels_for_recipe_target("default-label", None, Path("openusd/26.05")),
             [
@@ -1287,14 +1331,31 @@ class SmokeConsumersTests(unittest.TestCase):
                 "conda-forge",
             ],
         )
+        for recipe in [Path("goldeneye/0.1.0"), Path("goldeneye/0.2.0")]:
+            with self.subTest(recipe=recipe.as_posix(), target="test-label"):
+                self.assertEqual(
+                    smoke_consumers.channels_for_recipe_target("test-label", None, recipe),
+                    [
+                        "https://conda.anaconda.org/anderslanglands/label/test",
+                        "https://conda.anaconda.org/anderslanglands",
+                        "conda-forge",
+                    ],
+                )
+
+    def test_goldeneye_0_2_0_consumer_manifest_uses_main_then_test_channels(self) -> None:
+        manifest = tomllib.loads((ROOT / "goldeneye" / "0.2.0" / "pixi.toml").read_text(encoding="utf-8"))
+
         self.assertEqual(
-            smoke_consumers.channels_for_recipe_target("test-label", None, Path("goldeneye/0.1.0")),
+            manifest["workspace"]["channels"],
             [
-                "https://conda.anaconda.org/anderslanglands/label/test",
                 "https://conda.anaconda.org/anderslanglands",
+                "https://conda.anaconda.org/anderslanglands/label/test",
                 "conda-forge",
             ],
         )
+        self.assertEqual(manifest["workspace"]["channel-priority"], "disabled")
+        self.assertEqual(manifest["feature"]["goldeneye"]["dependencies"]["goldeneye"], "==0.2.0")
+        self.assertEqual(manifest["feature"]["goldeneye"]["dependencies"]["openusd-typhoon"], "*")
 
     def test_write_manifest_uses_requested_channel_priority(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
