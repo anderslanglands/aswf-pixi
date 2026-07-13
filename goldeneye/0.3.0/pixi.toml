@@ -1,0 +1,16 @@
+[workspace]
+name = "goldeneye-0.3.0-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands",
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "disabled"
+
+[feature.goldeneye.dependencies]
+goldeneye = "==0.3.0"
+openusd-typhoon = "*"
+
+[environments]
+goldeneye = ["goldeneye"]

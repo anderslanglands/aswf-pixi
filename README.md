@@ -67,6 +67,8 @@ FLIP Evaluator provides the FLIP image difference metric as a Python extension a
 Recipe versions:
 - `0.1.0`
 - `0.2.0`
+- `0.3.0`
+- `0.4.0`
 
 GoldenEye is a pytest-based runner for USD render regression suites, with image comparison and HTML report viewing.
 
