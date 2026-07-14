@@ -69,6 +69,7 @@ Recipe versions:
 - `0.2.0`
 - `0.3.0`
 - `0.4.0`
+- `0.5.0`
 
 GoldenEye is a pytest-based runner for USD render regression suites, with image comparison and HTML report viewing.
 
