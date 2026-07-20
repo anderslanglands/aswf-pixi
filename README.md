@@ -292,9 +292,9 @@ Python-enabled OpenUSD packages constrain Python 3.14 to the normal `cp314` ABI 
 ## OpenUSD Typhoon
 
 Recipe versions:
-- `26.05.8.4bdd4b656`
+- `26.05.9.ea5b6f695`
 
-OpenUSD Typhoon packages the NVIDIA Omniverse `typhoon-anders` branch at commit `4bdd4b656` as a test-label-only preview package. The Typhoon version format is `26.05.<recipe-build-serial>.<short-commit>`, where the serial starts at `1` and increments for each new Typhoon package definition; the current version is `26.05.8.4bdd4b656`. Rattler normalizes `+` and `-` separators in versions to `.`, so the version uses dot separators. Typhoon builds use channels ordered as test label, Anders, then conda-forge with channel priority disabled so dependencies can fall back across labels.
+OpenUSD Typhoon packages the NVIDIA Omniverse `typhoon-anders` branch at commit `ea5b6f695` as a test-label-only preview package. The Typhoon version format is `26.05.<recipe-build-serial>.<short-commit>`, where the serial starts at `1` and increments for each new Typhoon package definition; the current version is `26.05.9.ea5b6f695`. Rattler normalizes `+` and `-` separators in versions to `.`, so the version uses dot separators. Typhoon builds use channels ordered as test label, Anders, then conda-forge with channel priority disabled so dependencies can fall back across labels.
 
 OpenUSD Typhoon uses the same Python 3.14 normal `cp314` ABI constraint as OpenUSD, rather than allowing conda-forge's free-threaded `cp314t` variant.
 
