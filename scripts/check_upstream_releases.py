@@ -109,6 +109,13 @@ def parse_numbered_tag(value: str) -> Version | None:
     return Version.parse(match.group("number"))
 
 
+def numbered_tag_version_text(value: str) -> str | None:
+    match = NUMBERED_TAG_RE.match(value.strip())
+    if not match:
+        return None
+    return match.group("number").replace("_", ".")
+
+
 def parse_context(recipe_text: str) -> dict[str, str]:
     context: dict[str, str] = {}
     in_context = False
@@ -385,9 +392,30 @@ def closest_recipe(local_recipes: list[LocalRecipe], target: Version) -> LocalRe
     )
 
 
-def replace_text_in_tree(root: Path, old_version: str, new_version: str, old_tag: str | None, new_tag: str) -> None:
-    old_task_version = old_version.replace(".", "-")
-    new_task_version = new_version.replace(".", "-")
+def replace_text_in_tree(
+    root: Path,
+    old_versions: Iterable[str],
+    new_version: str,
+    old_tag: str | None,
+    new_tag: str,
+) -> None:
+    replacements: dict[str, str] = {}
+
+    def add_replacement(old_value: str, new_value: str) -> None:
+        if old_value in replacements and replacements[old_value] != new_value:
+            raise SystemExit(
+                f"Conflicting replacements for {old_value!r}: "
+                f"{replacements[old_value]!r} and {new_value!r}."
+            )
+        replacements[old_value] = new_value
+
+    for old_version in old_versions:
+        add_replacement(old_version, new_version)
+        add_replacement(old_version.replace(".", "-"), new_version.replace(".", "-"))
+    if old_tag:
+        add_replacement(old_tag, new_tag)
+
+    pattern = re.compile("|".join(re.escape(value) for value in sorted(replacements, key=len, reverse=True)))
     for path in sorted(root.rglob("*")):
         if not path.is_file():
             continue
@@ -396,10 +424,7 @@ def replace_text_in_tree(root: Path, old_version: str, new_version: str, old_tag
         except UnicodeDecodeError:
             continue
 
-        updated = text.replace(old_version, new_version)
-        updated = updated.replace(old_task_version, new_task_version)
-        if old_tag:
-            updated = updated.replace(old_tag, new_tag)
+        updated = pattern.sub(lambda match: replacements[match.group(0)], text)
         if updated != text:
             path.write_text(updated, encoding="utf-8")
 
@@ -620,7 +645,10 @@ def create_recipe_copy(
     git_ref_resolver: Callable[[str, str, str | None], str] = github_tag_commit,
 ) -> CreatedRecipe:
     source = closest_recipe(local_recipes, release.version)
-    destination = root / source.package / release.version.text
+    release_version_text = numbered_tag_version_text(release.tag)
+    if release_version_text is None:
+        raise SystemExit(f"Release tag {release.tag!r} is not a numbered tag.")
+    destination = root / source.package / release_version_text
     if destination.exists():
         raise SystemExit(f"{destination} already exists.")
 
@@ -629,8 +657,8 @@ def create_recipe_copy(
         shutil.copytree(source.path, destination)
         replace_text_in_tree(
             destination,
-            old_version=source.version.text,
-            new_version=release.version.text,
+            old_versions=[source.path.name, source.context["version"]],
+            new_version=release_version_text,
             old_tag=source.context.get("tag"),
             new_tag=release.tag,
         )
@@ -646,8 +674,8 @@ def create_recipe_copy(
 
     return CreatedRecipe(
         package=source.package,
-        version=release.version.text,
-        recipe=(Path(source.package) / release.version.text).as_posix(),
+        version=release_version_text,
+        recipe=(Path(source.package) / release_version_text).as_posix(),
         copied_from=source.path.relative_to(root).as_posix(),
         upstream_tag=release.tag,
         source_sha256=source_sha,
@@ -708,9 +736,12 @@ def check_upstream_releases(
         if not releases:
             continue
 
-        anchor_versions = {recipe.version.text for recipe in local_recipes}
+        anchor_versions = {recipe.path.name for recipe in local_recipes}
         for release in releases:
-            destination = root / package / release.version.text
+            release_version_text = numbered_tag_version_text(release.tag)
+            if release_version_text is None:
+                raise SystemExit(f"Release tag {release.tag!r} is not a numbered tag.")
+            destination = root / package / release_version_text
             if destination.exists():
                 warn(
                     f"{destination} already exists but was not usable for upstream release checks; "
@@ -729,7 +760,7 @@ def check_upstream_releases(
                 )
             )
             if apply:
-                new_recipe = read_local_recipe(root / package / release.version.text)
+                new_recipe = read_local_recipe(root / package / release_version_text)
                 if new_recipe:
                     local_recipes.append(new_recipe)
 

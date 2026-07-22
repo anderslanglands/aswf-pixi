@@ -43,7 +43,10 @@ class UpstreamReleaseCheckerTests(unittest.TestCase):
         self.assertIsNotNone(parsed)
         assert parsed is not None
         self.assertEqual(parsed.text, "3.7.0")
+        self.assertEqual(upstream.numbered_tag_version_text("v26.08"), "26.08")
+        self.assertEqual(upstream.numbered_tag_version_text("v3_7_0"), "3.7.0")
         self.assertIsNone(upstream.parse_numbered_tag("v3.7.0-rc1"))
+        self.assertIsNone(upstream.numbered_tag_version_text("v3.7.0-rc1"))
         self.assertIsNone(upstream.parse_numbered_tag("release-3.7.0"))
 
     def test_fetch_upstream_releases_ignores_drafts_and_prereleases(self) -> None:
@@ -226,6 +229,110 @@ source:
             self.assertIn(f"sha256: {'a' * 64}", new_recipe)
             self.assertIn("does not define an about.repository GitHub URL", stderr.getvalue())
             self.assertIn("using source repository example/foo", stderr.getvalue())
+
+    def test_tree_replacement_handles_overlapping_version_spellings_simultaneously(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            root = Path(tmp_raw)
+            example = root / "versions.txt"
+            example.write_text(
+                "directory=1.02 context=1.2 directory-task=1-02 context-task=1-2\n",
+                encoding="utf-8",
+            )
+
+            upstream.replace_text_in_tree(
+                root,
+                old_versions=["1.02", "1.2"],
+                new_version="1.2.1",
+                old_tag=None,
+                new_tag="v1.2.1",
+            )
+
+            self.assertEqual(
+                example.read_text(encoding="utf-8"),
+                "directory=1.2.1 context=1.2.1 directory-task=1-2-1 context-task=1-2-1\n",
+            )
+
+    def test_tree_replacement_rejects_conflicting_version_and_tag_aliases(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            root = Path(tmp_raw)
+            example = root / "versions.txt"
+            example.write_text("version=1.2 tag=1.2\n", encoding="utf-8")
+
+            with self.assertRaisesRegex(SystemExit, r"Conflicting replacements for '1\.2'"):
+                upstream.replace_text_in_tree(
+                    root,
+                    old_versions=["1.2"],
+                    new_version="1.3",
+                    old_tag="1.2",
+                    new_tag="v1.3",
+                )
+
+            self.assertEqual(example.read_text(encoding="utf-8"), "version=1.2 tag=1.2\n")
+
+    def test_apply_preserves_zero_padded_release_version_spelling(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            root = Path(tmp_raw)
+            recipe_dir = root / "openusd" / "26.05"
+            recipe_dir.mkdir(parents=True)
+            (recipe_dir / "recipe.yaml").write_text(
+                f"""context:
+  version: "26.5"
+  build_number: 4
+
+recipe:
+  name: openusd
+  version: ${{{{ version }}}}
+
+source:
+  url: https://github.com/PixarAnimationStudios/OpenUSD/archive/refs/tags/v${{{{ version }}}}.tar.gz
+  sha256: {"0" * 64}
+
+about:
+  repository: https://github.com/PixarAnimationStudios/OpenUSD
+""",
+                encoding="utf-8",
+            )
+            (recipe_dir / "pixi.toml").write_text(
+                '[workspace]\nname = "openusd-26.05-consumer"\n',
+                encoding="utf-8",
+            )
+
+            def fake_releases(repo: str, token: str | None) -> list[upstream.ReleaseCandidate]:
+                self.assertEqual(repo, "PixarAnimationStudios/OpenUSD")
+                self.assertIsNone(token)
+                return [release("26.08")]
+
+            def fake_sha256(url: str, token: str | None) -> str:
+                self.assertEqual(
+                    url,
+                    "https://github.com/PixarAnimationStudios/OpenUSD/archive/refs/tags/v26.08.tar.gz",
+                )
+                self.assertIsNone(token)
+                return "a" * 64
+
+            created = upstream.check_upstream_releases(
+                root,
+                packages={"openusd"},
+                token=None,
+                apply=True,
+                release_fetcher=fake_releases,
+                sha256_fetcher=fake_sha256,
+            )
+
+            self.assertEqual([recipe.recipe for recipe in created], ["openusd/26.08"])
+            self.assertEqual([recipe.version for recipe in created], ["26.08"])
+            new_recipe_file = root / "openusd" / "26.08" / "recipe.yaml"
+            new_recipe = new_recipe_file.read_text(encoding="utf-8")
+            self.assertIn('version: "26.08"', new_recipe)
+            self.assertIn("build_number: 0", new_recipe)
+            self.assertIn(f"sha256: {'a' * 64}", new_recipe)
+            self.assertEqual(
+                upstream.render_source_url(new_recipe_file),
+                "https://github.com/PixarAnimationStudios/OpenUSD/archive/refs/tags/v26.08.tar.gz",
+            )
+            pixi = (new_recipe_file.parent / "pixi.toml").read_text(encoding="utf-8")
+            self.assertIn('name = "openusd-26.08-consumer"', pixi)
+            self.assertNotIn("26.05", pixi)
 
     def test_apply_git_source_recipe_updates_rev_context_without_sha256(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
