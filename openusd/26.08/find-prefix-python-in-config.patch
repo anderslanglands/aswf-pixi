@@ -38,8 +38,8 @@ diff --git a/pxr/pxrConfig.cmake.in b/pxr/pxrConfig.cmake.in
      endif()
  
      if (NOT DEFINED Python3_VERSION)
--        find_dependency(Python3 "@Python3_VERSION@" EXACT COMPONENTS Development)
-+        find_dependency(Python3 "@Python3_VERSION@" EXACT COMPONENTS Interpreter Development)
+-        find_dependency(Python3 "@Python3_VERSION_MAJOR@.@Python3_VERSION_MINOR@" EXACT COMPONENTS Development)
++        find_dependency(Python3 "@Python3_VERSION_MAJOR@.@Python3_VERSION_MINOR@" EXACT COMPONENTS Interpreter Development)
      else()
 -        find_dependency(Python3 COMPONENTS Development)
 +        find_dependency(Python3 COMPONENTS Interpreter Development)
