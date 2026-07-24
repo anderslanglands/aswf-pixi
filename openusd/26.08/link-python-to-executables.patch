@@ -1,0 +1,16 @@
+diff --git a/cmake/macros/Public.cmake b/cmake/macros/Public.cmake
+--- a/cmake/macros/Public.cmake
++++ b/cmake/macros/Public.cmake
+@@ -192,8 +192,12 @@ function(pxr_cpp_bin BIN_NAME)
+     _pxr_init_rpath(rpath "${installDir}")
+     _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+     _pxr_install_rpath(rpath ${BIN_NAME})
+ 
++    if(PXR_ENABLE_PYTHON_SUPPORT AND PXR_PY_UNDEFINED_DYNAMIC_LOOKUP)
++        list(APPEND cb_LIBRARIES ${PYTHON_LIBRARIES})
++    endif()
++
+     _pxr_target_link_libraries(${BIN_NAME}
+         ${cb_LIBRARIES}
+         ${PXR_MALLOC_LIBRARY}
+     )
