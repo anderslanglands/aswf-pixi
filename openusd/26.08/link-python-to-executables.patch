@@ -1,23 +1,16 @@
-diff --git a/pxr/external/boost/python/CMakeLists.txt b/pxr/external/boost/python/CMakeLists.txt
-index 3874e7b24d..b5bb9f15a4 100644
---- a/pxr/external/boost/python/CMakeLists.txt
-+++ b/pxr/external/boost/python/CMakeLists.txt
-@@ -338,6 +338,18 @@ target_compile_definitions(python
-     PRIVATE $<$<NOT:$<CONFIG:Debug>>:NDEBUG>
- )
+diff --git a/cmake/macros/Public.cmake b/cmake/macros/Public.cmake
+--- a/cmake/macros/Public.cmake
++++ b/cmake/macros/Public.cmake
+@@ -192,8 +192,12 @@ function(pxr_cpp_bin BIN_NAME)
+     _pxr_init_rpath(rpath "${installDir}")
+     _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+     _pxr_install_rpath(rpath ${BIN_NAME})
  
-+# Even if PXR_PY_UNDEFINED_DYNAMIC_LOOKUP is defined to avoid linking USD's
-+# Python extension modules to libpython, executables that link usd_python
-+# still need to link with Python. Otherwise tools can fail at runtime with
-+# unresolved Python symbols such as _Py_NoneStruct.
-+if (PXR_PY_UNDEFINED_DYNAMIC_LOOKUP)
-+    # This is equivalent to target_link_libraries(python INTERFACE ...), but
-+    # pxr_library already used the plain target_link_libraries signature.
-+    set_property(TARGET python APPEND PROPERTY INTERFACE_LINK_LIBRARIES
-+        "$<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:Python3::Python>"
-+    )
-+endif()
++    if(PXR_ENABLE_PYTHON_SUPPORT AND PXR_PY_UNDEFINED_DYNAMIC_LOOKUP)
++        list(APPEND cb_LIBRARIES ${PYTHON_LIBRARIES})
++    endif()
 +
- # Since we're not going through the normal pxr_build_test macros
- # we need to elide tests here if requested.
- if (NOT PXR_BUILD_TESTS)
+     _pxr_target_link_libraries(${BIN_NAME}
+         ${cb_LIBRARIES}
+         ${PXR_MALLOC_LIBRARY}
+     )
