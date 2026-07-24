@@ -239,6 +239,7 @@ Recipe versions:
 - `2026.12.2`
 - `2026.13`
 - `2026.13.1`
+- `2026.14`
 
 Shader Slang is a shading language and compiler for real-time graphics, with code generation for APIs such as Vulkan, Direct3D, Metal, CUDA, and CPU-oriented workflows.
 

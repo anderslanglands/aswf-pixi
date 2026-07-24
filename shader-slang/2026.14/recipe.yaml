@@ -1,0 +1,338 @@
+context:
+  version: "2026.14"
+  build_number: 0
+  upstream_rev: "4265906358862245cb25f091cb47dc426c15267b"
+
+recipe:
+  name: shader-slang
+  version: ${{ version }}
+
+source:
+  git: https://github.com/shader-slang/slang.git
+  rev: ${{ upstream_rev }}
+  submodules: true
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: shader-slang-build
+    build:
+      script:
+        - if: unix
+          then: |
+            set -euo pipefail
+
+            cmake -E rm -rf "$SRC_DIR/../build"
+            export CXXFLAGS="${CXXFLAGS:-} -I$PREFIX/include/glslang"
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DSLANG_LIB_TYPE=SHARED \
+              -DSLANG_ENABLE_DXIL=OFF \
+              -DSLANG_SLANG_LLVM_FLAVOR=DISABLE \
+              -DSLANG_USE_SYSTEM_MINIZ=ON \
+              -DSLANG_USE_SYSTEM_GLSLANG=ON \
+              -DSLANG_USE_SYSTEM_SPIRV_HEADERS=ON \
+              -DSLANG_USE_SYSTEM_SPIRV_TOOLS=ON \
+              -DSLANG_ENABLE_CUDA=OFF \
+              -DSLANG_ENABLE_OPTIX=OFF \
+              -DSLANG_ENABLE_NVAPI=OFF \
+              -DSLANG_ENABLE_AFTERMATH=OFF \
+              -DSLANG_ENABLE_XLIB=OFF \
+              -DSLANG_ENABLE_DX_ON_VK=OFF \
+              -DSLANG_ENABLE_GFX=OFF \
+              -DSLANG_ENABLE_SLANG_RHI=OFF \
+              -DSLANG_ENABLE_TESTS=OFF \
+              -DSLANG_ENABLE_EXAMPLES=OFF \
+              -DSLANG_ENABLE_REPLAYER=OFF \
+              -DSLANG_ENABLE_SLANGC=ON \
+              -DSLANG_ENABLE_SLANGD=ON \
+              -DSLANG_ENABLE_SLANGI=ON \
+              -DSLANG_ENABLE_SLANGRT=ON \
+              -DSLANG_ENABLE_SLANG_GLSLANG=ON \
+              -DSLANG_STANDARD_MODULE_DEVELOP_BUILD=OFF \
+              -DSLANG_ENABLE_RELEASE_DEBUG_INFO=OFF \
+              -DSLANG_ENABLE_SPLIT_DEBUG_INFO=OFF \
+              -DSLANG_ENABLE_PCH=OFF \
+              -DSLANG_EXCLUDE_DAWN=ON \
+              -DSLANG_EXCLUDE_TINT=ON \
+              -DSLANG_ENABLE_SPIRV_TOOLS_MIMALLOC=OFF \
+              -B "$SRC_DIR/../build" \
+              -S .
+
+            cmake --build "$SRC_DIR/../build" --target install --parallel "${CPU_COUNT:-2}"
+          else: |
+            cmake -E rm -rf "%SRC_DIR%\..\build"
+            if errorlevel 1 exit /b 1
+
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "CXXFLAGS=%CXXFLAGS% /I%LIBRARY_INC%\glslang"
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX_FWD% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DSLANG_LIB_TYPE=SHARED ^
+              -DSLANG_ENABLE_DXIL=OFF ^
+              -DSLANG_SLANG_LLVM_FLAVOR=DISABLE ^
+              -DSLANG_USE_SYSTEM_MINIZ=ON ^
+              -DSLANG_USE_SYSTEM_GLSLANG=ON ^
+              -DSLANG_USE_SYSTEM_SPIRV_HEADERS=ON ^
+              -DSLANG_USE_SYSTEM_SPIRV_TOOLS=ON ^
+              -DSLANG_ENABLE_CUDA=OFF ^
+              -DSLANG_ENABLE_OPTIX=OFF ^
+              -DSLANG_ENABLE_NVAPI=OFF ^
+              -DSLANG_ENABLE_AFTERMATH=OFF ^
+              -DSLANG_ENABLE_XLIB=OFF ^
+              -DSLANG_ENABLE_DX_ON_VK=OFF ^
+              -DSLANG_ENABLE_GFX=OFF ^
+              -DSLANG_ENABLE_SLANG_RHI=OFF ^
+              -DSLANG_ENABLE_TESTS=OFF ^
+              -DSLANG_ENABLE_EXAMPLES=OFF ^
+              -DSLANG_ENABLE_REPLAYER=OFF ^
+              -DSLANG_ENABLE_SLANGC=ON ^
+              -DSLANG_ENABLE_SLANGD=ON ^
+              -DSLANG_ENABLE_SLANGI=ON ^
+              -DSLANG_ENABLE_SLANGRT=ON ^
+              -DSLANG_ENABLE_SLANG_GLSLANG=ON ^
+              -DSLANG_STANDARD_MODULE_DEVELOP_BUILD=OFF ^
+              -DSLANG_ENABLE_RELEASE_DEBUG_INFO=OFF ^
+              -DSLANG_ENABLE_SPLIT_DEBUG_INFO=OFF ^
+              -DSLANG_ENABLE_PCH=OFF ^
+              -DSLANG_EXCLUDE_DAWN=ON ^
+              -DSLANG_EXCLUDE_TINT=ON ^
+              -DSLANG_ENABLE_SPIRV_TOOLS_MIMALLOC=OFF ^
+              -B "%SRC_DIR%\..\build" ^
+              -S .
+            if errorlevel 1 exit /b 1
+
+            cmake --build "%SRC_DIR%\..\build" --target install --config Release --parallel "%CPU_COUNT%"
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - git
+        - ninja
+        - python
+      host:
+        - glslang
+        - miniz
+        - spirv-headers
+        - spirv-tools
+
+  - package:
+      name: shader-slang-lib
+    inherit: shader-slang-build
+    build:
+      files:
+        - lib/libslang-compiler.so*
+        - lib/libslang-compiler*.dylib*
+        - lib/libslang.so*
+        - lib/libslang.dylib*
+        - lib/libslang-glslang*.so*
+        - lib/libslang-glslang*.dylib*
+        - lib/libslang-glsl-module*.so*
+        - lib/libslang-glsl-module*.dylib*
+        - lib/libslang-rt.so*
+        - lib/libslang-rt*.dylib*
+        - lib/slang-standard-module-*/**
+        - Library/bin/slang-compiler.dll
+        - Library/bin/slang.dll
+        - Library/bin/slang-glslang.dll
+        - Library/bin/slang-glsl-module.dll
+        - Library/bin/slang-rt.dll
+        - Library/bin/slang-standard-module-*/**
+    requirements:
+      run:
+        - glslang
+        - miniz
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('shader-slang-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - bin/slangc
+              - bin/slangd
+              - bin/slangi
+              - bin/slang
+              - include/slang.h
+              - lib/cmake/slang/slangConfig.cmake
+              - Library/bin/slangc.exe
+              - Library/bin/slangd.exe
+              - Library/bin/slangi.exe
+              - Library/bin/slang.exe
+              - Library/include/slang.h
+              - Library/cmake/slangConfig.cmake
+              - Library/cmake/slang/**
+              - Library/lib/cmake/slang/**
+      - script:
+          - if: linux
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libslang-compiler.so*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: osx
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libslang-compiler*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: win
+            then:
+              - python -c "import ctypes, os; ctypes.CDLL(os.path.join(os.environ['LIBRARY_BIN'], 'slang-compiler.dll'))"
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: shader-slang-tools
+    inherit: shader-slang-build
+    build:
+      files:
+        - bin/slang
+        - bin/slangc
+        - bin/slangd
+        - bin/slangi
+        - Library/bin/slang.exe
+        - Library/bin/slangc.exe
+        - Library/bin/slangd.exe
+        - Library/bin/slangi.exe
+    requirements:
+      run:
+        - ${{ pin_subpackage('shader-slang-lib', exact=True) }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/slang.h
+              - lib/cmake/slang/slangConfig.cmake
+              - Library/include/slang.h
+              - Library/cmake/slangConfig.cmake
+      - script:
+          - python tests/check_tools.py
+        files:
+          recipe:
+            - tests/check_tools.py
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: shader-slang-dev
+    inherit: shader-slang-build
+    build:
+      files:
+        - include/**
+        - lib/cmake/slang/**
+        - lib/pkgconfig/slang-compiler.pc
+        - Library/include/**
+        - Library/cmake/**
+        - Library/lib/*.lib
+    requirements:
+      run:
+        - ${{ pin_subpackage('shader-slang-lib', exact=True) }}
+        - ${{ pin_subpackage('shader-slang-tools', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('shader-slang-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - slang.h
+            - slang-com-ptr.h
+          files:
+            not_exists:
+              - share/doc/slang/**
+              - Library/share/doc/slang/**
+      - script:
+          - if: unix
+            then:
+              - cmake -E rm -rf build
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/shader_slang_consumer
+          - if: win
+            then:
+              - set "SHADER_SLANG_TEST_BUILD=%TEMP%\shader-slang-consumer-%RANDOM%-%RANDOM%"
+              - if exist "%SHADER_SLANG_TEST_BUILD%" rmdir /S /Q "%SHADER_SLANG_TEST_BUILD%"
+              - if exist "%SHADER_SLANG_TEST_BUILD%" exit /b 1
+              - cmake -S tests -B "%SHADER_SLANG_TEST_BUILD%" -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - if errorlevel 1 exit /b 1
+              - cmake --build "%SHADER_SLANG_TEST_BUILD%" --config Release
+              - if errorlevel 1 exit /b 1
+              - '"%SHADER_SLANG_TEST_BUILD%\shader_slang_consumer.exe"'
+              - if errorlevel 1 exit /b 1
+              - rmdir /S /Q "%SHADER_SLANG_TEST_BUILD%"
+              - if exist "%SHADER_SLANG_TEST_BUILD%" exit /b 1
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/shader_slang_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: shader-slang
+    requirements:
+      run:
+        - ${{ pin_subpackage('shader-slang-lib', exact=True) }}
+        - ${{ pin_subpackage('shader-slang-dev', exact=True) }}
+        - ${{ pin_subpackage('shader-slang-tools', exact=True) }}
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('shader-slang-lib', upper_bound='x.x') }}
+    tests:
+      - script:
+          - python tests/check_tools.py
+        files:
+          recipe:
+            - tests/check_tools.py
+        requirements:
+          run:
+            - python
+      - script:
+          - if: unix
+            then:
+              - cmake -E rm -rf build
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
+              - cmake --build build
+              - ./build/shader_slang_consumer
+          - if: win
+            then:
+              - set "SHADER_SLANG_TEST_BUILD=%TEMP%\shader-slang-consumer-%RANDOM%-%RANDOM%"
+              - if exist "%SHADER_SLANG_TEST_BUILD%" rmdir /S /Q "%SHADER_SLANG_TEST_BUILD%"
+              - if exist "%SHADER_SLANG_TEST_BUILD%" exit /b 1
+              - cmake -S tests -B "%SHADER_SLANG_TEST_BUILD%" -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
+              - if errorlevel 1 exit /b 1
+              - cmake --build "%SHADER_SLANG_TEST_BUILD%" --config Release
+              - if errorlevel 1 exit /b 1
+              - '"%SHADER_SLANG_TEST_BUILD%\shader_slang_consumer.exe"'
+              - if errorlevel 1 exit /b 1
+              - rmdir /S /Q "%SHADER_SLANG_TEST_BUILD%"
+              - if exist "%SHADER_SLANG_TEST_BUILD%" exit /b 1
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/shader_slang_consumer.cpp
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+
+about:
+  homepage: https://shader-slang.com
+  repository: https://github.com/shader-slang/slang
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Shading language and compiler for real-time graphics.
