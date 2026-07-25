@@ -307,6 +307,31 @@ class CiMatrixTests(unittest.TestCase):
             "openusd-26.05-linux-64-full-py314",
         )
 
+    def test_openusd_2608_matrix_uses_declared_python_variants(self) -> None:
+        recipe = Path("openusd/26.08")
+        result = ci_matrix.matrix(
+            [recipe],
+            ["linux-64"],
+            {recipe.as_posix(): "5"},
+        )
+
+        self.assertEqual(
+            [item["partition"] for item in result["include"]],
+            [
+                "minimal-cpp",
+                "minimal-python-py311",
+                "minimal-python-py312",
+                "minimal-python-py313",
+                "full-py311",
+                "full-py312",
+                "full-py313",
+            ],
+        )
+        self.assertEqual(
+            result["include"][-1]["artifact"],
+            "openusd-26.08-linux-64-full-py313",
+        )
+
     def test_openusd_typhoon_matrix_splits_python_variants(self) -> None:
         recipe = Path("openusd-typhoon/26.05.9.ea5b6f695")
         result = ci_matrix.matrix(

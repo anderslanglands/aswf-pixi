@@ -423,6 +423,7 @@ outputs:
             set "CL=/utf-8 %CL%"
             set "CXXFLAGS=%CXXFLAGS% /utf-8"
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "SP_DIR_FWD=%SP_DIR:\=/%"
             setlocal EnableDelayedExpansion
 
             if "%OPENUSD_BUILD_PARALLEL_LEVEL%"=="" (
@@ -506,7 +507,7 @@ outputs:
               -DPython3_FIND_STRATEGY=LOCATION ^
               -DPython3_FIND_REGISTRY=NEVER ^
               -DPython3_FIND_FRAMEWORK=NEVER ^
-              -DPXR_PYTHON_INSTALL_DIR=%SP_DIR% ^
+              -DPXR_PYTHON_INSTALL_DIR=%SP_DIR_FWD% ^
               -DPXR_PYTHON_SHEBANG=%PYTHON% ^
               -B %SRC_DIR%\..\build-minimal-python ^
               -S .
@@ -736,6 +737,7 @@ outputs:
             set "CL=/utf-8 %CL%"
             set "CXXFLAGS=%CXXFLAGS% /utf-8"
             set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "SP_DIR_FWD=%SP_DIR:\=/%"
             setlocal EnableDelayedExpansion
 
             if "%OPENUSD_BUILD_PARALLEL_LEVEL%"=="" (
@@ -826,7 +828,7 @@ outputs:
               -DPython3_FIND_STRATEGY=LOCATION ^
               -DPython3_FIND_REGISTRY=NEVER ^
               -DPython3_FIND_FRAMEWORK=NEVER ^
-              -DPXR_PYTHON_INSTALL_DIR=%SP_DIR% ^
+              -DPXR_PYTHON_INSTALL_DIR=%SP_DIR_FWD% ^
               -DPXR_PYTHON_SHEBANG=%PYTHON% ^
               -B %SRC_DIR%\..\build-openusd ^
               -S .
@@ -1089,7 +1091,7 @@ outputs:
       - script:
           - if: unix
             then:
-              - 'status=0; usdcat --help > usdcat-help.txt 2>&1 || status=$?; cat usdcat-help.txt; test "$status" -eq 1 && grep -F "Usage: usdcat" usdcat-help.txt'
+              - 'status=0; usdcat --help > usdcat-help.txt 2>&1 || status=$?; cat usdcat-help.txt; if [ "$status" -ne 1 ] || ! grep -F "Usage: usdcat" usdcat-help.txt; then exit 1; fi'
           - if: win
             then:
               - usdcat --help
@@ -1133,7 +1135,7 @@ outputs:
       - script:
           - if: unix
             then:
-              - 'status=0; usdcat --help > usdcat-help.txt 2>&1 || status=$?; cat usdcat-help.txt; test "$status" -eq 1 && grep -F "Usage: usdcat" usdcat-help.txt'
+              - 'status=0; usdcat --help > usdcat-help.txt 2>&1 || status=$?; cat usdcat-help.txt; if [ "$status" -ne 1 ] || ! grep -F "Usage: usdcat" usdcat-help.txt; then exit 1; fi'
           - if: win
             then:
               - usdcat --help
@@ -1217,7 +1219,7 @@ outputs:
       - script:
           - if: unix
             then:
-              - 'status=0; usdcat --help > usdcat-help.txt 2>&1 || status=$?; cat usdcat-help.txt; test "$status" -eq 1 && grep -F "Usage: usdcat" usdcat-help.txt'
+              - 'status=0; usdcat --help > usdcat-help.txt 2>&1 || status=$?; cat usdcat-help.txt; if [ "$status" -ne 1 ] || ! grep -F "Usage: usdcat" usdcat-help.txt; then exit 1; fi'
           - if: win
             then:
               - usdcat --help
