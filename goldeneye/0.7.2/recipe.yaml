@@ -1,0 +1,65 @@
+context:
+  version: "0.7.2"
+  build_number: 0
+  upstream_rev: 829480730796b0e01ecf8b6f5e4d94e95ee37050
+
+package:
+  name: goldeneye
+  version: ${{ version }}
+
+source:
+  git: https://github.com/anderslanglands/goldeneye.git
+  rev: ${{ upstream_rev }}
+
+build:
+  number: ${{ build_number }}
+  string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+  script:
+    - if: unix
+      then: $PYTHON -m pip install . --no-deps --no-build-isolation -vv
+    - if: win
+      then: |
+        "%PYTHON%" -m pip install . --no-deps --no-build-isolation -vv
+  python:
+    entry_points:
+      - goldeneye = goldeneye.cli:main
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools >=68
+    - wheel
+  run:
+    - flip-evaluator ==1.7
+    - numpy
+    - openusd-typhoon
+    - pillow
+    - pytest
+    - python
+
+tests:
+  - python:
+      imports:
+        - goldeneye
+        - goldeneye.pytest_plugin
+  - script:
+      - goldeneye --help
+      - goldeneye init smoke-goldeneye.toml
+      - python -m pytest --help
+      - python -c "import importlib.metadata as m; eps = m.entry_points(group='pytest11'); assert any(ep.name == 'goldeneye' for ep in eps)"
+    requirements:
+      run:
+        - python
+
+about:
+  homepage: https://github.com/anderslanglands/goldeneye
+  repository: https://github.com/anderslanglands/goldeneye
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Pytest-based USD render regression runner and report viewer
+
+extra:
+  allowed_publish_targets:
+    - test-label
+    - default-label
