@@ -1091,7 +1091,7 @@ outputs:
       - script:
           - if: unix
             then:
-              - 'status=0; usdcat --help > usdcat-help.txt 2>&1 || status=$?; cat usdcat-help.txt; if [ "$status" -ne 1 ] || ! grep -F "Usage: usdcat" usdcat-help.txt; then exit 1; fi'
+              - 'status=0; usdcat --help > usdcat-help.txt 2>&1 || status=$?; cat usdcat-help.txt; if [ "$status" -ne 0 ] || ! grep -F "Usage: usdcat" usdcat-help.txt; then exit 1; fi'
           - if: win
             then:
               - usdcat --help
@@ -1135,7 +1135,7 @@ outputs:
       - script:
           - if: unix
             then:
-              - 'status=0; usdcat --help > usdcat-help.txt 2>&1 || status=$?; cat usdcat-help.txt; if [ "$status" -ne 1 ] || ! grep -F "Usage: usdcat" usdcat-help.txt; then exit 1; fi'
+              - 'status=0; usdcat --help > usdcat-help.txt 2>&1 || status=$?; cat usdcat-help.txt; if [ "$status" -ne 0 ] || ! grep -F "Usage: usdcat" usdcat-help.txt; then exit 1; fi'
           - if: win
             then:
               - usdcat --help
@@ -1219,7 +1219,7 @@ outputs:
       - script:
           - if: unix
             then:
-              - 'status=0; usdcat --help > usdcat-help.txt 2>&1 || status=$?; cat usdcat-help.txt; if [ "$status" -ne 1 ] || ! grep -F "Usage: usdcat" usdcat-help.txt; then exit 1; fi'
+              - 'status=0; usdcat --help > usdcat-help.txt 2>&1 || status=$?; cat usdcat-help.txt; if [ "$status" -ne 0 ] || ! grep -F "Usage: usdcat" usdcat-help.txt; then exit 1; fi'
           - if: win
             then:
               - usdcat --help
