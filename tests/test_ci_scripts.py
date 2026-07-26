@@ -1402,6 +1402,7 @@ class SmokeConsumersTests(unittest.TestCase):
                 "conda-forge",
             ],
         )
+        self.assertEqual(manifest["workspace"]["platforms"], ["linux-64", "win-64", "osx-arm64"])
         self.assertEqual(manifest["workspace"]["channel-priority"], "disabled")
         self.assertEqual(manifest["feature"]["goldeneye"]["dependencies"]["goldeneye"], "==0.7.1")
         self.assertEqual(manifest["feature"]["goldeneye"]["dependencies"]["openusd-typhoon"], "*")
