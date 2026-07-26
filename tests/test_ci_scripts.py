@@ -411,7 +411,7 @@ class CiMatrixTests(unittest.TestCase):
         )
 
     def test_goldeneye_matrix_splits_python_variants(self) -> None:
-        recipe = Path("goldeneye/0.7.0")
+        recipe = Path("goldeneye/0.7.1")
         result = ci_matrix.matrix(
             [recipe],
             ["linux-64"],
@@ -424,9 +424,9 @@ class CiMatrixTests(unittest.TestCase):
                 for item in result["include"]
             ],
             [
-                ("py311", "python=3.11", "goldeneye-0.7.0-linux-64-py311"),
-                ("py312", "python=3.12", "goldeneye-0.7.0-linux-64-py312"),
-                ("py313", "python=3.13", "goldeneye-0.7.0-linux-64-py313"),
+                ("py311", "python=3.11", "goldeneye-0.7.1-linux-64-py311"),
+                ("py312", "python=3.12", "goldeneye-0.7.1-linux-64-py312"),
+                ("py313", "python=3.13", "goldeneye-0.7.1-linux-64-py313"),
             ],
         )
 
@@ -462,10 +462,10 @@ class CiMatrixTests(unittest.TestCase):
 
         self.assertEqual(
             tasks["build-goldeneye"],
-            {"depends-on": ["build-goldeneye-0-7-0"]},
+            {"depends-on": ["build-goldeneye-0-7-1"]},
         )
-        build_task = shlex.split(tasks["build-goldeneye-0-7-0"])
-        self.assertEqual(build_task[:4], ["rattler-build", "build", "--recipe", "goldeneye/0.7.0/recipe.yaml"])
+        build_task = shlex.split(tasks["build-goldeneye-0-7-1"])
+        self.assertEqual(build_task[:4], ["rattler-build", "build", "--recipe", "goldeneye/0.7.1/recipe.yaml"])
         self.assertEqual(
             [build_task[index + 1] for index, item in enumerate(build_task) if item == "--channel"],
             [
@@ -599,6 +599,7 @@ class CiMatrixTests(unittest.TestCase):
             "0.4.0": "8c5f278b003be6d2e1959009edb50f1e65c1887e",
             "0.5.0": "e64fedda8266c5924d9b97a6fd919218aac7a7da",
             "0.7.0": "c6c71cb78c6013861864d5b33c7f9c9ff5b11797",
+            "0.7.1": "73885c11baf64adfcab549891c33ef2b8adfe4e7",
         }
 
         def top_level_block(recipe_text: str, section: str) -> list[str]:
@@ -1355,14 +1356,14 @@ class SmokeConsumersTests(unittest.TestCase):
             smoke_consumers.channel_priority_for_recipe(Path("openusd-typhoon/26.05.9.ea5b6f695")),
             "disabled",
         )
-        for recipe in [Path("goldeneye/0.1.0"), Path("goldeneye/0.2.0"), Path("goldeneye/0.3.0"), Path("goldeneye/0.4.0"), Path("goldeneye/0.5.0"), Path("goldeneye/0.7.0")]:
+        for recipe in [Path("goldeneye/0.1.0"), Path("goldeneye/0.2.0"), Path("goldeneye/0.3.0"), Path("goldeneye/0.4.0"), Path("goldeneye/0.5.0"), Path("goldeneye/0.7.0"), Path("goldeneye/0.7.1")]:
             with self.subTest(recipe=recipe.as_posix()):
                 self.assertEqual(smoke_consumers.channel_priority_for_recipe(recipe), "disabled")
         self.assertEqual(smoke_consumers.channel_priority_for_recipe(Path("openusd/26.05")), "strict")
         self.assertEqual(smoke_consumers.channel_priority_for_recipe(Path("openusd-typhoon")), "strict")
 
     def test_channels_for_recipe_target_uses_main_then_test_for_default_goldeneye(self) -> None:
-        for recipe in [Path("goldeneye/0.1.0"), Path("goldeneye/0.2.0"), Path("goldeneye/0.3.0"), Path("goldeneye/0.4.0"), Path("goldeneye/0.5.0"), Path("goldeneye/0.7.0")]:
+        for recipe in [Path("goldeneye/0.1.0"), Path("goldeneye/0.2.0"), Path("goldeneye/0.3.0"), Path("goldeneye/0.4.0"), Path("goldeneye/0.5.0"), Path("goldeneye/0.7.0"), Path("goldeneye/0.7.1")]:
             with self.subTest(recipe=recipe.as_posix(), target="default-label"):
                 self.assertEqual(
                     smoke_consumers.channels_for_recipe_target("default-label", None, recipe),
@@ -1379,7 +1380,7 @@ class SmokeConsumersTests(unittest.TestCase):
                 "conda-forge",
             ],
         )
-        for recipe in [Path("goldeneye/0.1.0"), Path("goldeneye/0.2.0"), Path("goldeneye/0.3.0"), Path("goldeneye/0.4.0"), Path("goldeneye/0.5.0"), Path("goldeneye/0.7.0")]:
+        for recipe in [Path("goldeneye/0.1.0"), Path("goldeneye/0.2.0"), Path("goldeneye/0.3.0"), Path("goldeneye/0.4.0"), Path("goldeneye/0.5.0"), Path("goldeneye/0.7.0"), Path("goldeneye/0.7.1")]:
             with self.subTest(recipe=recipe.as_posix(), target="test-label"):
                 self.assertEqual(
                     smoke_consumers.channels_for_recipe_target("test-label", None, recipe),
@@ -1390,8 +1391,8 @@ class SmokeConsumersTests(unittest.TestCase):
                     ],
                 )
 
-    def test_goldeneye_0_7_0_consumer_manifest_uses_main_then_test_channels(self) -> None:
-        manifest = tomllib.loads((ROOT / "goldeneye" / "0.7.0" / "pixi.toml").read_text(encoding="utf-8"))
+    def test_goldeneye_0_7_1_consumer_manifest_uses_main_then_test_channels(self) -> None:
+        manifest = tomllib.loads((ROOT / "goldeneye" / "0.7.1" / "pixi.toml").read_text(encoding="utf-8"))
 
         self.assertEqual(
             manifest["workspace"]["channels"],
@@ -1402,7 +1403,7 @@ class SmokeConsumersTests(unittest.TestCase):
             ],
         )
         self.assertEqual(manifest["workspace"]["channel-priority"], "disabled")
-        self.assertEqual(manifest["feature"]["goldeneye"]["dependencies"]["goldeneye"], "==0.7.0")
+        self.assertEqual(manifest["feature"]["goldeneye"]["dependencies"]["goldeneye"], "==0.7.1")
         self.assertEqual(manifest["feature"]["goldeneye"]["dependencies"]["openusd-typhoon"], "*")
 
     def test_write_manifest_uses_requested_channel_priority(self) -> None:
