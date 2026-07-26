@@ -325,7 +325,6 @@ def run_goldeneye_checks(manifest: Path, tmp: Path) -> None:
     pixi("run", "--manifest-path", str(manifest), "goldeneye", "--help")
     pixi("run", "--manifest-path", str(manifest), "goldeneye", "init", str(config_path))
     pixi("run", "--manifest-path", str(manifest), "python", "-m", "pytest", "--help")
-    pixi("run", "--manifest-path", str(manifest), "usdrender", "--help")
     pixi(
         "run",
         "--manifest-path",

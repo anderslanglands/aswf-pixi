@@ -1470,7 +1470,7 @@ class SmokeConsumersTests(unittest.TestCase):
                 ("run", "--manifest-path", str(manifest), "python", "-m", "pytest", "--help"),
                 calls,
             )
-            self.assertIn(
+            self.assertNotIn(
                 ("run", "--manifest-path", str(manifest), "usdrender", "--help"),
                 calls,
             )
