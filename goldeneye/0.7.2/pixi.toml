@@ -5,7 +5,7 @@ channels = [
   "https://conda.anaconda.org/anderslanglands/label/test",
   "conda-forge",
 ]
-platforms = ["linux-64"]
+platforms = ["linux-64", "win-64", "osx-arm64"]
 channel-priority = "disabled"
 
 [feature.goldeneye.dependencies]
