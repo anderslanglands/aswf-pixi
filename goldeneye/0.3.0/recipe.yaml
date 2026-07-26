@@ -10,9 +10,6 @@ package:
 source:
   git: https://github.com/anderslanglands/goldeneye.git
   rev: ${{ upstream_rev }}
-  patches:
-    - allow-python-3.10.patch
-    - python-3.10-tomli.patch
 
 build:
   number: ${{ build_number }}
@@ -40,7 +37,6 @@ requirements:
     - pillow
     - pytest
     - python
-    - tomli
 
 tests:
   - python:

@@ -60,7 +60,7 @@ Recipe versions:
 
 FLIP Evaluator provides the FLIP image difference metric as a Python extension and command-line tool.
 
-- `flip-evaluator`: Python extension module and `flip` command-line tool, built for Python 3.10 through 3.14.
+- `flip-evaluator`: Python extension module and `flip` command-line tool, built for Python 3.11 through 3.13.
 
 ## GoldenEye
 
@@ -70,10 +70,11 @@ Recipe versions:
 - `0.3.0`
 - `0.4.0`
 - `0.5.0`
+- `0.7.0`
 
 GoldenEye is a pytest-based runner for USD render regression suites, with image comparison and HTML report viewing.
 
-- `goldeneye`: Python command-line tool and pytest plugin, built for Python 3.10 through 3.14. It depends on `flip-evaluator ==1.7` and `openusd-typhoon` so the default Typhoon renderer works out of the box. Until `openusd-typhoon` is promoted, consumers should keep the test label available after the main Anders channel.
+- `goldeneye`: Python command-line tool and pytest plugin, built for Python 3.11 through 3.13. It depends on `flip-evaluator ==1.7` and `openusd-typhoon` so the default Typhoon renderer works out of the box. Until `openusd-typhoon` is promoted, consumers should keep the test label available after the main Anders channel.
 
 ## Imath
 
@@ -113,7 +114,7 @@ OpenColorIO is a color management solution for motion picture production.
 - `opencolorio-lib`: Shared OpenColorIO runtime library and setup script. Depends on Imath, expat, minizip, pystring, yaml-cpp, and zlib runtime libraries.
 - `opencolorio-dev`: C++ headers, CMake package files, pkg-config metadata, and Windows import libraries. Depends on the matching `opencolorio-lib`.
 - `opencolorio-tools`: Command-line tools built with `OCIO_USE_OIIO_FOR_APPS=OFF`, so image tools use OpenEXR rather than OpenImageIO. Depends on the matching `opencolorio-lib`, Little CMS, and OpenEXR runtime libraries; `ociodisplay` also requires the platform OpenGL/GLEW/GLUT stack at build time.
-- `opencolorio-python`: Python bindings for OpenColorIO, built for Python 3.10 through 3.14. Depends on the matching `opencolorio-lib`.
+- `opencolorio-python`: Python bindings for OpenColorIO, built for Python 3.11 through 3.13. Depends on the matching `opencolorio-lib`.
 - `opencolorio`: Default metapackage for C++ consumers. Depends on the matching `opencolorio-lib` and `opencolorio-dev`.
 
 ## OpenVDB and NanoVDB
@@ -127,7 +128,7 @@ OpenVDB provides sparse volumetric data structures, file I/O, and tools. NanoVDB
 - `openvdb-dev`: C++ headers and CMake package files. Depends on the matching `openvdb-lib`.
 - `openvdb-tools`: Core command-line tools, currently `vdb_print` and `vdb_lod`. Depends on the matching `openvdb-lib`.
 - `openvdb-guitools`: GUI/render tools, currently `vdb_view` and `vdb_render`, with PNG and OpenEXR output support enabled for `vdb_render`. Depends on the matching `openvdb-lib`.
-- `openvdb-python`: Python bindings for OpenVDB, built for Python 3.11 through 3.14. Depends on the matching `openvdb-lib`.
+- `openvdb-python`: Python bindings for OpenVDB, built for Python 3.11 through 3.13. Depends on the matching `openvdb-lib`.
 - `openvdb`: Default metapackage for C++ consumers. Depends on the matching `openvdb-lib`, `openvdb-dev`, and `openvdb-tools`; Python bindings, GUI/render tools, and NanoVDB are opt-in.
 - `nanovdb-dev`: Standalone NanoVDB headers. Does not depend on OpenVDB.
 - `nanovdb-tools`: Standalone NanoVDB command-line tools, currently `nanovdb_print` and `nanovdb_validate`. Does not depend on OpenVDB.
@@ -149,7 +150,7 @@ MaterialX is an open standard for transferring rich material and look-developmen
 - `materialx-render-mdl`: MDL convenience package for consumers that want MaterialX MDL generation together with the MDL SDK toolchain. Upstream MaterialX 1.39.x does not install a `MaterialXRenderMdl` library.
 - `materialx-render-slang`: Slang render backend, available for 1.39.5 and newer recipe versions that include upstream Slang renderer sources; 1.39.4 does not provide this package. Depends on `materialx-render` and `shader-slang-dev 2026.11`; the recipe fetches the matching `shader-slang/slang-rhi` source at the pinned Slang submodule revision, packages the public RHI headers, and consumes the `slang` CMake package exported by `shader-slang-dev`.
 - `materialx-guitools`: MaterialX viewer and graph editor executables. Depends on `materialx-render`; the recipe uses a git checkout with submodules because the release tarball does not include the GUI submodule payloads.
-- `materialx-python`: Python bindings for MaterialX, built for Python 3.10 through 3.14. Depends on the matching `materialx-lib`. Generator Python modules are included; render Python modules and upstream helper scripts that require disabled render modules are not included.
+- `materialx-python`: Python bindings for MaterialX, built for Python 3.11 through 3.13. Depends on the matching `materialx-lib`. Generator Python modules are included; render Python modules and upstream helper scripts that require disabled render modules are not included.
 - `materialx`: Default metapackage for complete base consumers. Depends on the matching `materialx-lib`, `materialx-dev`, and compatible `materialx-python`; render, renderer-specific dependencies, and GUI tools are opt-in.
 
 ## libuhdr
@@ -186,7 +187,7 @@ Partio is Walt Disney Animation Studios' particle file I/O and manipulation libr
 - `partio-lib`: Shared Partio runtime library with zlib support.
 - `partio-dev`: Public headers and recipe-side CMake package metadata exporting `Partio::partio` plus lowercase `partio` config-mode aliases and the `partio::partio` compatibility target. Depends on the matching `partio-lib`.
 - `partio-tools`: Headless command-line tools, currently `partattr`, `partconvert`, and `partinfo`. Depends on the matching `partio-lib`.
-- `partio-python`: SWIG Python bindings for Partio, built for Python 3.10 through 3.14. Depends on the matching `partio-lib`.
+- `partio-python`: SWIG Python bindings for Partio, built for Python 3.11 through 3.13. Depends on the matching `partio-lib`.
 - `partio`: Default metapackage for C++ and headless tool consumers. Depends on the matching `partio-lib`, `partio-dev`, and `partio-tools`; Python bindings and GUI tools are opt-in or omitted for now.
 
 ## OpenQMC
@@ -263,7 +264,7 @@ OpenImageIO provides image file I/O libraries, command-line tools, texture utili
 - `openimageio-lib`: Shared OpenImageIO and OpenImageIO_Util runtime libraries with common formats embedded, including OpenEXR, TIFF, JPEG, PNG/ICO, BMP, DPX, HDR, PNM, PSD, SGI, TGA, Cineon, DDS, FITS, IFF, RLA, Softimage, Zfile, null, and terminal output. JPEG support is built with libuhdr for 3.0.19.1 and 3.1.14.0; 2.5.19.1 predates that upstream integration.
 - `openimageio-dev`: C++ headers, CMake package files, pkg-config metadata, and Windows import libraries. Depends on the matching `openimageio-lib`.
 - `openimageio-tools`: Headless command-line tools: `oiiotool`, `maketx`, `iconvert`, `idiff`, `igrep`, and `iinfo`. Depends on the matching `openimageio-lib`.
-- `openimageio-python`: Python bindings for OpenImageIO, built for Python 3.10 through 3.14. Depends on the matching `openimageio-lib`.
+- `openimageio-python`: Python bindings for OpenImageIO, built for Python 3.11 through 3.13. Depends on the matching `openimageio-lib`.
 - `openimageio-format-gif`: GIF format plugin.
 - `openimageio-format-webp`: WebP format plugin.
 - `openimageio-format-jpeg2000`: JPEG 2000 format plugin with OpenJPEG and OpenJPH support.
@@ -282,7 +283,7 @@ Recipe versions:
 
 OpenUSD provides Pixar Universal Scene Description libraries, schemas, tools, Python modules, and imaging integrations.
 
-Python-enabled OpenUSD packages constrain Python 3.14 to the normal `cp314` ABI rather than conda-forge's free-threaded `cp314t` variant.
+Python-enabled OpenUSD packages are built for Python 3.11 through 3.13.
 
 - `openusd-minimal-lib`: Minimal non-Python runtime libraries and plugin resources. Depends only on MaterialX, OpenSubdiv, and TBB runtime packages.
 - `openusd-minimal-dev`: Minimal non-Python headers, CMake package files, and Windows import libraries. Depends on the matching `openusd-minimal-lib` plus MaterialX/OpenSubdiv/TBB development packages.
@@ -297,7 +298,7 @@ Recipe versions:
 
 OpenUSD Typhoon packages the NVIDIA Omniverse `typhoon-anders` branch at commit `ea5b6f695` as a test-label-only preview package. The Typhoon version format is `26.05.<recipe-build-serial>.<short-commit>`, where the serial starts at `1` and increments for each new Typhoon package definition; the current version is `26.05.9.ea5b6f695`. Rattler normalizes `+` and `-` separators in versions to `.`, so the version uses dot separators. Typhoon builds use channels ordered as test label, Anders, then conda-forge with channel priority disabled so dependencies can fall back across labels.
 
-OpenUSD Typhoon uses the same Python 3.14 normal `cp314` ABI constraint as OpenUSD, rather than allowing conda-forge's free-threaded `cp314t` variant.
+OpenUSD Typhoon is built for Python 3.11 through 3.13.
 
 - `openusd-typhoon`: Full Python-enabled OpenUSD package derived from the latest full `openusd` package recipe. It contains runtime libraries, development files, tools, `pxr` Python modules, USD imaging, `usdview`, GUI dependencies, MaterialX render support, OpenQMC-backed hdEmbree support, and supported plugins. It is mutually exclusive with `openusd` and all `openusd-minimal-*` packages. Recipe metadata restricts publishing to `test-label`.
 
@@ -312,7 +313,7 @@ OpenShadingLanguage provides a production shading language, compiler, runtime li
 - `openshadinglanguage-dev`: C++ headers, CMake package files, pkg-config metadata, and Windows import libraries. Depends on the matching `openshadinglanguage-lib` and `openshadinglanguage-tools` because upstream exports `oslc` and `oslinfo` in its CMake target set.
 - `openshadinglanguage-tools`: Headless command-line tools, currently `oslc` and `oslinfo`, plus installed standard shader headers.
 - `openshadinglanguage-guitools`: Qt-dependent GUI tools, currently `osltoy`. Depends on the matching `openshadinglanguage-lib` and Qt 6.
-- `openshadinglanguage-python`: Python `oslquery` bindings, built for Python 3.10 through 3.14. Depends on the matching `openshadinglanguage-lib` and `openimageio-python`.
+- `openshadinglanguage-python`: Python `oslquery` bindings, built for Python 3.11 through 3.13. Depends on the matching `openshadinglanguage-lib` and `openimageio-python`.
 - `openimageio-format-osl`: OpenImageIO input plugin for procedural OSL images (`.osl`, `.oso`, `.oslgroup`, and `.oslbody`). Depends on the matching OSL runtime and OpenImageIO runtime.
 - `openshadinglanguage`: Default metapackage for C++ and headless tool consumers. Depends on the matching `openshadinglanguage-lib`, `openshadinglanguage-dev`, and `openshadinglanguage-tools`; Python bindings, GUI tools, and OIIO plugin are opt-in.
 - `openshadinglanguage-cuda-*` and `openimageio-format-osl-cuda`: Linux-only CUDA-enabled flavor built with `osl_gpu=cuda`. These packages install the same upstream CMake target names as the CPU flavor and are mutually exclusive with the CPU packages. They are intended for explicit local/private builds rather than the default publish path.
@@ -330,7 +331,7 @@ The NVIDIA Material Definition Language SDK provides the MDL compiler, runtime S
 - `mdl-sdk-plugin-dds`: DDS image plugin.
 - `mdl-sdk-plugin-openimageio`: OpenImageIO image plugin. Depends on the matching MDL SDK runtime and OpenImageIO runtime.
 - `mdl-sdk-plugin-distiller`: MDL distiller plugin.
-- `mdl-sdk-python`: Python bindings (`pymdlsdk` and `pymdl`), built for Python 3.10 through 3.14. Depends on the matching runtime and standard plugins.
+- `mdl-sdk-python`: Python bindings (`pymdlsdk` and `pymdl`), built for Python 3.11 through 3.13. Depends on the matching runtime and standard plugins.
 - `mdl-sdk`: Default metapackage for C++ and headless tool consumers. Depends on the matching runtime, development surface, tools, and standard plugins; Python bindings are opt-in.
 
 ## OptiX SDK

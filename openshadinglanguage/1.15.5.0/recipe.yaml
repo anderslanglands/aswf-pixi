@@ -123,7 +123,7 @@ outputs:
             - ${{ compiler('cxx') }}
             - cmake
             - ninja
-            - python 3.14.*
+            - python 3.13.*
             - pkg-config
             - if: unix
               then: bison
@@ -252,7 +252,7 @@ outputs:
             - ${{ compiler('cxx') }}
             - cmake
             - ninja
-            - python 3.14.*
+            - python 3.13.*
             - if: unix
               then: bison
             - if: unix
@@ -377,7 +377,7 @@ outputs:
             - ${{ compiler('cxx') }}
             - cmake
             - ninja
-            - python 3.14.*
+            - python 3.13.*
             - if: unix
               then: bison
             - if: unix
@@ -592,7 +592,7 @@ outputs:
             - cmake
             - flex
             - ninja
-            - python 3.14.*
+            - python 3.13.*
             - pkg-config
       host:
         - if: osl_gpu == "cuda" and target_platform == "linux-64"
@@ -668,7 +668,7 @@ outputs:
             - cmake
             - flex
             - ninja
-            - python 3.14.*
+            - python 3.13.*
       host:
         - if: osl_gpu == "cuda" and target_platform == "linux-64"
           then:
@@ -743,7 +743,7 @@ outputs:
             - cmake
             - flex
             - ninja
-            - python 3.14.*
+            - python 3.13.*
       host:
         - if: osl_gpu == "cuda" and target_platform == "linux-64"
           then:

@@ -397,9 +397,6 @@ outputs:
         - pyopengl ==3.1.10
         - pyside6
         - python
-        - if: python == "3.14"
-          then:
-            - python_abi 3.14.* *_cp314
         - tbb-devel >=2022.3,<2023
         - zlib
         - if: linux
@@ -431,9 +428,6 @@ outputs:
         - pyopengl ==3.1.10
         - pyside6
         - python
-        - if: python == "3.14"
-          then:
-            - python_abi 3.14.* *_cp314
         - tbb-devel >=2022.3,<2023
         - if: linux
           then:

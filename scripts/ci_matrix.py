@@ -18,6 +18,7 @@ RUNNERS = {
 }
 
 DEFAULT_PLATFORMS = ["linux-64", "win-64", "osx-arm64"]
+SUPPORTED_PYTHON_VERSIONS = ["3.11", "3.12", "3.13"]
 
 OPENUSD_RECIPE = "openusd/26.05"
 OPENUSD_TYPHOON_RECIPE = "openusd-typhoon/26.05.9.ea5b6f695"
@@ -169,6 +170,51 @@ def read_simple_variant_values(recipe: Path, key: str) -> list[str]:
     return values
 
 
+def recipe_uses_python_variants(recipe: Path) -> bool:
+    recipe_file = recipe / "recipe.yaml"
+    if not recipe_file.is_file():
+        return False
+    recipe_text = "\n".join(
+        line
+        for line in recipe_file.read_text(encoding="utf-8").splitlines()
+        if not line.lstrip().startswith("#")
+    )
+    return bool(
+        re.search(
+            r"\$\{\{\s*python\b|\bpython_abi\b|if:\s*python\b|\$PYTHON\b|%PYTHON%|"
+            r"^\s+python:\s*(?:#.*)?$|^\s*noarch:\s*python\s*(?:#.*)?$|"
+            r"^\s+entry_points:\s*(?:#.*)?$",
+            recipe_text,
+            flags=re.MULTILINE,
+        )
+    )
+
+
+def validate_python_variant_policy(recipe: Path) -> None:
+    if not recipe_uses_python_variants(recipe):
+        return
+
+    variants_file = recipe / "variants.yaml"
+    if not variants_file.is_file():
+        raise SystemExit(
+            f"Python-enabled recipe {recipe} must contain variants.yaml defining "
+            "the repository-supported Python variants."
+        )
+    if not re.search(r"(?m)^python:\s*$", variants_file.read_text(encoding="utf-8")):
+        raise SystemExit(
+            f"Python-enabled recipe {recipe} variants.yaml must define Python variants."
+        )
+
+    versions = read_simple_variant_values(recipe, "python")
+    if versions != SUPPORTED_PYTHON_VERSIONS:
+        expected = ", ".join(SUPPORTED_PYTHON_VERSIONS)
+        actual = ", ".join(versions)
+        raise SystemExit(
+            f"Recipe {recipe} must define exactly the repository-supported Python "
+            f"variants ({expected}); found: {actual}."
+        )
+
+
 def validate_publish_target(value: str) -> None:
     if value not in {"artifact-only", "test-label", "default-label"}:
         raise SystemExit(
@@ -300,6 +346,7 @@ def matrix(
 ) -> dict[str, list[dict[str, str]]]:
     include: list[dict[str, str]] = []
     for recipe in recipes:
+        validate_python_variant_policy(recipe)
         recipe_key = recipe.as_posix()
         package = recipe.parts[-2]
         version = recipe.parts[-1]

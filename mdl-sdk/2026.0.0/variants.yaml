@@ -1,9 +1,7 @@
 python:
-  - 3.10
   - 3.11
   - 3.12
   - 3.13
-  - 3.14
 
 c_compiler_version:
   - if: target_platform == "osx-arm64"

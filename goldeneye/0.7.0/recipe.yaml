@@ -1,7 +1,7 @@
 context:
-  version: "0.2.0"
+  version: "0.7.0"
   build_number: 0
-  upstream_rev: faee4c0ac53df38c9c252b23ab0f54205657bcf6
+  upstream_rev: c6c71cb78c6013861864d5b33c7f9c9ff5b11797
 
 package:
   name: goldeneye

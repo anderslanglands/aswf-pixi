@@ -19,6 +19,7 @@ This repository is a new version of `~/code/pixi-recipes`. It builds conda packa
 Core goals:
 
 - Upload built packages to `anaconda.org`.
+- Build every Python-enabled package only for Python 3.11, 3.12, and 3.13. This is a repository-wide policy: never add Python 3.10 or 3.14 package variants.
 - The `anaconda.org` channel/user is `anderslanglands`; the consumer channel URL is `https://conda.anaconda.org/anderslanglands`.
 - Support both local test uploads and build/upload from GitHub Actions.
 - Store individual version recipes in this repo, for example `imath/3.1.2` and `imath/3.2.2`, so changes and fixes remain trackable over time. Start with one version per package unless Anders asks for more.
@@ -80,7 +81,7 @@ MaterialX packaging decisions:
 - Keep render and renderer-specific dependencies opt-in: `materialx-render` carries core/platform render targets, `materialx-render-osl` carries OSL render plus OSO generation support and depends on OpenShadingLanguage/OpenImageIO, `materialx-render-mdl` is a convenience dependency package because upstream 1.39.5 has no installed `MaterialXRenderMdl` target, and `materialx-render-slang` carries Slang render support.
 - `materialx-render-slang` depends on the separate `shader-slang-dev 2026.11` package for the Slang SDK and CMake target, while the MaterialX recipe fetches the matching `shader-slang/slang-rhi` source at the pinned Slang submodule revision and packages the public RHI headers needed by downstream consumers.
 - Build `materialx-guitools` from a git checkout with submodules, not the release tarball, because MaterialX 1.39.5's release tarball omits the NanoGUI, ImGui, and ImGuiNodeEditor submodule payloads required by the viewer and graph editor.
-- Build `materialx-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
+- Build `materialx-python` for Python 3.11, 3.12, and 3.13.
 - Keep `materialx-python` co-installable with `materialx`/`materialx-dev`; the old `materialx` vs `materialx-python` conflict only existed because pixi-recipes used two monolithic packages with overlapping files.
 - Do not carry the old MaterialX `add-cstdint.patch` into 1.39.4 or newer unless a build proves it is still needed; upstream 1.39.4 release notes mention a GCC 15 missing-header fix.
 - Carry the narrow MaterialX 1.39.5 `fix-render-slang-gcc15.patch` until upstream fixes the exported `MaterialXRenderSlang/SlangBlit.h` extra qualifications, missing `<cstring>` includes in the Slang renderer implementation/exported header, and the `MaterialXRenderSlang` target links on `MaterialXRenderHw`/`MaterialXGenSlang`.
@@ -91,14 +92,14 @@ OpenEXR packaging decisions:
 - Package OpenEXR 3.4.12 as `openexr-core-lib`, `openexr-core-dev`, `openexr-lib`, `openexr-dev`, `openexr-tools`, `openexr-python`, and a compatibility/default `openexr` metapackage.
 - Keep `OpenEXRCore` consumable on its own: `openexr-core-dev` carries the C API headers plus a small `OpenEXRCoreConfig.cmake` and `OpenEXRCore.pc`, while the upstream full `OpenEXRConfig.cmake` and `OpenEXR.pc` stay in `openexr-dev`.
 - The `openexr` metapackage should depend on the full C++ runtime/dev/tools surface, but not `openexr-python`; keep Python opt-in as `openexr-python`.
-- Build `openexr-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
+- Build `openexr-python` for Python 3.11, 3.12, and 3.13.
 - Use external `imath-dev` 3.2, `libdeflate`, `openjph`, and `zlib` dependencies rather than vendored copies.
 
 OpenColorIO packaging decisions:
 
 - Package OpenColorIO 2.5.1 as `opencolorio-lib`, `opencolorio-dev`, `opencolorio-tools`, `opencolorio-python`, and a compatibility/default `opencolorio` metapackage.
 - The `opencolorio` metapackage should depend on the C++ runtime and development surface only, not Python or tools; keep `opencolorio-python` and `opencolorio-tools` opt-in.
-- Build `opencolorio-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
+- Build `opencolorio-python` for Python 3.11, 3.12, and 3.13.
 - Build `opencolorio-tools` with `OCIO_USE_OIIO_FOR_APPS=OFF`; image tools should use OpenEXR rather than OpenImageIO until this repository has its own OpenImageIO package.
 - Keep Java, OpenFX, Nuke, docs, and tests disabled in package builds unless Anders explicitly asks for them.
 
@@ -106,7 +107,7 @@ OpenVDB packaging decisions:
 
 - Package OpenVDB 13.0.0 as `openvdb-lib`, `openvdb-dev`, `openvdb-tools`, `openvdb-guitools`, `openvdb-python`, `nanovdb-dev`, `nanovdb-tools`, `nanovdb-openvdb-tools`, `nanovdb`, and a compatibility/default `openvdb` metapackage.
 - The `openvdb` metapackage should depend on the C++ runtime, development surface, and core command-line tools only; keep Python bindings, GUI/render tools, and NanoVDB opt-in.
-- Build `openvdb-python` for Python 3.11, 3.12, 3.13, and 3.14.
+- Build `openvdb-python` for Python 3.11, 3.12, and 3.13.
 - Keep AX, `vdb_tool`, Houdini, Maya, docs, and upstream unit tests disabled unless Anders explicitly asks for them.
 - Package `openvdb-tools` with non-GUI tools only: `vdb_print` and `vdb_lod`.
 - Package `openvdb-guitools` with `vdb_view` and `vdb_render`; enable PNG and OpenEXR support for `vdb_render`.
@@ -136,7 +137,7 @@ Partio packaging decisions:
 
 - Package Partio 1.20.0 as `partio-lib`, `partio-dev`, `partio-tools`, `partio-python`, and a compatibility/default `partio` metapackage.
 - The `partio` metapackage should depend on the C++ runtime, development surface, and headless command-line tools only; keep Python bindings opt-in as `partio-python`.
-- Build `partio-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
+- Build `partio-python` for Python 3.11, 3.12, and 3.13.
 - Keep GUI tools disabled or omitted for now. Upstream's `partview` requires OpenGL/GLUT, while `partedit` and `partinspect` require Qt Python bindings.
 - Build `partio-tools` with only headless tools: `partattr`, `partconvert`, and `partinfo`.
 - Upstream 1.20.0 does not install CMake package metadata; install a small recipe-side `PartioConfig.cmake` exporting `Partio::partio`, lowercase `partio` config-mode aliases, and the `partio::partio` compatibility target, and validate consumers through CMake.
@@ -200,7 +201,7 @@ OpenImageIO packaging decisions:
 - Build the core JPEG plugin with libuhdr support for upstream versions that support it; omit libuhdr from 2.5.19.1.
 - Package optional plugins as `openimageio-format-gif`, `openimageio-format-webp`, `openimageio-format-jpeg2000`, `openimageio-format-jpegxl`, `openimageio-format-heif`, `openimageio-format-raw`, `openimageio-format-dicom`, `openimageio-format-ffmpeg`, and `openimageio-format-openvdb`, but omit `openimageio-format-jpegxl` from 2.5.19.1 because upstream does not provide it there.
 - `openimageio-format-openvdb` should depend on `openvdb-lib`, not `openvdb-python` or the OpenVDB compatibility metapackage.
-- Build `openimageio-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14; it depends on `openimageio-lib`, which carries the common read/write formats by default.
+- Build `openimageio-python` for Python 3.11, 3.12, and 3.13; it depends on `openimageio-lib`, which carries the common read/write formats by default.
 - Keep Qt viewer (`iv`), OpenCV, Freetype text rendering support, Ptex integration, R3DSDK, Nuke, docs, tests, and fonts disabled unless Anders explicitly asks for them.
 
 
@@ -212,7 +213,7 @@ OpenUSD packaging decisions:
 - Use `openusd` for the full Python-enabled package. It should be one package containing runtime libraries, headers, CMake metadata, tools, `pxr` Python modules, USD imaging, `usdview`, GUI dependencies, MaterialX render support, and supported plugins. It depends on `materialx-render` because USD imaging builds `hdSt` against MaterialXRender headers. It is mutually exclusive with all `openusd-minimal-*` packages.
 - Full `openusd` should enable USD tools, imaging, USD imaging, validation, exec, USDView, GL/Metal support where available, OpenImageIO, OpenColorIO, ImageIO, Draco, Embree, MaterialX, and OpenVDB support. Keep Vulkan disabled for 26.05 because the old recipe hit a Vulkan header API mismatch; keep Ptex, Alembic, OSL, Renderman/PRMan, HDF5, MayaPy tests, AnimX tests, generated-code validation, and precompiled headers disabled unless Anders asks.
 - Keep the old OpenUSD build stability fixes: cap recipe build parallelism at 24 jobs and remove `-pipe`, `-ffunction-sections`, and `-fvisibility-inlines-hidden` from compiler flags. Keep `PXR_PY_UNDEFINED_DYNAMIC_LOOKUP=OFF` for non-macOS Python-enabled builds, but enable it on macOS because conda-forge macOS Python reports static sysconfig metadata and direct `libpython` linkage crashes during `import pxr.Tf`; carry the narrow `link-python-to-executables.patch` so executables that link `usd_python` still link Python explicitly and avoid unresolved `_Py_NoneStruct`.
-- Constrain Python 3.14 Python-enabled OpenUSD packages to the normal `python_abi 3.14.* *_cp314` ABI so solves cannot drift to conda-forge's free-threaded `cp314t` packages, for example through PySide6. Patch OpenUSD's installed CMake config so Python-enabled packages resolve `Python3` from the installed conda prefix before falling back to ambient system discovery.
+- Patch OpenUSD's installed CMake config so Python-enabled packages resolve `Python3` from the installed conda prefix before falling back to ambient system discovery.
 
 OpenUSD Typhoon packaging decisions:
 
@@ -223,8 +224,8 @@ OpenUSD Typhoon packaging decisions:
 
 GoldenEye packaging decisions:
 
-- Package GoldenEye 0.1.0, 0.2.0, 0.3.0, 0.4.0, and 0.5.0 as a single `goldeneye` Python package; do not split runtime or development outputs because upstream installs only Python modules, CLI entry points, pytest plugin metadata, and static viewer assets.
-- Build `goldeneye` for Python 3.10, 3.11, 3.12, 3.13, and 3.14. Carry narrow recipe-side Python 3.10 compatibility patches: relax upstream `requires-python` from `>=3.11` to `>=3.10`, and fall back from stdlib `tomllib` to `tomli` on Python 3.10.
+- Package GoldenEye 0.1.0, 0.2.0, 0.3.0, 0.4.0, 0.5.0, and 0.7.0 as a single `goldeneye` Python package; do not split runtime or development outputs because upstream installs only Python modules, CLI entry points, pytest plugin metadata, and static viewer assets.
+- Build GoldenEye only for Python 3.11, 3.12, and 3.13, following the repository-wide Python policy.
 - Keep `openusd-typhoon` as an unconstrained runtime dependency so the default Typhoon renderer works out of the box. GoldenEye may publish to either `test-label` or `default-label`; until `openusd-typhoon` is promoted, default-label consumers and smoke tests should use the main Anders channel first, then the test label for Typhoon, then conda-forge, with channel priority disabled.
 
 OpenShadingLanguage packaging decisions:
@@ -233,7 +234,7 @@ OpenShadingLanguage packaging decisions:
 - The `openshadinglanguage` metapackage should depend on the C++ runtime, development surface, and headless tools only; keep Python bindings, Qt GUI tools, and the OIIO OSL plugin opt-in.
 - Package Qt-dependent tools separately as `openshadinglanguage-guitools`; upstream 1.15.5.0 only installs `osltoy` in this category, and the recipe uses Qt 6.
 - Package the OpenImageIO OSL procedural input plugin as `openimageio-format-osl`; it depends on `openshadinglanguage-lib` and `openimageio-lib`, not the OSL compatibility metapackage.
-- Build `openshadinglanguage-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14. The Python module imports `OpenImageIO`, so it must depend on `openimageio-python` as well as the matching OSL runtime.
+- Build `openshadinglanguage-python` for Python 3.11, 3.12, and 3.13. The Python module imports `OpenImageIO`, so it must depend on `openimageio-python` as well as the matching OSL runtime.
 - Keep upstream tests, `testshade`, and `testrender` disabled in package builds unless Anders explicitly asks to package or run them.
 - Use `winflexbison` for Windows OSL builds because conda-forge does not publish `bison`/`flex` for `win-64`; keep LLVM link-time dependencies such as `libxml2-devel` and `zstd` explicit in OSL host requirements.
 - Provide a Linux-only CUDA-enabled flavor named with `-cuda` package suffixes (`openshadinglanguage-cuda-lib`, `openshadinglanguage-cuda-dev`, `openshadinglanguage-cuda-tools`, `openshadinglanguage-cuda-guitools`, `openshadinglanguage-cuda-python`, `openimageio-format-osl-cuda`, and `openshadinglanguage-cuda`). Do not call these packages `-optix`.
@@ -247,7 +248,7 @@ MDL SDK packaging decisions:
 - Do not split `libmdl_core` into a separate runtime package for now. Upstream installs `libmdl_core` and `libmdl_sdk` as distinct loadable modules, but they share substantial internal implementation and the useful consumer surface is simpler as one `mdl-sdk-lib` runtime.
 - The `mdl-sdk` metapackage should depend on the C++ runtime, development surface, headless tools, and standard plugins only; keep Python bindings opt-in as `mdl-sdk-python`.
 - `mdl-sdk-dev` should depend on the matching runtime, tools, and standard plugin outputs because upstream installs one CMake export set containing all of those targets.
-- Build `mdl-sdk-python` for Python 3.10, 3.11, 3.12, 3.13, and 3.14.
+- Build `mdl-sdk-python` for Python 3.11, 3.12, and 3.13.
 - Keep SDK examples, CUDA examples, OpenGL/Vulkan/DXR/OptiX examples, Qt browser, Arnold plugin, AxF support, MaterialX example integration, Slang support, API documentation generation, and upstream unit tests disabled unless Anders explicitly asks for them.
 - Treat CUDA support as part of the normal SDK code-generation API surface unless a build proves a separate runtime flavor is needed. Validate the PTX backend API without requiring a CUDA driver; package CUDA example binaries separately only if Anders asks for examples.
 - Use external `openimageio-dev`/`openimageio-lib` for the `nv_openimageio` plugin. Keep the plugin separate so non-image consumers can install the SDK runtime without OpenImageIO.
