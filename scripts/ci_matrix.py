@@ -20,7 +20,6 @@ RUNNERS = {
 DEFAULT_PLATFORMS = ["linux-64", "win-64", "osx-arm64"]
 SUPPORTED_PYTHON_VERSIONS = ["3.11", "3.12", "3.13"]
 
-OPENUSD_RECIPE = "openusd/26.05"
 OPENUSD_TYPHOON_RECIPE = "openusd-typhoon/26.05.9.ea5b6f695"
 
 MATERIALX_PARALLEL_PYTHON_RECIPES = {"materialx/1.39.4", "materialx/1.39.5"}
@@ -430,7 +429,7 @@ def matrix(
                     )
                 continue
 
-            if recipe_key == OPENUSD_RECIPE:
+            if package == "openusd":
                 openusd_python_versions = read_simple_variant_values(recipe, "python")
                 include.append(
                     {

@@ -1,0 +1,31 @@
+[workspace]
+name = "openusd-26.08-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands/label/test",
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.openusd-minimal-lib.dependencies]
+openusd-minimal-lib = "==26.08"
+
+[feature.openusd-minimal-dev.dependencies]
+openusd-minimal-dev = "==26.08"
+
+[feature.openusd-minimal-tools.dependencies]
+openusd-minimal-tools = "==26.08"
+
+[feature.openusd-minimal-python.dependencies]
+openusd-minimal-python = "==26.08"
+
+[feature.openusd.dependencies]
+openusd = "==26.08"
+
+[environments]
+openusd-minimal-lib = ["openusd-minimal-lib"]
+openusd-minimal-dev = ["openusd-minimal-dev"]
+openusd-minimal-tools = ["openusd-minimal-tools"]
+openusd-minimal-python = ["openusd-minimal-python"]
+openusd = ["openusd"]
