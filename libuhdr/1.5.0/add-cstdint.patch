@@ -1,0 +1,12 @@
+diff --git a/lib/include/ultrahdr/ultrahdrcommon.h b/lib/include/ultrahdr/ultrahdrcommon.h
+index 5e815f0..0e46f65 100644
+--- a/lib/include/ultrahdr/ultrahdrcommon.h
++++ b/lib/include/ultrahdr/ultrahdrcommon.h
+@@ -23,6 +23,7 @@
+ #include <GLES3/gl3.h>
+ #endif
+ 
++#include <cstdint>
+ #include <deque>
+ #include <map>
+ #include <memory>
