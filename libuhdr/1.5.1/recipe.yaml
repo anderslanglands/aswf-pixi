@@ -10,7 +10,6 @@ source:
   url: https://github.com/google/libultrahdr/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 54d3f36c1d2b56ef9b8e63fd3f5fcac56c2c4540f8a56e0cc952f5010d790191
   patches:
-    - add-cstdint.patch
     - pkg-config-shared-cflags.patch
 
 build:
