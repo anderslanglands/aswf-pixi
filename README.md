@@ -76,7 +76,7 @@ Recipe versions:
 
 GoldenEye is a pytest-based runner for USD render regression suites, with image comparison and HTML report viewing.
 
-- `goldeneye`: Python command-line tool and pytest plugin, built for Python 3.11 through 3.13. It depends on `flip-evaluator ==1.7` and `openusd-typhoon` so the default Typhoon renderer works out of the box. Until `openusd-typhoon` is promoted, consumers should keep the test label available after the main Anders channel.
+- `goldeneye`: Python command-line tool and pytest plugin, built for Python 3.11 through 3.13. It depends on `flip-evaluator ==1.7` and `openusd-typhoon` so the default Typhoon renderer works out of the box. Consumers should prefer the main Anders channel and may keep the test label as a fallback during Typhoon migration.
 
 ## Imath
 
@@ -300,12 +300,13 @@ Python-enabled OpenUSD packages are built for Python 3.11 through 3.13.
 
 Recipe versions:
 - `26.05.9.ea5b6f695`
+- `26.08.10.121e74ef7`
 
-OpenUSD Typhoon packages the NVIDIA Omniverse `typhoon-anders` branch at commit `ea5b6f695` as a test-label-only preview package. The Typhoon version format is `26.05.<recipe-build-serial>.<short-commit>`, where the serial starts at `1` and increments for each new Typhoon package definition; the current version is `26.05.9.ea5b6f695`. Rattler normalizes `+` and `-` separators in versions to `.`, so the version uses dot separators. Typhoon builds use channels ordered as test label, Anders, then conda-forge with channel priority disabled so dependencies can fall back across labels.
+OpenUSD Typhoon packages the NVIDIA Omniverse `typhoon-anders` branch. The current recipe pins commit `121e74ef7` on the OpenUSD 26.08 line as version `26.08.10.121e74ef7`. The Typhoon version format is `<OpenUSD major.minor>.<recipe-build-serial>.<short-commit>`, with one repository-wide serial increment per new Typhoon package definition. Rattler normalizes `+` and `-` separators in versions to `.`, so the version uses dot separators. Typhoon builds use channels ordered as test label, Anders, then conda-forge with channel priority disabled so dependencies can fall back across labels.
 
 OpenUSD Typhoon is built for Python 3.11 through 3.13.
 
-- `openusd-typhoon`: Full Python-enabled OpenUSD package derived from the latest full `openusd` package recipe. It contains runtime libraries, development files, tools, `pxr` Python modules, USD imaging, `usdview`, GUI dependencies, MaterialX render support, OpenQMC-backed hdEmbree support, and supported plugins. It is mutually exclusive with `openusd` and all `openusd-minimal-*` packages. Recipe metadata restricts publishing to `test-label`.
+- `openusd-typhoon`: Full Python-enabled OpenUSD package derived from the latest full `openusd` package recipe. It contains runtime libraries, development files, tools, `pxr` Python modules, USD imaging, `usdview`, GUI dependencies, MaterialX render support, OpenQMC-backed hdEmbree support, and supported plugins. It is mutually exclusive with `openusd` and all `openusd-minimal-*` packages. Current recipes may be published to the test or default label.
 
 ## OpenShadingLanguage
 

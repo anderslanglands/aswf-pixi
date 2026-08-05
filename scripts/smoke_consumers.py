@@ -49,7 +49,11 @@ def channels_for_target(target: str, local_channel: str | None) -> list[str]:
 
 
 def channels_for_recipe_target(target: str, local_channel: str | None, recipe: Path) -> list[str]:
-    if target == "default-label" and len(recipe.parts) >= 2 and recipe.parts[-2] == "goldeneye":
+    if (
+        target == "default-label"
+        and len(recipe.parts) >= 2
+        and recipe.parts[-2] in {"goldeneye", "openusd-typhoon"}
+    ):
         if local_channel:
             raise SystemExit("--local-channel is only valid with --target local-artifacts.")
         return [
