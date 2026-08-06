@@ -14,6 +14,7 @@ source:
   patches:
     - link-python-to-executables.patch
     - find-prefix-python-in-config.patch
+    - fix-hdembree-bsdl-windows-strcasecmp.patch
 
 build:
   number: ${{ build_number }}
