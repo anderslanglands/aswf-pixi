@@ -7,8 +7,8 @@ recipe:
   version: ${{ version }}
 
 source:
-  url: https://github.com/AcademySoftwareFoundation/OpenImageIO/releases/download/v${{ version }}/OpenImageIO-${{ version }}.tar.gz
-  sha256: 2c17eb34aa9d645629caf26a1c90e14556ae558f429e1ff6f0e41fbe4c80d42e
+  url: https://github.com/AcademySoftwareFoundation/OpenImageIO/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 7837a2058638dd9caa352d6936677dba7883105c6db6caf6fb58ba40fa2c12c8
   patches:
     - patches/cmake-4-private-plugin-linking.patch
     - patches/heif-plugin-init-symbol.patch
