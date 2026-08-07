@@ -301,6 +301,7 @@ OpenUSD Typhoon is built for Python 3.11 through 3.13.
 
 Recipe versions:
 - `1.15.5.0`
+- `1.15.6.0`
 
 OpenShadingLanguage provides a production shading language, compiler, runtime libraries, and OpenImageIO integration.
 
