@@ -149,6 +149,7 @@ MaterialX is an open standard for transferring rich material and look-developmen
 Recipe versions:
 - `1.4.0`
 - `1.5.1`
+- `2.0.0`
 
 libuhdr is Google's reference codec for the JPEG/R gain map based Ultra HDR image format.
 
