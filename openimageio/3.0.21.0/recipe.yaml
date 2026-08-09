@@ -831,7 +831,7 @@ outputs:
         - libboost-devel
         - libheif
         - libjpeg-turbo
-        - libjxl
+        - libjxl 0.11.*
         - libpng
         - libraw
         - libtiff
@@ -1093,7 +1093,7 @@ outputs:
     requirements:
       run:
         - ${{ pin_subpackage('openimageio-lib', exact=True) }}
-        - libjxl
+        - libjxl 0.11.*
     tests:
       - script:
           - python tests/check_formats.py jpegxl --roundtrip jpegxl
