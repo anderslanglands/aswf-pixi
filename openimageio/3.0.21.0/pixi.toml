@@ -1,7 +1,6 @@
 [workspace]
 name = "openimageio-3.0.21.0-consumer"
 channels = [
-  "https://conda.anaconda.org/anderslanglands/label/test",
   "https://conda.anaconda.org/anderslanglands",
   "conda-forge",
 ]
