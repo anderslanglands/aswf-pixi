@@ -8,9 +8,8 @@ recipe:
 
 source:
   url: https://github.com/google/libultrahdr/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 5e422540271b64473d069623136e207d0516999aac2f819fb6176a01a3f9f915
+  sha256: 39a64a17c48f2f8a68b653b76663ab14ce357cb5ca5acaacd89e6bc97d2f409f
   patches:
-    - add-cstdint.patch
     - pkg-config-shared-cflags.patch
 
 build:
