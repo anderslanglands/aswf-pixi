@@ -1,0 +1,31 @@
+diff --git a/src/heif.imageio/heifinput.cpp b/src/heif.imageio/heifinput.cpp
+--- a/src/heif.imageio/heifinput.cpp
++++ b/src/heif.imageio/heifinput.cpp
+@@ -105,7 +105,12 @@
+ };
+ 
+ 
+-void
++// Export version number and create function symbols
++OIIO_PLUGIN_EXPORTS_BEGIN
++
++OIIO_EXPORT int heif_imageio_version = OIIO_PLUGIN_VERSION;
++
++OIIO_EXPORT void
+ oiio_heif_init()
+ {
+ #if LIBHEIF_HAVE_VERSION(1, 16, 0)
+@@ -113,13 +118,6 @@
+     std::call_once(flag, []() { heif_init(nullptr); });
+ #endif
+ }
+-
+-
+-
+-// Export version number and create function symbols
+-OIIO_PLUGIN_EXPORTS_BEGIN
+-
+-OIIO_EXPORT int heif_imageio_version = OIIO_PLUGIN_VERSION;
+ 
+ OIIO_EXPORT const char*
+ heif_imageio_library_version()
