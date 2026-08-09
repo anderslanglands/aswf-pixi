@@ -11,7 +11,6 @@ source:
   sha256: 5af7221be05bbe69d7ec4eb74b5656c6d15b8d1a332410d6af937b1df48647c0
   patches:
     - patches/cmake-4-private-plugin-linking.patch
-    - patches/heif-plugin-init-symbol.patch
 
 build:
   number: ${{ build_number }}
@@ -831,7 +830,7 @@ outputs:
         - libboost-devel
         - libheif
         - libjpeg-turbo
-        - libjxl
+        - libjxl 0.11.*
         - libpng
         - libraw
         - libtiff
@@ -1093,7 +1092,7 @@ outputs:
     requirements:
       run:
         - ${{ pin_subpackage('openimageio-lib', exact=True) }}
-        - libjxl
+        - libjxl 0.11.*
     tests:
       - script:
           - python tests/check_formats.py jpegxl --roundtrip jpegxl
