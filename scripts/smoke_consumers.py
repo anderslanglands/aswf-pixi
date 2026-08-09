@@ -16,11 +16,6 @@ from pathlib import Path
 
 CHANNELS = {
     "local-artifacts": [],
-    "test-label": [
-        "https://conda.anaconda.org/anderslanglands/label/test",
-        "https://conda.anaconda.org/anderslanglands",
-        "conda-forge",
-    ],
     "default-label": [
         "https://conda.anaconda.org/anderslanglands",
         "conda-forge",
@@ -29,7 +24,6 @@ CHANNELS = {
 
 EXPECTED_SOURCE = {
     "local-artifacts": None,
-    "test-label": "https://conda.anaconda.org/anderslanglands/label/test",
     "default-label": "https://conda.anaconda.org/anderslanglands",
 }
 
@@ -49,24 +43,10 @@ def channels_for_target(target: str, local_channel: str | None) -> list[str]:
 
 
 def channels_for_recipe_target(target: str, local_channel: str | None, recipe: Path) -> list[str]:
-    if (
-        target == "default-label"
-        and len(recipe.parts) >= 2
-        and recipe.parts[-2] in {"goldeneye", "openusd-typhoon"}
-    ):
-        if local_channel:
-            raise SystemExit("--local-channel is only valid with --target local-artifacts.")
-        return [
-            "https://conda.anaconda.org/anderslanglands",
-            "https://conda.anaconda.org/anderslanglands/label/test",
-            "conda-forge",
-        ]
     return channels_for_target(target, local_channel)
 
 
 def channel_priority_for_recipe(recipe: Path) -> str:
-    if len(recipe.parts) >= 2 and recipe.parts[-2] in {"goldeneye", "openusd-typhoon"}:
-        return "disabled"
     return "strict"
 
 

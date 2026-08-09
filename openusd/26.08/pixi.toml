@@ -1,7 +1,6 @@
 [workspace]
 name = "openusd-26.08-consumer"
 channels = [
-  "https://conda.anaconda.org/anderslanglands/label/test",
   "https://conda.anaconda.org/anderslanglands",
   "conda-forge",
 ]

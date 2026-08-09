@@ -208,26 +208,49 @@ class CiMatrixTests(unittest.TestCase):
         self.assertIsNotNone(build_step_match)
         assert build_step_match is not None
         build_step = build_step_match.group("body")
-        pre_typhoon, typhoon_and_rest = build_step.split('if [[ "$RECIPE" == openusd-typhoon/* || "$RECIPE" == goldeneye/* ]]; then', 1)
-        typhoon_block, post_typhoon = typhoon_and_rest.split("\n          fi", 1)
-        self.assertIn("https://conda.anaconda.org/anderslanglands", pre_typhoon)
-        self.assertIn("conda-forge", pre_typhoon)
-        self.assertIn("channel_priority=strict", pre_typhoon)
-        self.assertNotIn("https://conda.anaconda.org/anderslanglands/label/test", pre_typhoon)
-        self.assertNotIn("channel_priority=disabled", pre_typhoon)
-        self.assertRegex(
-            typhoon_block,
-            r"(?s)https://conda\.anaconda\.org/anderslanglands/label/test.*"
-            r"https://conda\.anaconda\.org/anderslanglands.*conda-forge",
-        )
-        self.assertIn("channel_priority=disabled", typhoon_block)
-        self.assertIn('args+=(--channel "$channel")', post_typhoon)
+        self.assertIn("--channel https://conda.anaconda.org/anderslanglands", build_step)
+        self.assertIn("--channel conda-forge", build_step)
+        self.assertIn("--channel-priority strict", build_step)
+        self.assertNotIn("channel_priority=disabled", build_step)
+        self.assertNotIn("openusd-typhoon/*", build_step)
         self.assertIn("args+=(--variant \"$variant_pair\")", workflow)
         match = re.search(r"(?ms)^      publish_target:\n(?P<body>(?:        .*\n)+)", workflow)
         self.assertIsNotNone(match)
         assert match is not None
         self.assertIn("default: default-label", match.group("body"))
         self.assertNotIn("default: artifact-only", match.group("body"))
+
+    def test_repository_has_no_staged_anaconda_label_paths(self) -> None:
+        forbidden = [
+            "test" + "-label",
+            "/label/" + "test",
+            "anaconda-" + "test",
+            "--label " + "test",
+        ]
+        tracked = subprocess.run(
+            ["git", "ls-files", "-z"],
+            cwd=ROOT,
+            check=True,
+            stdout=subprocess.PIPE,
+        ).stdout.split(b"\0")
+
+        violations: list[str] = []
+        for raw_path in tracked:
+            if not raw_path:
+                continue
+            path = ROOT / raw_path.decode()
+            if not path.is_file():
+                continue
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            if any(value in text for value in forbidden):
+                violations.append(path.relative_to(ROOT).as_posix())
+
+        self.assertEqual(violations, [])
+        staged_target = "test" + "-label"
+        with self.assertRaisesRegex(SystemExit, "Publish target must be"):
+            ci_matrix.validate_publish_target(staged_target)
+        self.assertNotIn(staged_target, publish_packages.CHANNELS)
+        self.assertNotIn(staged_target, smoke_consumers.CHANNELS)
 
     def test_build_packages_workflow_concurrency_scopes_by_recipe(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "build-packages.yml").read_text(encoding="utf-8")
@@ -479,10 +502,11 @@ class CiMatrixTests(unittest.TestCase):
         )
         build_task = tasks["build-openusd-typhoon-26-08-10-121e74ef7"]
         self.assertIn("--recipe openusd-typhoon/26.08.10.121e74ef7/recipe.yaml", build_task)
-        self.assertIn("--channel https://conda.anaconda.org/anderslanglands/label/test", build_task)
-        self.assertIn("--channel-priority disabled", build_task)
+        self.assertIn("--channel https://conda.anaconda.org/anderslanglands", build_task)
+        self.assertNotIn("/label/", build_task)
+        self.assertIn("--channel-priority strict", build_task)
 
-    def test_goldeneye_root_build_task_uses_relaxed_test_label_channels(self) -> None:
+    def test_goldeneye_root_build_task_uses_default_channels(self) -> None:
         manifest = tomllib.loads((ROOT / "pixi.toml").read_text(encoding="utf-8"))
         tasks = manifest["tasks"]
 
@@ -495,13 +519,12 @@ class CiMatrixTests(unittest.TestCase):
         self.assertEqual(
             [build_task[index + 1] for index, item in enumerate(build_task) if item == "--channel"],
             [
-                "https://conda.anaconda.org/anderslanglands/label/test",
                 "https://conda.anaconda.org/anderslanglands",
                 "conda-forge",
             ],
         )
         self.assertEqual(build_task.count("--channel-priority"), 1)
-        self.assertEqual(build_task[build_task.index("--channel-priority") + 1], "disabled")
+        self.assertEqual(build_task[build_task.index("--channel-priority") + 1], "strict")
 
     def test_openusd_typhoon_consumer_manifest_prefers_default_label(self) -> None:
         recipe_version = "26.08.10.121e74ef7"
@@ -513,11 +536,10 @@ class CiMatrixTests(unittest.TestCase):
             manifest["workspace"]["channels"],
             [
                 "https://conda.anaconda.org/anderslanglands",
-                "https://conda.anaconda.org/anderslanglands/label/test",
                 "conda-forge",
             ],
         )
-        self.assertEqual(manifest["workspace"]["channel-priority"], "disabled")
+        self.assertEqual(manifest["workspace"]["channel-priority"], "strict")
         self.assertEqual(manifest["dependencies"]["openusd-typhoon"], f"=={recipe_version}")
 
     def test_current_openusd_typhoon_recipe_allows_default_label(self) -> None:
@@ -534,7 +556,7 @@ class CiMatrixTests(unittest.TestCase):
         self.assertEqual(upstream_rev_match.group("rev"), "121e74ef79f11d38effb31c0d8a1c4ac2658b4fe")
         self.assertTrue(upstream_rev_match.group("rev").startswith(recipe.name.rsplit(".", 1)[-1]))
 
-        self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"default-label", "test-label"})
+        self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"default-label"})
         self.assertEqual(resolve_build_numbers.recipe_package_names(recipe), ["openusd-typhoon"])
         self.assertIn("upstream_branch: typhoon-anders", recipe_text)
         self.assertIn("git: https://github.com/NVIDIA-Omniverse/OpenUSD.git", recipe_text)
@@ -669,14 +691,13 @@ class CiMatrixTests(unittest.TestCase):
                     [],
                 )
 
-                self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"default-label", "test-label"})
-                ci_matrix.validate_recipe_publish_target(recipe, "test-label")
+                self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"default-label"})
                 ci_matrix.validate_recipe_publish_target(recipe, "default-label")
                 self.assertEqual(resolve_build_numbers.recipe_package_names(recipe), ["goldeneye"])
                 self.assertIn("openusd-typhoon", run_dependencies)
                 self.assertNotIn("tomli", run_dependencies)
 
-    def test_recipe_publish_policy_allows_test_label_and_artifact_only(self) -> None:
+    def test_recipe_publish_policy_allows_default_label_and_artifact_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
             recipe = Path(tmp_raw) / "preview" / "1.0.0"
             recipe.mkdir(parents=True)
@@ -686,16 +707,14 @@ class CiMatrixTests(unittest.TestCase):
   version: 1.0.0
 
 extra:
-  allowed_publish_targets: ["test-label"] # preview-only package
+  allowed_publish_targets: ["default-label"] # preview-only package
 """,
                 encoding="utf-8",
             )
 
-            self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"test-label"})
-            ci_matrix.validate_recipe_publish_target(recipe, "test-label")
+            self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"default-label"})
+            ci_matrix.validate_recipe_publish_target(recipe, "default-label")
             ci_matrix.validate_recipe_publish_target(recipe, "artifact-only")
-            with self.assertRaisesRegex(SystemExit, "may only be published to test-label"):
-                ci_matrix.validate_recipe_publish_target(recipe, "default-label")
 
     def test_recipe_publish_policy_rejects_unknown_targets(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
@@ -708,14 +727,13 @@ extra:
 
 extra:
   allowed_publish_targets:
-    - test-label
     - "staging-label" # unsupported target
 """,
                 encoding="utf-8",
             )
 
             with self.assertRaisesRegex(SystemExit, "unsupported allowed_publish_targets: staging-label"):
-                ci_matrix.validate_recipe_publish_target(recipe, "test-label")
+                ci_matrix.validate_recipe_publish_target(recipe, "default-label")
 
     def test_ci_matrix_cli_rejects_default_label_disallowed_by_recipe(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
@@ -728,8 +746,7 @@ extra:
   version: 1.0.0
 
 extra:
-  allowed_publish_targets:
-    - test-label
+  allowed_publish_targets: []
 """,
                 encoding="utf-8",
             )
@@ -755,7 +772,7 @@ extra:
 
             self.assertNotEqual(completed.returncode, 0)
             self.assertIn(
-                "Recipe preview/1.0.0 may only be published to test-label; requested default-label.",
+                "Recipe preview/1.0.0 may only be published to none; requested default-label.",
                 completed.stderr,
             )
 
@@ -1038,7 +1055,7 @@ outputs:
     def test_artifact_only_rejects_explicit_auto_build_number(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
             recipe = self.make_recipe(Path(tmp_raw))
-            with self.assertRaisesRegex(SystemExit, "requires test-label or default-label"):
+            with self.assertRaisesRegex(SystemExit, "requires default-label"):
                 resolve_build_numbers.resolve_build_numbers(
                     [recipe],
                     ["linux-64"],
@@ -1130,14 +1147,13 @@ outputs:
             with (recipe / "recipe.yaml").open("a", encoding="utf-8") as handle:
                 handle.write("""
 extra:
-  allowed_publish_targets:
-    - test-label
+  allowed_publish_targets: []
 """)
 
             def fail_fetch(_: str) -> list[dict[str, object]]:
                 raise AssertionError("publish policy should reject before network lookup")
 
-            with self.assertRaisesRegex(SystemExit, "may only be published to test-label"):
+            with self.assertRaisesRegex(SystemExit, "may only be published to none"):
                 resolve_build_numbers.resolve_build_numbers(
                     [recipe],
                     ["linux-64"],
@@ -1240,7 +1256,7 @@ extra:
                 resolve_build_numbers.resolve_build_numbers(
                     [recipe],
                     ["linux-64", "win-64"],
-                    "test-label",
+                    "default-label",
                     "auto",
                     fake_fetch,
                 ),
@@ -1293,8 +1309,7 @@ class PublishPackagesTests(unittest.TestCase):
   version: 1.0.0
 
 extra:
-  allowed_publish_targets:
-    - test-label
+  allowed_publish_targets: []
 """,
                 encoding="utf-8",
             )
@@ -1323,42 +1338,15 @@ extra:
             cwd = Path.cwd()
             try:
                 os.chdir(tmp)
-                self.assertEqual(publish_packages.package_paths(tmp / "artifacts", "test-label"), [package])
-                with self.assertRaisesRegex(SystemExit, "may only be published to test-label"):
+                with self.assertRaisesRegex(SystemExit, "may only be published to none"):
                     publish_packages.package_paths(tmp / "artifacts", "default-label")
             finally:
                 os.chdir(cwd)
 
-    def test_publish_packages_cli_allows_real_typhoon_recipe_to_test_label(self) -> None:
+    def test_publish_packages_cli_allows_historical_typhoon_recipe_to_default_label(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
             tmp = Path(tmp_raw)
             package = self.make_typhoon_artifacts(tmp)
-
-            completed = subprocess.run(
-                [
-                    sys.executable,
-                    "scripts/publish_packages.py",
-                    "--target",
-                    "test-label",
-                    "--root",
-                    str(tmp / "artifacts"),
-                    "--dry-run",
-                ],
-                cwd=ROOT,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-
-            self.assertEqual(completed.returncode, 0, completed.stderr)
-            self.assertIn("--channel test", completed.stdout)
-            self.assertNotIn("--channel main", completed.stdout)
-            self.assertIn(str(package), completed.stdout)
-
-    def test_publish_packages_cli_rejects_default_label_for_real_typhoon_recipe(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp_raw:
-            tmp = Path(tmp_raw)
-            self.make_typhoon_artifacts(tmp)
 
             completed = subprocess.run(
                 [
@@ -1376,11 +1364,9 @@ extra:
                 text=True,
             )
 
-            self.assertNotEqual(completed.returncode, 0)
-            self.assertIn(
-                "Recipe openusd-typhoon/26.05.9.ea5b6f695 may only be published to test-label; requested default-label.",
-                completed.stderr,
-            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn("--channel main", completed.stdout)
+            self.assertIn(str(package), completed.stdout)
 
     def test_publish_packages_cli_allows_current_typhoon_recipe_to_default_label(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
@@ -1409,74 +1395,41 @@ extra:
 
 
 class SmokeConsumersTests(unittest.TestCase):
-    def test_channel_priority_for_recipe_relaxes_test_label_dependency_recipes(self) -> None:
+    def test_all_recipes_use_strict_channel_priority(self) -> None:
         for recipe in [
             Path("openusd-typhoon/26.05.9.ea5b6f695"),
             Path("openusd-typhoon/26.08.10.121e74ef7"),
+            Path("goldeneye/0.7.2"),
+            Path("openusd/26.05"),
         ]:
-            self.assertEqual(smoke_consumers.channel_priority_for_recipe(recipe), "disabled")
-        for recipe in [Path("goldeneye/0.1.0"), Path("goldeneye/0.2.0"), Path("goldeneye/0.3.0"), Path("goldeneye/0.4.0"), Path("goldeneye/0.5.0"), Path("goldeneye/0.7.0"), Path("goldeneye/0.7.1"), Path("goldeneye/0.7.2")]:
             with self.subTest(recipe=recipe.as_posix()):
-                self.assertEqual(smoke_consumers.channel_priority_for_recipe(recipe), "disabled")
-        self.assertEqual(smoke_consumers.channel_priority_for_recipe(Path("openusd/26.05")), "strict")
-        self.assertEqual(smoke_consumers.channel_priority_for_recipe(Path("openusd-typhoon")), "strict")
+                self.assertEqual(smoke_consumers.channel_priority_for_recipe(recipe), "strict")
 
-    def test_channels_for_recipe_target_uses_main_then_test_for_default_goldeneye(self) -> None:
-        for recipe in [Path("goldeneye/0.1.0"), Path("goldeneye/0.2.0"), Path("goldeneye/0.3.0"), Path("goldeneye/0.4.0"), Path("goldeneye/0.5.0"), Path("goldeneye/0.7.0"), Path("goldeneye/0.7.1"), Path("goldeneye/0.7.2")]:
-            with self.subTest(recipe=recipe.as_posix(), target="default-label"):
+    def test_all_recipes_use_default_channels(self) -> None:
+        for recipe in [
+            Path("goldeneye/0.7.2"),
+            Path("openusd/26.05"),
+            Path("openusd-typhoon/26.08.10.121e74ef7"),
+        ]:
+            with self.subTest(recipe=recipe.as_posix()):
                 self.assertEqual(
                     smoke_consumers.channels_for_recipe_target("default-label", None, recipe),
-                    [
-                        "https://conda.anaconda.org/anderslanglands",
-                        "https://conda.anaconda.org/anderslanglands/label/test",
-                        "conda-forge",
-                    ],
+                    ["https://conda.anaconda.org/anderslanglands", "conda-forge"],
                 )
-        self.assertEqual(
-            smoke_consumers.channels_for_recipe_target("default-label", None, Path("openusd/26.05")),
-            [
-                "https://conda.anaconda.org/anderslanglands",
-                "conda-forge",
-            ],
-        )
-        self.assertEqual(
-            smoke_consumers.channels_for_recipe_target(
-                "default-label", None, Path("openusd-typhoon/26.08.10.121e74ef7")
-            ),
-            [
-                "https://conda.anaconda.org/anderslanglands",
-                "https://conda.anaconda.org/anderslanglands/label/test",
-                "conda-forge",
-            ],
-        )
         self.assertEqual(
             smoke_consumers.EXPECTED_SOURCE["default-label"],
             "https://conda.anaconda.org/anderslanglands",
         )
-        for recipe in [Path("goldeneye/0.1.0"), Path("goldeneye/0.2.0"), Path("goldeneye/0.3.0"), Path("goldeneye/0.4.0"), Path("goldeneye/0.5.0"), Path("goldeneye/0.7.0"), Path("goldeneye/0.7.1"), Path("goldeneye/0.7.2")]:
-            with self.subTest(recipe=recipe.as_posix(), target="test-label"):
-                self.assertEqual(
-                    smoke_consumers.channels_for_recipe_target("test-label", None, recipe),
-                    [
-                        "https://conda.anaconda.org/anderslanglands/label/test",
-                        "https://conda.anaconda.org/anderslanglands",
-                        "conda-forge",
-                    ],
-                )
 
-    def test_goldeneye_0_7_2_consumer_manifest_uses_main_then_test_channels(self) -> None:
+    def test_goldeneye_0_7_2_consumer_manifest_uses_default_channels(self) -> None:
         manifest = tomllib.loads((ROOT / "goldeneye" / "0.7.2" / "pixi.toml").read_text(encoding="utf-8"))
 
         self.assertEqual(
             manifest["workspace"]["channels"],
-            [
-                "https://conda.anaconda.org/anderslanglands",
-                "https://conda.anaconda.org/anderslanglands/label/test",
-                "conda-forge",
-            ],
+            ["https://conda.anaconda.org/anderslanglands", "conda-forge"],
         )
         self.assertEqual(manifest["workspace"]["platforms"], ["linux-64", "win-64", "osx-arm64"])
-        self.assertEqual(manifest["workspace"]["channel-priority"], "disabled")
+        self.assertEqual(manifest["workspace"]["channel-priority"], "strict")
         self.assertEqual(manifest["feature"]["goldeneye"]["dependencies"]["goldeneye"], "==0.7.2")
         self.assertEqual(manifest["feature"]["goldeneye"]["dependencies"]["openusd-typhoon"], "*")
 
@@ -1489,24 +1442,22 @@ class SmokeConsumersTests(unittest.TestCase):
                 {"name": "openusd-typhoon", "version": "26.05.9.ea5b6f695", "build": "py312h123_0"},
                 "linux-64",
                 [
-                    "https://conda.anaconda.org/anderslanglands/label/test",
                     "https://conda.anaconda.org/anderslanglands",
                     "conda-forge",
                 ],
-                "disabled",
+                "strict",
                 False,
             )
 
             rendered = manifest.read_text(encoding="utf-8")
             self.assertIn(
                 """channels = [
-  "https://conda.anaconda.org/anderslanglands/label/test",
   "https://conda.anaconda.org/anderslanglands",
   "conda-forge",
 ]""",
                 rendered,
             )
-            self.assertIn('channel-priority = "disabled"', rendered)
+            self.assertIn('channel-priority = "strict"', rendered)
 
     def test_run_goldeneye_checks_exercises_cli_and_pytest_plugin(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
@@ -1603,7 +1554,7 @@ class SmokeConsumersTests(unittest.TestCase):
                     "--platform",
                     "linux-64",
                     "--target",
-                    "test-label",
+                    "default-label",
                     "--artifact-manifest",
                     str(manifest),
                 ]

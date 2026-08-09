@@ -58,29 +58,6 @@ class ChangedRecipeTests(unittest.TestCase):
 
             self.assertEqual(completed.stdout, "foo/1.2.3,bar/2.0.0\n")
 
-    def test_promote_workflow_dispatches_default_label_for_merged_automation_prs(self) -> None:
-        workflow = (ROOT / ".github" / "workflows" / "promote-upstream-releases.yml").read_text(encoding="utf-8")
-
-        self.assertIn("pull_request:", workflow)
-        self.assertIn("run-name: ${{ github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && startsWith(github.event.pull_request.head.ref, 'automation/upstream-release-prs/') && github.event.pull_request.head.repo.full_name == github.repository && format('Promote {0} to default-label', github.event.pull_request.head.ref) || format('Evaluate promotion for {0}', github.event.pull_request.head.ref) }}", workflow)
-        self.assertIn("name: ${{ github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && startsWith(github.event.pull_request.head.ref, 'automation/upstream-release-prs/') && github.event.pull_request.head.repo.full_name == github.repository && format('Dispatch {0} to default-label', github.event.pull_request.head.ref) || format('Evaluate promotion for {0}', github.event.pull_request.head.ref) }}", workflow)
-        self.assertIn("closed", workflow)
-        self.assertIn("github.event.pull_request.merged == true", workflow)
-        self.assertIn("github.event.pull_request.base.ref == 'main'", workflow)
-        self.assertIn("startsWith(github.event.pull_request.head.ref, 'automation/upstream-release-prs/')", workflow)
-        self.assertIn("github.event.pull_request.head.repo.full_name == github.repository", workflow)
-        self.assertIn("ref: ${{ github.event.pull_request.merge_commit_sha }}", workflow)
-        self.assertIn("PROMOTION_REF: automation/promote-upstream-releases/pr-${{ github.event.pull_request.number }}", workflow)
-        self.assertIn('git push --force-with-lease origin "HEAD:refs/heads/$PROMOTION_REF"', workflow)
-        self.assertIn("RECIPES: ${{ steps.recipes.outputs.recipes }}", workflow)
-        self.assertIn("PROMOTION_REF: ${{ steps.promotion-ref.outputs.ref }}", workflow)
-        self.assertIn("scripts/changed_recipes.py --root .", workflow)
-        self.assertIn("gh workflow run build-packages.yml", workflow)
-        self.assertIn('--ref "$PROMOTION_REF"', workflow)
-        self.assertIn('-f recipes="$RECIPES"', workflow)
-        self.assertIn('-f publish_target="default-label"', workflow)
-        self.assertIn('-f run_smoke_tests="true"', workflow)
-
     def test_default_label_builds_still_use_production_environment_gate(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "build-packages.yml").read_text(encoding="utf-8")
         match = re.search(r"(?ms)^  publish:\n(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:|\Z)", workflow)
@@ -88,11 +65,15 @@ class ChangedRecipeTests(unittest.TestCase):
         assert match is not None
 
         self.assertIn(
-            "environment: ${{ inputs.publish_target == 'default-label' && 'anaconda-production' || 'anaconda-test' }}",
+            "environment: anaconda-production",
             match.group("body"),
         )
 
-    def test_merge_workflow_merges_successful_test_label_automation_builds(self) -> None:
+    def test_staged_promotion_workflow_remains_removed(self) -> None:
+        workflow_name = "promote-upstream-releases.yml"
+        self.assertFalse((ROOT / ".github" / "workflows" / workflow_name).exists())
+
+    def test_merge_workflow_merges_successful_default_label_automation_builds(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "merge-upstream-release-pr.yml").read_text(encoding="utf-8")
         build_workflow = (ROOT / ".github" / "workflows" / "build-packages.yml").read_text(encoding="utf-8")
 
@@ -150,7 +131,7 @@ class ChangedRecipeTests(unittest.TestCase):
                 "AUTOMATION_BRANCH": "automation/upstream-release-prs/foo/1.2.4",
                 "AUTOMATION_BRANCH_PREFIX": "automation/upstream-release-prs",
                 "BASE_BRANCH": "main",
-                "RUN_DISPLAY_TITLE": "Build foo/1.2.4 (default, test-label, smoke=true)",
+                "RUN_DISPLAY_TITLE": "Build foo/1.2.4 (default, default-label, smoke=true)",
                 "RUN_HEAD_SHA": "abc123",
                 "RUN_HTML_URL": "https://github.com/anders/aswf-pixi/actions/runs/123",
                 "GITHUB_REPOSITORY": "anders/aswf-pixi",
@@ -168,15 +149,15 @@ class ChangedRecipeTests(unittest.TestCase):
 
             calls_text = calls.read_text(encoding="utf-8")
             self.assertIn(
-                "pr merge 42 --squash --delete-branch --subject Add foo/1.2.4 upstream release recipe --body Automerged after the test-label build, publish, and smoke workflow succeeded: https://github.com/anders/aswf-pixi/actions/runs/123 --match-head-commit abc123\n",
+                "pr merge 42 --squash --delete-branch --subject Add foo/1.2.4 upstream release recipe --body Automerged after the default-label build, publish, and smoke workflow succeeded: https://github.com/anders/aswf-pixi/actions/runs/123 --match-head-commit abc123\n",
                 calls_text,
             )
             self.assertIn("Merged upstream release PR #42 for foo/1.2.4", summary.read_text(encoding="utf-8"))
 
     def test_merge_upstream_release_pr_script_skips_wrong_recipe_or_without_smoke(self) -> None:
         cases = [
-            "Build bar/1.2.4 (default, test-label, smoke=true)",
-            "Build foo/1.2.4 (default, test-label, smoke=false)",
+            "Build bar/1.2.4 (default, default-label, smoke=true)",
+            "Build foo/1.2.4 (default, default-label, smoke=false)",
             "Build foo/1.2.4 (default, artifact-only, smoke=true)",
         ]
         for title in cases:
@@ -211,7 +192,7 @@ class ChangedRecipeTests(unittest.TestCase):
                         text=True,
                     )
 
-                    self.assertIn("not a smoke-tested test-label build", summary.read_text(encoding="utf-8"))
+                    self.assertIn("not a smoke-tested default-label build", summary.read_text(encoding="utf-8"))
 
 
     def test_merge_upstream_release_pr_script_rejects_extra_changed_files(self) -> None:
@@ -241,7 +222,7 @@ class ChangedRecipeTests(unittest.TestCase):
                 "GH_CALLS": str(calls),
                 "AUTOMATION_BRANCH": "automation/upstream-release-prs/foo/1.2.4",
                 "BASE_BRANCH": "main",
-                "RUN_DISPLAY_TITLE": "Build foo/1.2.4 (default, test-label, smoke=true)",
+                "RUN_DISPLAY_TITLE": "Build foo/1.2.4 (default, default-label, smoke=true)",
                 "RUN_HEAD_SHA": "abc123",
                 "GITHUB_REPOSITORY": "anders/aswf-pixi",
                 "GITHUB_STEP_SUMMARY": str(summary),
@@ -288,7 +269,7 @@ class ChangedRecipeTests(unittest.TestCase):
                 "GH_CALLS": str(calls),
                 "AUTOMATION_BRANCH": "automation/upstream-release-prs/foo/1.2.4",
                 "BASE_BRANCH": "main",
-                "RUN_DISPLAY_TITLE": "Build foo/1.2.4 (default, test-label, smoke=true)",
+                "RUN_DISPLAY_TITLE": "Build foo/1.2.4 (default, default-label, smoke=true)",
                 "RUN_HEAD_SHA": "abc123",
                 "GITHUB_STEP_SUMMARY": str(summary),
             }

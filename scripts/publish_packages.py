@@ -13,7 +13,6 @@ import ci_matrix
 
 
 CHANNELS = {
-    "test-label": "test",
     "default-label": "main",
 }
 

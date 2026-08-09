@@ -1,7 +1,6 @@
 [workspace]
 name = "shader-slang-2026.12.1-consumer"
 channels = [
-  "https://conda.anaconda.org/anderslanglands/label/test",
   "https://conda.anaconda.org/anderslanglands",
   "conda-forge",
 ]

@@ -7,16 +7,11 @@ set -euo pipefail
 base_branch="${BASE_BRANCH:-${GITHUB_REF_NAME:-main}}"
 branch_prefix="${AUTOMATION_BRANCH_PREFIX:-automation/upstream-release-prs}"
 platforms="${PLATFORMS:-default}"
-publish_target="${PUBLISH_TARGET:-test-label}"
+publish_target="${PUBLISH_TARGET:-default-label}"
 run_smoke_tests="${RUN_SMOKE_TESTS:-true}"
 dispatch_build="${DISPATCH_BUILD:-true}"
 pr_token="${PR_GH_TOKEN:-${GH_TOKEN:-}}"
 actions_token="${ACTIONS_GH_TOKEN:-${GH_TOKEN:-}}"
-
-if [[ "$publish_target" == "default-label" ]]; then
-  echo "Nightly upstream release checks may not dispatch default-label publishes." >&2
-  exit 1
-fi
 
 if [[ "$dispatch_build" == "true" && "${GITHUB_ACTIONS:-}" == "true" && -z "${ACTIONS_GH_TOKEN:-}" ]]; then
   message="UPSTREAM_RELEASE_PR_TOKEN is required to dispatch build workflows from GitHub Actions so downstream auto-merge can run."

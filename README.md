@@ -17,36 +17,24 @@ materialx = ">=1.39.4,<1.40"
 If you are configuring Pixi in `pyproject.toml`, use the same channel values under
 `[tool.pixi.workspace]` and dependencies under `[tool.pixi.dependencies]`.
 
-For packages published only to the test label, put the test-label channel first:
-
-```toml
-[workspace]
-channels = [
-  "https://conda.anaconda.org/anderslanglands/label/test",
-  "https://conda.anaconda.org/anderslanglands",
-  "conda-forge",
-]
-platforms = ["linux-64", "win-64", "osx-arm64"]
-```
-
 # Upstream Release Automation
 
 The `Check upstream releases` workflow runs nightly and can also be started manually. It checks the upstream GitHub releases for the package recipe directories in this repo, copies the semantically closest existing version recipe when a newer numbered release is found, updates the version/tag/source hash, and opens or refreshes one PR per created package/version recipe from `automation/upstream-release-prs/<package>/<version>`.
 
-By default, each generated recipe PR dispatches the existing package build workflow for only that recipe selector with `publish_target = test-label` and smoke tests enabled. When that exact branch/head SHA succeeds for a smoke-tested test-label run, the `Merge upstream release PR` workflow merges the matching PR to `main`. That merge triggers the `Promote upstream releases` workflow, which creates a promotion ref at the merge commit and dispatches the existing package build workflow from that ref with `publish_target = default-label`, so production uploads still pass through the `anaconda-production` environment gate. Automatic PR creation uses `UPSTREAM_RELEASE_PR_TOKEN` when configured, otherwise `GITHUB_TOKEN`; build dispatch and auto-merge require `UPSTREAM_RELEASE_PR_TOKEN` in GitHub Actions so the dispatched build and merged PR can trigger downstream workflows. If repository settings block GitHub Actions from creating PRs, the workflow leaves each branch in place, reports a manual PR URL, and still dispatches the test-label build when the token is available.
+By default, each generated recipe PR dispatches the existing package build workflow for only that recipe selector with `publish_target = default-label` and smoke tests enabled. Production upload waits on the `anaconda-production` environment gate. When that exact branch/head SHA succeeds for a smoke-tested default-label run, the `Merge upstream release PR` workflow merges the matching PR to `main`. Automatic PR creation uses `UPSTREAM_RELEASE_PR_TOKEN` when configured, otherwise `GITHUB_TOKEN`; build dispatch and auto-merge require `UPSTREAM_RELEASE_PR_TOKEN` in GitHub Actions. If repository settings block GitHub Actions from creating PRs, the workflow leaves each branch in place, reports a manual PR URL, and still dispatches the default-label build when the token is available.
 
 The `UPSTREAM_RELEASE_PR_TOKEN` secret should be a fine-grained token limited to this repository with Contents read/write, Pull requests read/write, and Actions read/write permissions.
 
 Generated upstream-release PRs update package version lists as one README bullet per recipe version. `README.md` uses Git's union merge driver so concurrent generated PRs that add different version bullets are unlikely to conflict; the updater rewrites the targeted package block from the actual recipe directories, which keeps repeated runs idempotent and normalizes duplicate or out-of-order bullets.
 
-If a generated upstream release PR fails, commit the fix to that PR branch and rerun the test-label workflow against the same branch and recipe selector:
+If a generated upstream release PR fails, commit the fix to that PR branch and rerun the default-label workflow against the same branch and recipe selector:
 
 ```bash
 gh workflow run build-packages.yml \
   --ref automation/upstream-release-prs/<package>/<version> \
   -f recipes="<package>/<version>" \
   -f platforms="default" \
-  -f publish_target="test-label" \
+  -f publish_target="default-label" \
   -f build_number="" \
   -f run_smoke_tests="true"
 ```
@@ -76,7 +64,7 @@ Recipe versions:
 
 GoldenEye is a pytest-based runner for USD render regression suites, with image comparison and HTML report viewing.
 
-- `goldeneye`: Python command-line tool and pytest plugin, built for Python 3.11 through 3.13. It depends on `flip-evaluator ==1.7` and `openusd-typhoon` so the default Typhoon renderer works out of the box. Consumers should prefer the main Anders channel and may keep the test label as a fallback during Typhoon migration.
+- `goldeneye`: Python command-line tool and pytest plugin, built for Python 3.11 through 3.13. It depends on `flip-evaluator ==1.7` and `openusd-typhoon` so the default Typhoon renderer works out of the box.
 
 ## Imath
 

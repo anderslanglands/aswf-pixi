@@ -1,7 +1,6 @@
 [workspace]
 name = "flip-evaluator-1.7-consumer"
 channels = [
-  "https://conda.anaconda.org/anderslanglands/label/test",
   "https://conda.anaconda.org/anderslanglands",
   "conda-forge",
 ]

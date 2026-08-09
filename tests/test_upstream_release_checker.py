@@ -684,7 +684,7 @@ about:
                 "# Packages\n\n## Foo\n\nRecipe versions:\n- `1.2.3`\n- `1.2.4`\n- `1.2.5`\n\nFoo package.\n",
             )
 
-    def test_workflow_creates_per_recipe_prs_and_dispatches_test_label_builds_by_default(self) -> None:
+    def test_workflow_creates_per_recipe_prs_and_dispatches_default_label_builds_by_default(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "check-upstream-releases.yml").read_text(encoding="utf-8")
         fanout_step = re.search(
             r"(?ms)^      - name: Create per-recipe pull requests and dispatch builds\n(?P<body>.*?)(?=^      - name: |\Z)",
@@ -720,13 +720,9 @@ about:
         self.assertIn('gh workflow run build-packages.yml', script)
         self.assertIn('--ref "$branch"', script)
         self.assertIn('-f recipes="$recipe"', script)
-        self.assertIn('if [[ "$publish_target" == "default-label" ]]; then', script)
-        self.assertIn("Nightly upstream release checks may not dispatch default-label publishes.", script)
-
         self.assertIn("- artifact-only", publish_target_input)
-        self.assertIn("- test-label", publish_target_input)
-        self.assertIn("default: test-label", publish_target_input)
-        self.assertNotIn("- default-label", publish_target_input)
+        self.assertIn("- default-label", publish_target_input)
+        self.assertIn("default: default-label", publish_target_input)
 
     def test_create_upstream_release_prs_script_fans_out_one_branch_pr_and_build_per_recipe(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
@@ -805,7 +801,7 @@ about:
                 "BASE_BRANCH": "main",
                 "AUTOMATION_BRANCH_PREFIX": "automation/upstream-release-prs",
                 "PLATFORMS": "default",
-                "PUBLISH_TARGET": "test-label",
+                "PUBLISH_TARGET": "default-label",
                 "RUN_SMOKE_TESTS": "true",
                 "DISPATCH_BUILD": "true",
             }
@@ -828,7 +824,7 @@ about:
             gh_text = gh_log.read_text(encoding="utf-8")
             self.assertIn("pr create --head automation/upstream-release-prs/foo/1.2.4 --base main --title Add foo/1.2.4 upstream release recipe", gh_text)
             self.assertIn("workflow run build-packages.yml --ref automation/upstream-release-prs/foo/1.2.4 -f recipes=foo/1.2.4", gh_text)
-            self.assertIn("-f publish_target=test-label", gh_text)
+            self.assertIn("-f publish_target=default-label", gh_text)
             self.assertIn("-f run_smoke_tests=true", gh_text)
             self.assertIn("workflow-token=actions-token", gh_text)
 
@@ -844,7 +840,7 @@ about:
                 "RUNNER_TEMP": str(tmp),
                 "GITHUB_STEP_SUMMARY": str(summary),
                 "GITHUB_ACTIONS": "true",
-                "PUBLISH_TARGET": "test-label",
+                "PUBLISH_TARGET": "default-label",
                 "DISPATCH_BUILD": "true",
             }
             env.pop("ACTIONS_GH_TOKEN", None)
@@ -931,7 +927,7 @@ about:
                 "BASE_BRANCH": "main",
                 "AUTOMATION_BRANCH_PREFIX": "automation/upstream-release-prs",
                 "PLATFORMS": "default",
-                "PUBLISH_TARGET": "test-label",
+                "PUBLISH_TARGET": "default-label",
                 "RUN_SMOKE_TESTS": "true",
                 "DISPATCH_BUILD": "true",
             }
@@ -1018,7 +1014,7 @@ about:
                 "BASE_BRANCH": "main",
                 "AUTOMATION_BRANCH_PREFIX": "automation/upstream-release-prs",
                 "PLATFORMS": "default",
-                "PUBLISH_TARGET": "test-label",
+                "PUBLISH_TARGET": "default-label",
                 "RUN_SMOKE_TESTS": "true",
                 "DISPATCH_BUILD": "true",
             }

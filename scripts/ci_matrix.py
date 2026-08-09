@@ -215,9 +215,9 @@ def validate_python_variant_policy(recipe: Path) -> None:
 
 
 def validate_publish_target(value: str) -> None:
-    if value not in {"artifact-only", "test-label", "default-label"}:
+    if value not in {"artifact-only", "default-label"}:
         raise SystemExit(
-            "Publish target must be one of artifact-only, test-label, or default-label."
+            "Publish target must be one of artifact-only or default-label."
         )
 
 
@@ -285,7 +285,7 @@ def validate_recipe_publish_target(recipe: Path, target: str) -> None:
     if allowed is None:
         return
 
-    unknown = sorted(allowed - {"test-label", "default-label"})
+    unknown = sorted(allowed - {"default-label"})
     if unknown:
         raise SystemExit(
             f"Recipe {recipe} has unsupported allowed_publish_targets: {', '.join(unknown)}."

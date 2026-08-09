@@ -1,7 +1,6 @@
 [workspace]
 name = "openqmc-0.7.1-consumer"
 channels = [
-  "https://conda.anaconda.org/anderslanglands/label/test",
   "https://conda.anaconda.org/anderslanglands",
   "conda-forge",
 ]

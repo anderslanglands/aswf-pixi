@@ -25,11 +25,11 @@ if [[ -z "$display_title" && -n "${RUN_ID:-}" && -n "${GITHUB_REPOSITORY:-}" ]];
 fi
 
 expected_prefix="Build $recipe ("
-if [[ "$display_title" != "$expected_prefix"* || "$display_title" != *", test-label, smoke=true)" ]]; then
+if [[ "$display_title" != "$expected_prefix"* || "$display_title" != *", default-label, smoke=true)" ]]; then
   {
     echo "Skipping upstream release PR auto-merge."
     echo
-    echo "The completed build was not a smoke-tested test-label build for $recipe: ${display_title:-unknown run title}"
+    echo "The completed build was not a smoke-tested default-label build for $recipe: ${display_title:-unknown run title}"
   } >> "$GITHUB_STEP_SUMMARY"
   exit 0
 fi
@@ -107,7 +107,7 @@ merge_args=(
   --squash
   --delete-branch
   --subject "Add $recipe upstream release recipe"
-  --body "Automerged after the test-label build, publish, and smoke workflow succeeded: ${RUN_HTML_URL:-unknown workflow run}"
+  --body "Automerged after the default-label build, publish, and smoke workflow succeeded: ${RUN_HTML_URL:-unknown workflow run}"
 )
 if [[ -n "${RUN_HEAD_SHA:-}" ]]; then
   merge_args+=(--match-head-commit "$RUN_HEAD_SHA")
@@ -116,7 +116,7 @@ fi
 gh pr merge "${merge_args[@]}"
 
 {
-  echo "Merged upstream release PR #$pr_number for $recipe after successful test-label build, publish, and smoke tests."
+  echo "Merged upstream release PR #$pr_number for $recipe after successful default-label build, publish, and smoke tests."
   if [[ -n "${RUN_HTML_URL:-}" ]]; then
     echo
     echo "Build run: $RUN_HTML_URL"

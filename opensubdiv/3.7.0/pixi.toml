@@ -1,7 +1,6 @@
 [workspace]
 name = "opensubdiv-3.7.0-consumer"
 channels = [
-  "https://conda.anaconda.org/anderslanglands/label/test",
   "https://conda.anaconda.org/anderslanglands",
   "conda-forge",
 ]

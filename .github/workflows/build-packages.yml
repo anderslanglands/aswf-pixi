@@ -18,7 +18,6 @@ on:
         type: choice
         options:
           - artifact-only
-          - test-label
           - default-label
         default: default-label
       build_number:
@@ -108,30 +107,15 @@ jobs:
             test_mode=skip
           fi
 
-          channels=(
-            https://conda.anaconda.org/anderslanglands
-            conda-forge
-          )
-          channel_priority=strict
-          if [[ "$RECIPE" == openusd-typhoon/* || "$RECIPE" == goldeneye/* ]]; then
-            channels=(
-              https://conda.anaconda.org/anderslanglands/label/test
-              https://conda.anaconda.org/anderslanglands
-              conda-forge
-            )
-            channel_priority=disabled
-          fi
-
           args=(
             rattler-build build
             --recipe "$RECIPE/recipe.yaml"
             --target-platform "$PLATFORM"
+            --channel https://conda.anaconda.org/anderslanglands
+            --channel conda-forge
+            --channel-priority strict
           )
-          for channel in "${channels[@]}"; do
-            args+=(--channel "$channel")
-          done
           args+=(
-            --channel-priority "$channel_priority"
             --output-dir "$OUTPUT_DIR"
             --package-format conda
             --test "$test_mode"
@@ -213,7 +197,7 @@ jobs:
       - prepare
       - build
     runs-on: ubuntu-latest
-    environment: ${{ inputs.publish_target == 'default-label' && 'anaconda-production' || 'anaconda-test' }}
+    environment: anaconda-production
     env:
       ANACONDA_API_KEY: ${{ secrets.ANACONDA_TOKEN }}
     steps:

@@ -202,7 +202,7 @@ def resolve_build_numbers(
 
     if target == "artifact-only":
         if requested_build_number == ci_matrix.AUTO_BUILD_NUMBER:
-            raise SystemExit("Automatic build number resolution requires test-label or default-label.")
+            raise SystemExit("Automatic build number resolution requires default-label.")
         return {recipe.as_posix(): "" for recipe in recipes}
 
     return {

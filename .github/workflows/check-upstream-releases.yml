@@ -25,8 +25,8 @@ on:
         type: choice
         options:
           - artifact-only
-          - test-label
-        default: test-label
+          - default-label
+        default: default-label
       run_smoke_tests:
         description: "Run smoke tests after publishing from build-packages.yml"
         required: true
