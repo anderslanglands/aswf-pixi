@@ -224,7 +224,7 @@ OpenUSD Typhoon packaging decisions:
 
 GoldenEye packaging decisions:
 
-- Package GoldenEye 0.1.0, 0.2.0, 0.3.0, 0.4.0, 0.5.0, 0.7.0, 0.7.1, and 0.7.2 as a single `goldeneye` Python package; do not split runtime or development outputs because upstream installs only Python modules, CLI entry points, pytest plugin metadata, and static viewer assets.
+- Package GoldenEye 0.1.0, 0.2.0, 0.3.0, 0.4.0, 0.5.0, 0.7.0, 0.7.1, 0.7.2, 0.8.0, and 0.9.0 as a single `goldeneye` Python package; do not split runtime or development outputs because upstream installs only Python modules, CLI entry points, pytest plugin metadata, and static viewer assets.
 - Build GoldenEye only for Python 3.11, 3.12, and 3.13, following the repository-wide Python policy.
 - Keep `openusd-typhoon` as an unconstrained runtime dependency so the default Typhoon renderer works out of the box. GoldenEye and OpenUSD Typhoon publish only to the default label; consumers should use the main Anders channel, then conda-forge, with strict channel priority.
 
