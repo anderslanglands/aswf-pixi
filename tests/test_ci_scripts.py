@@ -465,7 +465,7 @@ class CiMatrixTests(unittest.TestCase):
                 )
 
     def test_goldeneye_matrix_splits_python_variants(self) -> None:
-        recipe = Path("goldeneye/0.7.2")
+        recipe = Path("goldeneye/0.8.0")
         result = ci_matrix.matrix(
             [recipe],
             ["linux-64"],
@@ -478,9 +478,9 @@ class CiMatrixTests(unittest.TestCase):
                 for item in result["include"]
             ],
             [
-                ("py311", "python=3.11", "goldeneye-0.7.2-linux-64-py311"),
-                ("py312", "python=3.12", "goldeneye-0.7.2-linux-64-py312"),
-                ("py313", "python=3.13", "goldeneye-0.7.2-linux-64-py313"),
+                ("py311", "python=3.11", "goldeneye-0.8.0-linux-64-py311"),
+                ("py312", "python=3.12", "goldeneye-0.8.0-linux-64-py312"),
+                ("py313", "python=3.13", "goldeneye-0.8.0-linux-64-py313"),
             ],
         )
 
@@ -518,10 +518,10 @@ class CiMatrixTests(unittest.TestCase):
 
         self.assertEqual(
             tasks["build-goldeneye"],
-            {"depends-on": ["build-goldeneye-0-7-2"]},
+            {"depends-on": ["build-goldeneye-0-8-0"]},
         )
-        build_task = shlex.split(tasks["build-goldeneye-0-7-2"])
-        self.assertEqual(build_task[:4], ["rattler-build", "build", "--recipe", "goldeneye/0.7.2/recipe.yaml"])
+        build_task = shlex.split(tasks["build-goldeneye-0-8-0"])
+        self.assertEqual(build_task[:4], ["rattler-build", "build", "--recipe", "goldeneye/0.8.0/recipe.yaml"])
         self.assertEqual(
             [build_task[index + 1] for index, item in enumerate(build_task) if item == "--channel"],
             [
@@ -662,6 +662,7 @@ class CiMatrixTests(unittest.TestCase):
             "0.7.0": "c6c71cb78c6013861864d5b33c7f9c9ff5b11797",
             "0.7.1": "73885c11baf64adfcab549891c33ef2b8adfe4e7",
             "0.7.2": "829480730796b0e01ecf8b6f5e4d94e95ee37050",
+            "0.8.0": "212d173a04848227588bfd92fd0c7b37f65f2307",
         }
 
         def top_level_block(recipe_text: str, section: str) -> list[str]:
@@ -1407,7 +1408,7 @@ class SmokeConsumersTests(unittest.TestCase):
             Path("openusd-typhoon/26.05.9.ea5b6f695"),
             Path("openusd-typhoon/26.08.10.121e74ef7"),
             Path("openusd-typhoon/26.08.11.29775bac6"),
-            Path("goldeneye/0.7.2"),
+            Path("goldeneye/0.8.0"),
             Path("openusd/26.05"),
         ]:
             with self.subTest(recipe=recipe.as_posix()):
@@ -1415,7 +1416,7 @@ class SmokeConsumersTests(unittest.TestCase):
 
     def test_all_recipes_use_default_channels(self) -> None:
         for recipe in [
-            Path("goldeneye/0.7.2"),
+            Path("goldeneye/0.8.0"),
             Path("openusd/26.05"),
             Path("openusd-typhoon/26.08.11.29775bac6"),
         ]:
@@ -1429,8 +1430,8 @@ class SmokeConsumersTests(unittest.TestCase):
             "https://conda.anaconda.org/anderslanglands",
         )
 
-    def test_goldeneye_0_7_2_consumer_manifest_uses_default_channels(self) -> None:
-        manifest = tomllib.loads((ROOT / "goldeneye" / "0.7.2" / "pixi.toml").read_text(encoding="utf-8"))
+    def test_goldeneye_0_8_0_consumer_manifest_uses_default_channels(self) -> None:
+        manifest = tomllib.loads((ROOT / "goldeneye" / "0.8.0" / "pixi.toml").read_text(encoding="utf-8"))
 
         self.assertEqual(
             manifest["workspace"]["channels"],
@@ -1438,7 +1439,7 @@ class SmokeConsumersTests(unittest.TestCase):
         )
         self.assertEqual(manifest["workspace"]["platforms"], ["linux-64", "win-64", "osx-arm64"])
         self.assertEqual(manifest["workspace"]["channel-priority"], "strict")
-        self.assertEqual(manifest["feature"]["goldeneye"]["dependencies"]["goldeneye"], "==0.7.2")
+        self.assertEqual(manifest["feature"]["goldeneye"]["dependencies"]["goldeneye"], "==0.8.0")
         self.assertEqual(manifest["feature"]["goldeneye"]["dependencies"]["openusd-typhoon"], "*")
 
     def test_write_manifest_uses_requested_channel_priority(self) -> None:
