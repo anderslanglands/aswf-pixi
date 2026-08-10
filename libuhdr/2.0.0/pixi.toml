@@ -1,0 +1,22 @@
+[workspace]
+name = "libuhdr-2.0.0-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.libuhdr-lib.dependencies]
+libuhdr-lib = "==2.0.0"
+
+[feature.libuhdr-dev.dependencies]
+libuhdr-dev = "==2.0.0"
+
+[feature.libuhdr.dependencies]
+libuhdr = "==2.0.0"
+
+[environments]
+libuhdr-lib = ["libuhdr-lib"]
+libuhdr-dev = ["libuhdr-dev"]
+libuhdr = ["libuhdr"]
