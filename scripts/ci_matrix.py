@@ -20,8 +20,6 @@ RUNNERS = {
 DEFAULT_PLATFORMS = ["linux-64", "win-64", "osx-arm64"]
 SUPPORTED_PYTHON_VERSIONS = ["3.11", "3.12", "3.13"]
 
-OPENUSD_TYPHOON_RECIPE = "openusd-typhoon/26.08.10.121e74ef7"
-
 MATERIALX_PARALLEL_PYTHON_RECIPES = {"materialx/1.39.4", "materialx/1.39.5"}
 MATERIALX_CPP_MANIFEST_PACKAGES = {
     "materialx/1.39.4": (
@@ -401,7 +399,7 @@ def matrix(
                     )
                 continue
 
-            if recipe_key == OPENUSD_TYPHOON_RECIPE:
+            if package == "openusd-typhoon":
                 openusd_python_versions = read_simple_variant_values(recipe, "python")
                 for python in openusd_python_versions:
                     python_tag = python.replace(".", "")

@@ -427,36 +427,42 @@ class CiMatrixTests(unittest.TestCase):
         )
 
     def test_openusd_typhoon_matrix_splits_python_variants(self) -> None:
-        recipe = Path("openusd-typhoon/26.08.10.121e74ef7")
-        result = ci_matrix.matrix(
-            [recipe],
-            ["linux-64"],
-            {recipe.as_posix(): "2"},
-        )
+        for version in [
+            "26.05.9.ea5b6f695",
+            "26.08.10.121e74ef7",
+            "26.08.11.29775bac6",
+        ]:
+            with self.subTest(version=version):
+                recipe = Path("openusd-typhoon") / version
+                result = ci_matrix.matrix(
+                    [recipe],
+                    ["linux-64"],
+                    {recipe.as_posix(): "2"},
+                )
 
-        self.assertEqual(
-            [
-                (item["partition"], item["variant_args"], item["artifact"])
-                for item in result["include"]
-            ],
-            [
-                (
-                    "py311",
-                    "python=3.11",
-                    "openusd-typhoon-26.08.10.121e74ef7-linux-64-py311",
-                ),
-                (
-                    "py312",
-                    "python=3.12",
-                    "openusd-typhoon-26.08.10.121e74ef7-linux-64-py312",
-                ),
-                (
-                    "py313",
-                    "python=3.13",
-                    "openusd-typhoon-26.08.10.121e74ef7-linux-64-py313",
-                ),
-            ],
-        )
+                self.assertEqual(
+                    [
+                        (item["partition"], item["variant_args"], item["artifact"])
+                        for item in result["include"]
+                    ],
+                    [
+                        (
+                            "py311",
+                            "python=3.11",
+                            f"openusd-typhoon-{version}-linux-64-py311",
+                        ),
+                        (
+                            "py312",
+                            "python=3.12",
+                            f"openusd-typhoon-{version}-linux-64-py312",
+                        ),
+                        (
+                            "py313",
+                            "python=3.13",
+                            f"openusd-typhoon-{version}-linux-64-py313",
+                        ),
+                    ],
+                )
 
     def test_goldeneye_matrix_splits_python_variants(self) -> None:
         recipe = Path("goldeneye/0.7.2")
@@ -478,7 +484,7 @@ class CiMatrixTests(unittest.TestCase):
             ],
         )
 
-    def test_openusd_typhoon_root_build_task_uses_relaxed_test_label_channels(self) -> None:
+    def test_openusd_typhoon_root_build_task_uses_default_channels(self) -> None:
         manifest = tomllib.loads((ROOT / "pixi.toml").read_text(encoding="utf-8"))
         tasks = manifest["tasks"]
 
@@ -498,10 +504,10 @@ class CiMatrixTests(unittest.TestCase):
         self.assertNotIn("build-openusd-typhoon-26-05-9-ea5b6f695", tasks)
         self.assertEqual(
             tasks["build-openusd-typhoon"],
-            {"depends-on": ["build-openusd-typhoon-26-08-10-121e74ef7"]},
+            {"depends-on": ["build-openusd-typhoon-26-08-11-29775bac6"]},
         )
-        build_task = tasks["build-openusd-typhoon-26-08-10-121e74ef7"]
-        self.assertIn("--recipe openusd-typhoon/26.08.10.121e74ef7/recipe.yaml", build_task)
+        build_task = tasks["build-openusd-typhoon-26-08-11-29775bac6"]
+        self.assertIn("--recipe openusd-typhoon/26.08.11.29775bac6/recipe.yaml", build_task)
         self.assertIn("--channel https://conda.anaconda.org/anderslanglands", build_task)
         self.assertNotIn("/label/", build_task)
         self.assertIn("--channel-priority strict", build_task)
@@ -527,7 +533,7 @@ class CiMatrixTests(unittest.TestCase):
         self.assertEqual(build_task[build_task.index("--channel-priority") + 1], "strict")
 
     def test_openusd_typhoon_consumer_manifest_prefers_default_label(self) -> None:
-        recipe_version = "26.08.10.121e74ef7"
+        recipe_version = "26.08.11.29775bac6"
         manifest = tomllib.loads(
             (ROOT / "openusd-typhoon" / recipe_version / "pixi.toml").read_text(encoding="utf-8")
         )
@@ -543,7 +549,7 @@ class CiMatrixTests(unittest.TestCase):
         self.assertEqual(manifest["dependencies"]["openusd-typhoon"], f"=={recipe_version}")
 
     def test_current_openusd_typhoon_recipe_allows_default_label(self) -> None:
-        recipe = ROOT / "openusd-typhoon" / "26.08.10.121e74ef7"
+        recipe = ROOT / "openusd-typhoon" / "26.08.11.29775bac6"
         recipe_text = (recipe / "recipe.yaml").read_text(encoding="utf-8")
 
         version_match = re.search(r'(?m)^  version: "(?P<version>[^"]+)"$', recipe_text)
@@ -553,7 +559,7 @@ class CiMatrixTests(unittest.TestCase):
         assert version_match is not None
         assert upstream_rev_match is not None
         self.assertEqual(version_match.group("version"), recipe.name)
-        self.assertEqual(upstream_rev_match.group("rev"), "121e74ef79f11d38effb31c0d8a1c4ac2658b4fe")
+        self.assertEqual(upstream_rev_match.group("rev"), "29775bac6f0b8b139d2ac2822b5d69171745c621")
         self.assertTrue(upstream_rev_match.group("rev").startswith(recipe.name.rsplit(".", 1)[-1]))
 
         self.assertEqual(ci_matrix.recipe_allowed_publish_targets(recipe), {"default-label"})
@@ -601,6 +607,7 @@ class CiMatrixTests(unittest.TestCase):
             (ROOT / "openusd" / "26.08" / "recipe.yaml", 3),
             (ROOT / "openusd-typhoon" / "26.05.9.ea5b6f695" / "recipe.yaml", 1),
             (ROOT / "openusd-typhoon" / "26.08.10.121e74ef7" / "recipe.yaml", 1),
+            (ROOT / "openusd-typhoon" / "26.08.11.29775bac6" / "recipe.yaml", 1),
         ]
 
         for recipe, staging_builds in cases:
@@ -1371,7 +1378,7 @@ extra:
     def test_publish_packages_cli_allows_current_typhoon_recipe_to_default_label(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
             tmp = Path(tmp_raw)
-            package = self.make_typhoon_artifacts(tmp, "26.08.10.121e74ef7")
+            package = self.make_typhoon_artifacts(tmp, "26.08.11.29775bac6")
 
             completed = subprocess.run(
                 [
@@ -1399,6 +1406,7 @@ class SmokeConsumersTests(unittest.TestCase):
         for recipe in [
             Path("openusd-typhoon/26.05.9.ea5b6f695"),
             Path("openusd-typhoon/26.08.10.121e74ef7"),
+            Path("openusd-typhoon/26.08.11.29775bac6"),
             Path("goldeneye/0.7.2"),
             Path("openusd/26.05"),
         ]:
@@ -1409,7 +1417,7 @@ class SmokeConsumersTests(unittest.TestCase):
         for recipe in [
             Path("goldeneye/0.7.2"),
             Path("openusd/26.05"),
-            Path("openusd-typhoon/26.08.10.121e74ef7"),
+            Path("openusd-typhoon/26.08.11.29775bac6"),
         ]:
             with self.subTest(recipe=recipe.as_posix()):
                 self.assertEqual(
