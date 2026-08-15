@@ -51,8 +51,8 @@ upload-openimageio-3-1-14-0 = "anaconda upload --user anderslanglands output/*/o
 build-openusd-26-05 = "rattler-build build --recipe openusd/26.05/recipe.yaml --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native"
 build-openusd = { depends-on = ["build-openusd-26-05"] }
 upload-openusd-26-05 = "anaconda upload --user anderslanglands output/*/openusd-minimal-lib-26.05-*.conda output/*/openusd-minimal-dev-26.05-*.conda output/*/openusd-minimal-tools-26.05-*.conda output/*/openusd-minimal-python-26.05-*.conda output/*/openusd-26.05-*.conda"
-build-openusd-typhoon-26-08-12-1170b8b39 = "rattler-build build --recipe openusd-typhoon/26.08.12.1170b8b39/recipe.yaml --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native"
-build-openusd-typhoon = { depends-on = ["build-openusd-typhoon-26-08-12-1170b8b39"] }
+build-openusd-typhoon-26-08-11-29775bac6 = "rattler-build build --recipe openusd-typhoon/26.08.11.29775bac6/recipe.yaml --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native"
+build-openusd-typhoon = { depends-on = ["build-openusd-typhoon-26-08-11-29775bac6"] }
 build-goldeneye-0-1-0 = "rattler-build build --recipe goldeneye/0.1.0/recipe.yaml --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native"
 build-goldeneye-0-2-0 = "rattler-build build --recipe goldeneye/0.2.0/recipe.yaml --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native"
 build-goldeneye-0-3-0 = "rattler-build build --recipe goldeneye/0.3.0/recipe.yaml --channel https://conda.anaconda.org/anderslanglands --channel conda-forge --channel-priority strict --output-dir output --package-format conda --test native"
