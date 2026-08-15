@@ -1,0 +1,17 @@
+diff --git a/pxr/imaging/plugin/hdEmbree/renderer/materials/BSDL/src/jakobhanika_luts.cpp b/pxr/imaging/plugin/hdEmbree/renderer/materials/BSDL/src/jakobhanika_luts.cpp
+index 7e1f37ed6..371b4effe 100644
+--- a/pxr/imaging/plugin/hdEmbree/renderer/materials/BSDL/src/jakobhanika_luts.cpp
++++ b/pxr/imaging/plugin/hdEmbree/renderer/materials/BSDL/src/jakobhanika_luts.cpp
+@@ -12,5 +12,11 @@
+ #include <assert.h>
+-
++#if defined(_WIN32)
++#    include <string.h>
++#    define strcasecmp _stricmp
++#else
++#    include <strings.h>
++#endif
++
+ #include <cmath>
+ #include <cstdio>
+ #include <cstring>

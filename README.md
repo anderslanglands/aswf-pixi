@@ -296,8 +296,9 @@ Recipe versions:
 - `26.05.9.ea5b6f695`
 - `26.08.10.121e74ef7`
 - `26.08.11.29775bac6`
+- `26.08.12.1170b8b39`
 
-OpenUSD Typhoon packages the NVIDIA Omniverse `typhoon-anders` branch. The current recipe pins commit `29775bac6` on the OpenUSD 26.08 line as version `26.08.11.29775bac6`. The Typhoon version format is `<OpenUSD major.minor>.<recipe-build-serial>.<short-commit>`, with one repository-wide serial increment per new Typhoon package definition. Rattler normalizes `+` and `-` separators in versions to `.`, so the version uses dot separators. Typhoon builds use channels ordered as Anders, then conda-forge, with strict channel priority.
+OpenUSD Typhoon packages the NVIDIA Omniverse `typhoon-anders` branch. The current recipe pins commit `1170b8b39` on the OpenUSD 26.08 line as version `26.08.12.1170b8b39`. The Typhoon version format is `<OpenUSD major.minor>.<recipe-build-serial>.<short-commit>`, with one repository-wide serial increment per new Typhoon package definition. Rattler normalizes `+` and `-` separators in versions to `.`, so the version uses dot separators. Typhoon builds use channels ordered as Anders, then conda-forge, with strict channel priority.
 
 OpenUSD Typhoon is built for Python 3.11 through 3.13.
 
