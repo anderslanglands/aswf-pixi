@@ -5,3 +5,7 @@ python:
 materialx_build_set:
   - cpp
   - python
+c_stdlib:
+  - sysroot
+c_stdlib_version:
+  - "2.17"
