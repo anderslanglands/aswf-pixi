@@ -102,6 +102,9 @@ outputs:
     requirements:
       build:
         - ${{ compiler('cxx') }}
+        - if: linux
+          then:
+            - ${{ stdlib('c') }}
         - cmake
         - ninja
 
@@ -193,6 +196,9 @@ outputs:
     requirements:
       build:
         - ${{ compiler('cxx') }}
+        - if: linux
+          then:
+            - ${{ stdlib('c') }}
         - cmake
         - ninja
       host:
@@ -290,6 +296,9 @@ outputs:
     requirements:
       build:
         - ${{ compiler('cxx') }}
+        - if: linux
+          then:
+            - ${{ stdlib('c') }}
         - cmake
         - ninja
       host:
@@ -417,6 +426,9 @@ outputs:
     requirements:
       build:
         - ${{ compiler('cxx') }}
+        - if: linux
+          then:
+            - ${{ stdlib('c') }}
         - cmake
         - ninja
       host:
@@ -442,7 +454,7 @@ outputs:
         - if: unix
           then: |
             cmake -E rm -rf $SRC_DIR/../build-render-slang
-            export CXXFLAGS="${CXXFLAGS:-} -Wno-error=shadow"
+            export CXXFLAGS="${CXXFLAGS:-} -Wno-error=shadow -Wno-error=free-nonheap-object"
 
             cmake $CMAKE_ARGS \
               -GNinja \
@@ -576,6 +588,9 @@ outputs:
     requirements:
       build:
         - ${{ compiler('cxx') }}
+        - if: linux
+          then:
+            - ${{ stdlib('c') }}
         - cmake
         - ninja
       host:
@@ -655,6 +670,9 @@ outputs:
     requirements:
       build:
         - ${{ compiler('cxx') }}
+        - if: linux
+          then:
+            - ${{ stdlib('c') }}
         - cmake
         - ninja
       host:
@@ -717,6 +735,7 @@ outputs:
             then:
               - test -f "$PREFIX/libraries/stdlib/stdlib_defs.mtlx"
               - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libMaterialXCore.so*')); assert paths; ctypes.CDLL(paths[0])"
+              - python tests/check_glibc.py materialx-lib 2.17
           - if: osx
             then:
               - test -f "$PREFIX/libraries/stdlib/stdlib_defs.mtlx"
@@ -728,6 +747,11 @@ outputs:
         requirements:
           run:
             - python
+            - if: linux
+              then: binutils
+        files:
+          recipe:
+            - tests/check_glibc.py
 
   - package:
       name: materialx-dev
@@ -859,6 +883,9 @@ outputs:
               - cmake -S tests -B build-render -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build-render --target materialx_render_consumer
               - ./build-render/materialx_render_consumer
+          - if: linux
+            then:
+              - python tests/check_glibc.py materialx-render 2.17
           - if: osx
             then:
               - test -f "$PREFIX/include/MaterialXRenderMsl/MslRenderer.h"
@@ -877,11 +904,15 @@ outputs:
             - tests/materialx_consumer.cpp
             - tests/materialx_render_consumer.cpp
             - tests/materialx_render_msl_consumer.mm
+            - tests/check_glibc.py
         requirements:
           run:
             - ${{ compiler('cxx') }}
             - cmake
             - ninja
+            - python
+            - if: linux
+              then: binutils
 
   - package:
       name: materialx-render-osl
@@ -926,6 +957,9 @@ outputs:
               - cmake -S tests -B build-render-osl -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build-render-osl --target materialx_render_osl_consumer
               - ./build-render-osl/materialx_render_osl_consumer
+          - if: linux
+            then:
+              - python tests/check_glibc.py materialx-render-osl 2.17
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\cmake\MaterialX\MaterialXRenderOslOptionalTargets.cmake" exit /b 1
@@ -941,12 +975,15 @@ outputs:
             - tests/materialx_render_consumer.cpp
             - tests/materialx_render_osl_consumer.cpp
             - tests/materialx_render_msl_consumer.mm
+            - tests/check_glibc.py
         requirements:
           run:
             - ${{ compiler('cxx') }}
             - cmake
             - ninja
             - python
+            - if: linux
+              then: binutils
 
   - package:
       name: materialx-render-mdl
@@ -1024,6 +1061,9 @@ outputs:
               - cmake -S tests -B build-render-slang -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build-render-slang --target materialx_render_slang_consumer
               - ./build-render-slang/materialx_render_slang_consumer
+          - if: linux
+            then:
+              - python tests/check_glibc.py materialx-render-slang 2.17
           - if: win
             then:
               - if not exist "%LIBRARY_LIB%\cmake\MaterialX\MaterialXRenderSlangOptionalTargets.cmake" exit /b 1
@@ -1037,11 +1077,15 @@ outputs:
             - tests/materialx_render_consumer.cpp
             - tests/materialx_render_slang_consumer.cpp
             - tests/materialx_render_msl_consumer.mm
+            - tests/check_glibc.py
         requirements:
           run:
             - ${{ compiler('cxx') }}
             - cmake
             - ninja
+            - python
+            - if: linux
+              then: binutils
 
   - package:
       name: materialx-guitools
@@ -1086,12 +1130,23 @@ outputs:
               - test -x "$PREFIX/bin/MaterialXGraphEditor"
               - '"$PREFIX/bin/MaterialXView" --help'
               - '"$PREFIX/bin/MaterialXGraphEditor" --help'
+          - if: linux
+            then:
+              - python tests/check_glibc.py materialx-guitools 2.17
           - if: win
             then:
               - if not exist "%LIBRARY_BIN%\MaterialXView.exe" exit /b 1
               - if not exist "%LIBRARY_BIN%\MaterialXGraphEditor.exe" exit /b 1
               - '"%LIBRARY_BIN%\MaterialXView.exe" --help'
               - '"%LIBRARY_BIN%\MaterialXGraphEditor.exe" --help'
+        files:
+          recipe:
+            - tests/check_glibc.py
+        requirements:
+          run:
+            - python
+            - if: linux
+              then: binutils
 
   - package:
       name: materialx-python
@@ -1127,9 +1182,17 @@ outputs:
           - python -c "import MaterialX.PyMaterialXGenGlsl as gg, MaterialX.PyMaterialXGenMsl as gm, MaterialX.PyMaterialXGenOsl as go, MaterialX.PyMaterialXGenMdl as gd, MaterialX.PyMaterialXGenSlang as gs; generators = (gg.GlslShaderGenerator.create(), gm.MslShaderGenerator.create(), go.OslShaderGenerator.create(), gd.MdlShaderGenerator.create(), gs.SlangShaderGenerator.create()); assert all(generators); assert [g.getTarget() for g in generators] == ['genglsl', 'genmsl', 'genosl', 'genmdl', 'genslang']"
           - python -c "import importlib.util; modules = ('MaterialX.PyMaterialXRender', 'MaterialX.PyMaterialXRenderGlsl', 'MaterialX.PyMaterialXRenderMsl', 'MaterialX.PyMaterialXRenderOsl', 'MaterialX.PyMaterialXRenderSlang'); found = [module for module in modules if importlib.util.find_spec(module) is not None]; assert not found, found"
           - python -c "import MaterialX, pathlib; assert not (pathlib.Path(MaterialX.__file__).parent / '_scripts').exists()"
+          - if: linux
+            then:
+              - python tests/check_glibc.py materialx-python 2.17
+        files:
+          recipe:
+            - tests/check_glibc.py
         requirements:
           run:
             - python
+            - if: linux
+              then: binutils
 
   - package:
       name: materialx
