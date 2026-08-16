@@ -330,6 +330,9 @@ outputs:
       build:
         - ${{ compiler('c') }}
         - ${{ compiler('cxx') }}
+        - if: linux
+          then:
+            - ${{ stdlib('c') }}
         - cmake
         - ninja
       host:
@@ -416,6 +419,9 @@ outputs:
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/openusd_consumer
+          - if: linux
+            then:
+              - python tests/check_glibc.py
           - if: win
             then:
               - if not exist "%LIBRARY_PREFIX%\pxrConfig.cmake" exit /b 1
@@ -433,10 +439,14 @@ outputs:
         files:
           recipe:
             - tests/CMakeLists.txt
+            - tests/check_glibc.py
             - tests/openusd_consumer.cpp
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then:
+                - binutils
             - cmake
             - ninja
             - python
