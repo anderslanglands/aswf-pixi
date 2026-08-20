@@ -72,6 +72,7 @@ GoldenEye is a pytest-based runner for USD render regression suites, with image 
 
 Recipe versions:
 - `3.2.2`
+- `3.2.3`
 
 Imath is a C++ math library for 2D and 3D graphics.
 
