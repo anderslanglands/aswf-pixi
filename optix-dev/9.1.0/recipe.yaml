@@ -130,6 +130,8 @@ tests:
     requirements:
       run:
         - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
         - cmake
         - ninja
         - if: unix

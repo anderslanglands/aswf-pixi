@@ -331,8 +331,7 @@ outputs:
         - ${{ compiler('c') }}
         - ${{ compiler('cxx') }}
         - if: linux
-          then:
-            - ${{ stdlib('c') }}
+          then: ${{ stdlib('c') }}
         - cmake
         - ninja
       host:
@@ -444,6 +443,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - if: linux
               then:
                 - binutils

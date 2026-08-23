@@ -366,6 +366,94 @@ class CiMatrixTests(unittest.TestCase):
                 )
                 ci_matrix.validate_python_variant_policy(recipe)
 
+    def test_c_stdlib_policy_rejects_unpinned_compiled_recipe(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            recipe = Path(tmp_raw) / "example" / "1.0.0"
+            recipe.mkdir(parents=True)
+            (recipe / "recipe.yaml").write_text(
+                "requirements:\n"
+                "  build:\n"
+                "    - ${{ compiler('cxx') }}\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(SystemExit, r"pair every compiler dependency block"):
+                ci_matrix.validate_c_stdlib_policy(recipe)
+
+    def test_c_stdlib_policy_rejects_unpinned_c_only_recipe(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            recipe = Path(tmp_raw) / "example" / "1.0.0"
+            recipe.mkdir(parents=True)
+            (recipe / "recipe.yaml").write_text(
+                "requirements:\n"
+                "  build:\n"
+                "    - ${{ compiler('c') }}\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(SystemExit, r"pair every compiler dependency block"):
+                ci_matrix.validate_c_stdlib_policy(recipe)
+
+    def test_c_stdlib_policy_rejects_unpaired_mixed_compiler_block(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            recipe = Path(tmp_raw) / "example" / "1.0.0"
+            recipe.mkdir(parents=True)
+            (recipe / "recipe.yaml").write_text(
+                "requirements:\n"
+                "  build:\n"
+                "    - ${{ compiler('c') }}\n"
+                "  host:\n"
+                "    - ${{ compiler('cxx') }}\n"
+                "    - if: linux\n"
+                "      then: ${{ stdlib('c') }}\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(SystemExit, r"pair every compiler dependency block"):
+                ci_matrix.validate_c_stdlib_policy(recipe)
+
+    def test_c_stdlib_policy_rejects_extra_linux_baseline(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_raw:
+            recipe = Path(tmp_raw) / "example" / "1.0.0"
+            recipe.mkdir(parents=True)
+            (recipe / "recipe.yaml").write_text(
+                "requirements:\n"
+                "  build:\n"
+                "    - ${{ compiler('cxx') }}\n"
+                "    - if: linux\n"
+                "      then: ${{ stdlib('c') }}\n",
+                encoding="utf-8",
+            )
+            (recipe / "variants.yaml").write_text(
+                "c_stdlib:\n"
+                "  - if: linux\n"
+                "    then: sysroot\n\n"
+                "c_stdlib_version:\n"
+                "  - if: linux\n"
+                "    then: \"2.17\"\n"
+                "  - if: linux\n"
+                "    then: \"2.39\"\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(SystemExit, r"only the Linux sysroot baseline 2\.17"):
+                ci_matrix.validate_c_stdlib_policy(recipe)
+
+    def test_all_compiled_recipes_pin_linux_c_stdlib(self) -> None:
+        compiled_recipes = [
+            recipe_file.parent
+            for recipe_file in ROOT.glob("*/*/recipe.yaml")
+            if any(
+                compiler in recipe_file.read_text(encoding="utf-8")
+                for compiler in ("${{ compiler('c') }}", "${{ compiler('cxx') }}")
+            )
+        ]
+
+        self.assertTrue(compiled_recipes)
+        for recipe in compiled_recipes:
+            with self.subTest(recipe=recipe.relative_to(ROOT).as_posix()):
+                ci_matrix.validate_c_stdlib_policy(recipe)
+
     def test_openusd_matrix_splits_long_build_partitions(self) -> None:
         recipe = Path("openusd/26.05")
         result = ci_matrix.matrix(

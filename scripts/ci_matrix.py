@@ -19,6 +19,7 @@ RUNNERS = {
 
 DEFAULT_PLATFORMS = ["linux-64", "win-64", "osx-arm64"]
 SUPPORTED_PYTHON_VERSIONS = ["3.11", "3.12", "3.13"]
+LINUX_C_STDLIB_VERSION = "2.17"
 
 MATERIALX_PARALLEL_PYTHON_RECIPES = {"materialx/1.39.4", "materialx/1.39.5"}
 MATERIALX_CPP_MANIFEST_PACKAGES = {
@@ -212,6 +213,77 @@ def validate_python_variant_policy(recipe: Path) -> None:
         )
 
 
+def validate_c_stdlib_policy(recipe: Path) -> None:
+    recipe_file = recipe / "recipe.yaml"
+    if not recipe_file.is_file():
+        return
+    recipe_text = recipe_file.read_text(encoding="utf-8")
+    lines = recipe_text.splitlines()
+    compiler_re = re.compile(
+        r"^(?P<indent>[ ]*)- \$\{\{ compiler\('(?P<language>c|cxx)'\) \}\}[ \t]*$"
+    )
+    compiler_lines = [index for index, line in enumerate(lines) if compiler_re.fullmatch(line)]
+    if not compiler_lines:
+        return
+
+    def has_stdlib_pair(index: int) -> bool:
+        match = compiler_re.fullmatch(lines[index])
+        assert match is not None
+        indent = match.group("indent")
+        return (
+            index + 2 < len(lines)
+            and lines[index + 1].rstrip() == f"{indent}- if: linux"
+            and lines[index + 2].rstrip() == f"{indent}  then: ${{{{ stdlib('c') }}}}"
+        )
+
+    for index in compiler_lines:
+        match = compiler_re.fullmatch(lines[index])
+        assert match is not None
+        language = match.group("language")
+        if has_stdlib_pair(index):
+            continue
+        if language == "c" and index + 1 < len(lines):
+            next_match = compiler_re.fullmatch(lines[index + 1])
+            if (
+                next_match is not None
+                and next_match.group("indent") == match.group("indent")
+                and next_match.group("language") == "cxx"
+                and has_stdlib_pair(index + 1)
+            ):
+                continue
+        raise SystemExit(
+            f"Compiled recipe {recipe} must pair every compiler dependency block "
+            "with a Linux-conditional stdlib('c') dependency."
+        )
+
+    variants_file = recipe / "variants.yaml"
+    if not variants_file.is_file():
+        raise SystemExit(
+            f"Compiled recipe {recipe} must contain variants.yaml with the Linux C stdlib baseline."
+        )
+    variant_lines = variants_file.read_text(encoding="utf-8").splitlines()
+
+    def variant_section(key: str) -> list[str]:
+        indices = [index for index, line in enumerate(variant_lines) if line == f"{key}:"]
+        if len(indices) != 1:
+            return []
+        section: list[str] = []
+        for line in variant_lines[indices[0] + 1 :]:
+            if line and not line.startswith((" ", "#")):
+                break
+            if line.strip() and not line.lstrip().startswith("#"):
+                section.append(line.rstrip())
+        return section
+
+    if variant_section("c_stdlib") != ["  - if: linux", "    then: sysroot"] or variant_section(
+        "c_stdlib_version"
+    ) != ["  - if: linux", f'    then: "{LINUX_C_STDLIB_VERSION}"']:
+        raise SystemExit(
+            f"Compiled recipe {recipe} must define only the Linux sysroot baseline "
+            f"{LINUX_C_STDLIB_VERSION} in variants.yaml."
+        )
+
+
 def validate_publish_target(value: str) -> None:
     if value not in {"artifact-only", "default-label"}:
         raise SystemExit(
@@ -344,6 +416,7 @@ def matrix(
     include: list[dict[str, str]] = []
     for recipe in recipes:
         validate_python_variant_policy(recipe)
+        validate_c_stdlib_policy(recipe)
         recipe_key = recipe.as_posix()
         package = recipe.parts[-2]
         version = recipe.parts[-1]

@@ -60,6 +60,8 @@ Package conversion process:
 
 Local package preflight:
 
+- Every compiled Linux recipe must pair its compiler requirements with a Linux-conditional `${{ stdlib('c') }}` dependency and pin `c_stdlib: sysroot` plus `c_stdlib_version: "2.17"` in `variants.yaml`. Apply the same baseline to compiler-based consumer tests.
+
 - Before pushing recipe or workflow changes, run a local native build on any platform that is readily available, especially when adding a new target platform.
 - Use a clean generated `output/` directory for local preflight builds so stale packages are not picked up by manifest or upload checks.
 - Match the GitHub Actions build command locally rather than relying only on shorthand tasks. For example, on a Windows machine validating Imath before enabling `win-64` in CI, run:

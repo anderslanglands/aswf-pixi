@@ -31,6 +31,8 @@ build:
 requirements:
   build:
     - ${{ compiler('cxx') }}
+    - if: linux
+      then: ${{ stdlib('c') }}
     - cmake
     - ninja
   host:
