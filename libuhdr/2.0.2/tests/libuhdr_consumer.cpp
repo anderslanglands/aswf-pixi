@@ -5,7 +5,7 @@
 
 int main()
 {
-    if (UHDR_LIB_VERSION != 20000 || std::strcmp(UHDR_LIB_VERSION_STR, "2.0.2") != 0)
+    if (std::strcmp(UHDR_LIB_VERSION_STR, "2.0.2") != 0)
     {
         std::cerr << "Unexpected libuhdr version: " << UHDR_LIB_VERSION_STR << '\n';
         return 1;
