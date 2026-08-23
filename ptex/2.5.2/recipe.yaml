@@ -66,6 +66,8 @@ outputs:
     requirements:
       build:
         - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
         - cmake
         - ninja
       host:
@@ -168,6 +170,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
 
@@ -205,6 +209,8 @@ outputs:
           run:
             - ${{ pin_subpackage('ptex-dev', exact=True) }}
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
 
@@ -244,6 +250,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
 

@@ -135,6 +135,8 @@ outputs:
     requirements:
       build:
         - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
         - cmake
         - ninja
         - pkg-config
@@ -246,6 +248,8 @@ outputs:
     requirements:
       build:
         - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
         - cmake
         - ninja
         - pkg-config
@@ -374,6 +378,8 @@ outputs:
     requirements:
       build:
         - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
         - cmake
         - ninja
         - pkg-config
@@ -489,6 +495,8 @@ outputs:
       build:
         - ${{ compiler('c') }}
         - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
         - cmake
         - ninja
         - pkg-config
@@ -610,6 +618,8 @@ outputs:
       build:
         - ${{ compiler('c') }}
         - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
         - cmake
         - ninja
         - pkg-config
@@ -722,6 +732,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
 
@@ -772,6 +784,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
             - ${{ pin_subpackage('openvdb-dev', exact=True) }}
@@ -838,6 +852,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
             - ${{ pin_subpackage('openvdb-dev', exact=True) }}
@@ -918,6 +934,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
 
@@ -990,6 +1008,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
             - ${{ pin_subpackage('openvdb-dev', exact=True) }}
@@ -1023,6 +1043,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
 
@@ -1076,6 +1098,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
             - python

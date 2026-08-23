@@ -161,6 +161,8 @@ outputs:
       build:
         - ${{ compiler('c') }}
         - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
         - if: osx
           then: clang 22.1.*
         - if: not osx
@@ -229,6 +231,8 @@ outputs:
       build:
         - ${{ compiler('c') }}
         - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
         - cmake
         - ninja
         - swig 4.2.*
@@ -421,6 +425,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
 
@@ -498,6 +504,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
             - python

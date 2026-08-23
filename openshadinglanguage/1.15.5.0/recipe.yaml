@@ -121,6 +121,8 @@ outputs:
           then:
             - ${{ compiler('c') }}
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
             - python 3.13.*
@@ -250,6 +252,8 @@ outputs:
           then:
             - ${{ compiler('c') }}
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
             - python 3.13.*
@@ -375,6 +379,8 @@ outputs:
           then:
             - ${{ compiler('c') }}
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
             - python 3.13.*
@@ -509,6 +515,8 @@ outputs:
           then:
             - ${{ compiler('c') }}
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
             - if: unix
@@ -588,6 +596,8 @@ outputs:
           then:
             - ${{ compiler('c') }}
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - bison
             - cmake
             - flex
@@ -664,6 +674,8 @@ outputs:
           then:
             - ${{ compiler('c') }}
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - bison
             - cmake
             - flex
@@ -739,6 +751,8 @@ outputs:
           then:
             - ${{ compiler('c') }}
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - bison
             - cmake
             - flex
@@ -817,6 +831,8 @@ outputs:
           then:
             - ${{ compiler('c') }}
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - bison
             - cmake
             - flex
@@ -947,6 +963,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
 
@@ -1128,6 +1146,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
             - python
@@ -1212,6 +1232,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
 
@@ -1352,6 +1374,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
             - python

@@ -99,6 +99,8 @@ outputs:
     requirements:
       build:
         - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
         - cmake
         - ninja
         - if: unix
@@ -195,6 +197,8 @@ outputs:
     requirements:
       build:
         - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
         - cmake
         - ninja
         - if: unix
@@ -313,6 +317,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
 
@@ -389,6 +395,8 @@ outputs:
         requirements:
           run:
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - ninja
 

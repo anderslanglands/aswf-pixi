@@ -77,6 +77,8 @@ outputs:
           then:
             - ${{ compiler('c') }}
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - git
             - ninja
@@ -170,6 +172,8 @@ outputs:
           then:
             - ${{ compiler('c') }}
             - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
             - cmake
             - git
             - ninja
