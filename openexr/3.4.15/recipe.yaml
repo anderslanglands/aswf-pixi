@@ -9,6 +9,8 @@ recipe:
 source:
   url: https://github.com/AcademySoftwareFoundation/openexr/releases/download/v${{ version }}/openexr-${{ version }}.tar.gz
   sha256: ab893d8003773ccd9a5556b2caf38da591ae37e20b06ee9d589a08984c5191f2
+  patches:
+    - patches/link-openexrcore-threads.patch
 
 build:
   number: ${{ build_number }}
