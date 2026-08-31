@@ -331,6 +331,7 @@ OpenShadingLanguage provides a production shading language, compiler, runtime li
 
 Recipe versions:
 - `2026.0.0`
+- `2026.0.2`
 
 The NVIDIA Material Definition Language SDK provides the MDL compiler, runtime SDK APIs, image plugins, command-line tools, and Python bindings.
 
