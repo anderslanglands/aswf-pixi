@@ -168,6 +168,7 @@ libuhdr is Google's reference codec for the JPEG/R gain map based Ultra HDR imag
 Recipe versions:
 - `2.5.1`
 - `2.5.2`
+- `2.5.4`
 
 Ptex is Walt Disney Animation Studios' per-face texture mapping system for production rendering.
 
