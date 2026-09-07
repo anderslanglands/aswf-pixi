@@ -9,6 +9,8 @@ recipe:
 source:
   url: https://github.com/wdas/ptex/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 435c116ea5bbe6f0054f8227e204d255b2d91bf35786b007c77a894c729c1fbc
+  patches:
+    - fix-posix-unlink-include.patch
 
 build:
   number: ${{ build_number }}

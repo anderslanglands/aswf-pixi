@@ -1,0 +1,16 @@
+diff --git a/src/ptex/PtexWriter.cpp b/src/ptex/PtexWriter.cpp
+index f5c8b7a..fb66743 100644
+--- a/src/ptex/PtexWriter.cpp
++++ b/src/ptex/PtexWriter.cpp
+@@ -38,8 +38,10 @@
+ #include <algorithm>
+ #include <iostream>
+ #include <sstream>
+-#if defined(__FreeBSD__)
++#if !defined(_WIN32)
+     #include <unistd.h>
++#endif
++#if defined(__FreeBSD__)
+     #include <stddef.h>
+ #endif
+ #include <libdeflate.h>
