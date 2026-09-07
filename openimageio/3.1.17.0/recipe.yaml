@@ -831,7 +831,7 @@ outputs:
         - blosc
         - bzip2
         - dcmtk
-        - ffmpeg
+        - ffmpeg 8.*
         - fmt
         - giflib
         - imath-dev 3.2.*
@@ -1200,7 +1200,7 @@ outputs:
       run:
         - ${{ pin_subpackage('openimageio-lib', exact=True) }}
         - bzip2
-        - ffmpeg
+        - ffmpeg >=8,<9
     tests:
       - script:
           - python tests/check_formats.py ffmpeg
