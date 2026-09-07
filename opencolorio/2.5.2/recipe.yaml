@@ -224,6 +224,7 @@ outputs:
             cmake --build $SRC_DIR/../build-python --target install
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build-python
+            set "CXXFLAGS=%CXXFLAGS% /bigobj"
 
             cmake %CMAKE_ARGS% ^
               -GNinja ^
