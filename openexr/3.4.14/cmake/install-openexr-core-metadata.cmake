@@ -11,6 +11,7 @@ file(WRITE "${_prefix}/lib/cmake/OpenEXRCore/OpenEXRCoreConfig.cmake" [=[
 include(CMakeFindDependencyMacro)
 
 find_dependency(Imath)
+find_dependency(Threads)
 
 get_filename_component(_OPENEXRCORE_PREFIX "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
 
@@ -18,7 +19,7 @@ if(NOT TARGET OpenEXRCore::OpenEXRCore)
   add_library(OpenEXRCore::OpenEXRCore SHARED IMPORTED)
   set_target_properties(OpenEXRCore::OpenEXRCore PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${_OPENEXRCORE_PREFIX}/include;${_OPENEXRCORE_PREFIX}/include/OpenEXR"
-    INTERFACE_LINK_LIBRARIES "Imath::Imath"
+    INTERFACE_LINK_LIBRARIES "Imath::Imath;Threads::Threads"
   )
 
   if(WIN32)
