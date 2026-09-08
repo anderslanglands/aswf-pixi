@@ -1,0 +1,18 @@
+diff --git a/src/cmake/modules/FindLLVM.cmake b/src/cmake/modules/FindLLVM.cmake
+index c7c0e95..aaf6972 100644
+--- a/src/cmake/modules/FindLLVM.cmake
++++ b/src/cmake/modules/FindLLVM.cmake
+@@ -116,9 +116,10 @@ if (LLVM_SHARED_MODE STREQUAL "shared")
+     endif ()
+ endif ()
+ 
+-foreach (COMPONENT clangFrontend clangDriver clangSerialization
+-                   clangParse clangSema clangAnalysis clangAST
+-                   clangASTMatchers clangEdit clangLex
++foreach (COMPONENT clangFrontend clangDriver clangOptions
++                   clangSerialization clangParse clangSema clangAnalysis
++                   clangAnalysisLifetimeSafety clangAST clangASTMatchers
++                   clangEdit clangLex
+                    clangSupport clangAPINotes clangBasic)
+     find_library ( _CLANG_${COMPONENT}_LIBRARY
+                   NAMES ${COMPONENT}
