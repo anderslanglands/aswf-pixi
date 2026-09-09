@@ -96,6 +96,7 @@ outputs:
               -DMDL_ENABLE_UNIT_TESTS=OFF \
               -DMDL_ENABLE_PYTHON_BINDINGS=OFF \
               -DMDL_ENABLE_CUDA_EXAMPLES=OFF \
+              -DMDL_ENABLE_GPU_BAKER=OFF \
               -DMDL_ENABLE_OPENGL_EXAMPLES=OFF \
               -DMDL_ENABLE_QT_EXAMPLES=OFF \
               -DMDL_ENABLE_VULKAN_EXAMPLES=OFF \
@@ -143,6 +144,7 @@ outputs:
               -DMDL_ENABLE_UNIT_TESTS=OFF ^
               -DMDL_ENABLE_PYTHON_BINDINGS=OFF ^
               -DMDL_ENABLE_CUDA_EXAMPLES=OFF ^
+              -DMDL_ENABLE_GPU_BAKER=OFF ^
               -DMDL_ENABLE_OPENGL_EXAMPLES=OFF ^
               -DMDL_ENABLE_QT_EXAMPLES=OFF ^
               -DMDL_ENABLE_VULKAN_EXAMPLES=OFF ^
