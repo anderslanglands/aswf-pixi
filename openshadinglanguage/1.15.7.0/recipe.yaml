@@ -10,8 +10,6 @@ recipe:
 source:
   url: https://github.com/AcademySoftwareFoundation/OpenShadingLanguage/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 06a914d67c8c8a0f62e518b14791b1dd044c2421b6259e2de6b4f89d8f1442e0
-  patches:
-    - fix-llvm-22-clang-components.patch
 
 build:
   number: ${{ build_number }}
