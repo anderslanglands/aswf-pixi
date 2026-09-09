@@ -398,7 +398,7 @@ outputs:
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
             - pugixml
-            - qt6-main
+            - qt6-main 6.10.*
             - tsl_robin_map 1.4.*
             - zlib
             - zstd
@@ -768,7 +768,7 @@ outputs:
             - openimageio-dev 3.1.*
             - partio-dev 1.20.*
             - pugixml
-            - qt6-main
+            - qt6-main 6.10.*
             - tsl_robin_map 1.4.*
             - zlib
             - zstd
@@ -1015,7 +1015,7 @@ outputs:
     requirements:
       run:
         - ${{ pin_subpackage('openshadinglanguage-lib', exact=True) }}
-        - qt6-main
+        - qt6-main 6.10.*
       run_constraints:
         - openshadinglanguage-cuda-guitools <0a0
     tests:
@@ -1274,7 +1274,7 @@ outputs:
     requirements:
       run:
         - ${{ pin_subpackage('openshadinglanguage-cuda-lib', exact=True) }}
-        - qt6-main
+        - qt6-main 6.10.*
       run_constraints:
         - openshadinglanguage-guitools <0a0
     tests:
