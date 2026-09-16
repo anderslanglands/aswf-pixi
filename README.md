@@ -116,6 +116,7 @@ OpenColorIO is a color management solution for motion picture production.
 
 Recipe versions:
 - `13.0.0`
+- `13.1.0`
 
 OpenVDB provides sparse volumetric data structures, file I/O, and tools. NanoVDB provides compact mostly read-only VDB grids for GPU-friendly and header-only workflows.
 
