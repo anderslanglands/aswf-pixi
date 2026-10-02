@@ -103,6 +103,7 @@ OpenEXR provides high dynamic-range image file format libraries and tools.
 Recipe versions:
 - `2.5.1`
 - `2.5.2`
+- `2.6.0`
 
 OpenColorIO is a color management solution for motion picture production.
 
