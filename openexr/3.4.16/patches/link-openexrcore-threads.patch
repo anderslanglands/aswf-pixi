@@ -1,0 +1,15 @@
+diff --git a/src/lib/OpenEXRCore/CMakeLists.txt b/src/lib/OpenEXRCore/CMakeLists.txt
+index 08b5e52..f53ec4c 100644
+--- a/src/lib/OpenEXRCore/CMakeLists.txt
++++ b/src/lib/OpenEXRCore/CMakeLists.txt
+@@ -116,6 +116,10 @@ openexr_define_library(OpenEXRCore
+     Imath::Imath
+   )
+ 
++if (OPENEXR_ENABLE_THREADING)
++  target_link_libraries(OpenEXRCore PRIVATE Threads::Threads)
++endif()
++
+ if (DEFINED EXR_DEFLATE_LIB)
+   if (BUILD_SHARED_LIBS)
+     target_link_libraries(OpenEXRCore PRIVATE ${EXR_DEFLATE_LIB})
