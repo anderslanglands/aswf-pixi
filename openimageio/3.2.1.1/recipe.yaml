@@ -11,7 +11,6 @@ source:
   sha256: 518dd997d457fa198cd4aa51a0ccf2b79a45176cf2522fe3d7392580dcb7ae11
   patches:
     - patches/cmake-4-private-plugin-linking.patch
-    - patches/heif-plugin-init-symbol.patch
 
 build:
   number: ${{ build_number }}
@@ -832,14 +831,14 @@ outputs:
         - blosc
         - bzip2
         - dcmtk
-        - ffmpeg
+        - ffmpeg >=8,<9
         - fmt
         - giflib
         - imath-dev 3.2.*
         - libboost-devel
         - libheif
         - libjpeg-turbo
-        - libjxl
+        - libjxl 0.11.*
         - libpng
         - libraw
         - libtiff
@@ -1103,7 +1102,7 @@ outputs:
     requirements:
       run:
         - ${{ pin_subpackage('openimageio-lib', exact=True) }}
-        - libjxl
+        - libjxl 0.11.*
     tests:
       - script:
           - python tests/check_formats.py jpegxl --roundtrip jpegxl
@@ -1201,7 +1200,7 @@ outputs:
       run:
         - ${{ pin_subpackage('openimageio-lib', exact=True) }}
         - bzip2
-        - ffmpeg
+        - ffmpeg >=8,<9
     tests:
       - script:
           - python tests/check_formats.py ffmpeg
