@@ -164,6 +164,8 @@ outputs:
         - ninja
         - pkg-config
       host:
+        - if: win
+          then: directx-headers >=1.606.0
         - expat
         - imath-dev 3.2.*
         - lcms2
