@@ -47,8 +47,8 @@ outputs:
             cmake --build $SRC_DIR/../build --target install
 
             for lib in OpenEXR OpenEXRCore OpenEXRUtil Iex IlmThread; do
-              if [ -e "$PREFIX/lib/lib${lib}-3_4.so.33" ] && [ ! -e "$PREFIX/lib/lib${lib}.so.33" ]; then
-                ln -s "lib${lib}-3_4.so.33" "$PREFIX/lib/lib${lib}.so.33"
+              if [ -e "$PREFIX/lib/lib${lib}-3_5.so.34" ] && [ ! -e "$PREFIX/lib/lib${lib}.so.34" ]; then
+                ln -s "lib${lib}-3_5.so.34" "$PREFIX/lib/lib${lib}.so.34"
               fi
             done
 
@@ -299,17 +299,17 @@ outputs:
     inherit: openexr-build
     build:
       files:
-        - lib/libOpenEXR-3_4*.so*
+        - lib/libOpenEXR-3_5*.so*
         - lib/libOpenEXR.so*
         - lib/libOpenEXRUtil*.so*
         - lib/libIex*.so*
         - lib/libIlmThread*.so*
-        - lib/libOpenEXR-3_4*.dylib*
+        - lib/libOpenEXR-3_5*.dylib*
         - lib/libOpenEXR.dylib*
         - lib/libOpenEXRUtil*.dylib*
         - lib/libIex*.dylib*
         - lib/libIlmThread*.dylib*
-        - Library/bin/OpenEXR-3_4*.dll
+        - Library/bin/OpenEXR-3_5*.dll
         - Library/bin/OpenEXRUtil*.dll
         - Library/bin/Iex*.dll
         - Library/bin/IlmThread*.dll
@@ -334,13 +334,13 @@ outputs:
       - script:
           - if: linux
             then:
-              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libOpenEXR-3_4*.so*')); assert paths; ctypes.CDLL(paths[0])"
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libOpenEXR-3_5*.so*')); assert paths; ctypes.CDLL(paths[0])"
           - if: osx
             then:
-              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libOpenEXR-3_4*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libOpenEXR-3_5*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
           - if: win
             then:
-              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'OpenEXR-3_4*.dll')); assert paths; ctypes.WinDLL(paths[0])"
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['LIBRARY_BIN'], 'OpenEXR-3_5*.dll')); assert paths; ctypes.WinDLL(paths[0])"
         requirements:
           run:
             - python
@@ -372,7 +372,7 @@ outputs:
         - Library/include/OpenEXR/IlmThreadPool.h
         - Library/include/OpenEXR/IlmThreadProcessGroup.h
         - Library/include/OpenEXR/IlmThreadSemaphore.h
-        - Library/lib/OpenEXR-3_4*.lib
+        - Library/lib/OpenEXR-3_5*.lib
         - Library/lib/OpenEXRUtil*.lib
         - Library/lib/Iex*.lib
         - Library/lib/IlmThread*.lib

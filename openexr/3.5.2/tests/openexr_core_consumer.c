@@ -9,5 +9,5 @@ int main(void)
 
     exr_get_library_version(&major, &minor, &patch, &extra);
 
-    return (major == 3 && minor == 4 && patch == 12) ? 0 : 1;
+    return (major == 3 && minor == 5 && patch == 2) ? 0 : 1;
 }

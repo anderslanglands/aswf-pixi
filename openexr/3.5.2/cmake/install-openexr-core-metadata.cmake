@@ -4,7 +4,7 @@ endif()
 
 set(_prefix "${OPENEXR_CORE_METADATA_PREFIX}")
 set(_version "3.5.2")
-set(_api_suffix "-3_4")
+set(_api_suffix "-3_5")
 
 file(MAKE_DIRECTORY "${_prefix}/lib/cmake/OpenEXRCore")
 file(WRITE "${_prefix}/lib/cmake/OpenEXRCore/OpenEXRCoreConfig.cmake" [=[
@@ -23,17 +23,17 @@ if(NOT TARGET OpenEXRCore::OpenEXRCore)
 
   if(WIN32)
     set_target_properties(OpenEXRCore::OpenEXRCore PROPERTIES
-      IMPORTED_IMPLIB "${_OPENEXRCORE_PREFIX}/lib/OpenEXRCore-3_4.lib"
-      IMPORTED_LOCATION "${_OPENEXRCORE_PREFIX}/bin/OpenEXRCore-3_4.dll"
+      IMPORTED_IMPLIB "${_OPENEXRCORE_PREFIX}/lib/OpenEXRCore-3_5.lib"
+      IMPORTED_LOCATION "${_OPENEXRCORE_PREFIX}/bin/OpenEXRCore-3_5.dll"
       INTERFACE_COMPILE_DEFINITIONS "OPENEXR_DLL"
     )
   elseif(APPLE)
     set_target_properties(OpenEXRCore::OpenEXRCore PROPERTIES
-      IMPORTED_LOCATION "${_OPENEXRCORE_PREFIX}/lib/libOpenEXRCore-3_4.dylib"
+      IMPORTED_LOCATION "${_OPENEXRCORE_PREFIX}/lib/libOpenEXRCore-3_5.dylib"
     )
   else()
     set_target_properties(OpenEXRCore::OpenEXRCore PROPERTIES
-      IMPORTED_LOCATION "${_OPENEXRCORE_PREFIX}/lib/libOpenEXRCore-3_4.so"
+      IMPORTED_LOCATION "${_OPENEXRCORE_PREFIX}/lib/libOpenEXRCore-3_5.so"
     )
   endif()
 endif()
