@@ -177,10 +177,10 @@ outputs:
             cmake --build %SRC_DIR%\..\build-python --target install --config Release
             if errorlevel 1 exit /b 1
 
-            if exist "%LIBRARY_PREFIX%\python\OpenEXR" (
+            if exist "%LIBRARY_PREFIX%\Lib\site-packages" (
               if not exist "%SP_DIR%" mkdir "%SP_DIR%"
-              move "%LIBRARY_PREFIX%\python\OpenEXR\*" "%SP_DIR%"
-              rmdir /S /Q "%LIBRARY_PREFIX%\python"
+              move "%LIBRARY_PREFIX%\Lib\site-packages\OpenEXR*.pyd" "%SP_DIR%"
+              move "%LIBRARY_PREFIX%\Lib\site-packages\Imath.py" "%SP_DIR%"
             )
     requirements:
       build:
