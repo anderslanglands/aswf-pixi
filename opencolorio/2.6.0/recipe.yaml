@@ -227,6 +227,8 @@ outputs:
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build-python
 
+            set "CXXFLAGS=%CXXFLAGS% /bigobj"
+
             cmake %CMAKE_ARGS% ^
               -GNinja ^
               -DCMAKE_BUILD_TYPE=Release ^
@@ -251,6 +253,7 @@ outputs:
               -S .
 
             cmake --build %SRC_DIR%\..\build-python --target install --config Release
+            if errorlevel 1 exit /b 1
 
             if exist "%LIBRARY_PREFIX%\lib\site-packages\PyOpenColorIO" (
               if not exist "%SP_DIR%" mkdir "%SP_DIR%"
