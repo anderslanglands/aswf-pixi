@@ -301,6 +301,7 @@ OpenImageIO provides image file I/O libraries, command-line tools, texture utili
 Recipe versions:
 - `26.05`
 - `26.08`
+- `26.11.1`
 
 OpenUSD provides Pixar Universal Scene Description libraries, schemas, tools, Python modules, and imaging integrations.
 
