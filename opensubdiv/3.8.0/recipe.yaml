@@ -1,0 +1,950 @@
+context:
+  version: "3.8.0"
+  tag: v3_8_0
+  build_number: 0
+  cuda_version: "12.9"
+
+recipe:
+  name: opensubdiv
+  version: ${{ version }}
+
+source:
+  url: https://github.com/PixarAnimationStudios/OpenSubdiv/archive/refs/tags/${{ tag }}.tar.gz
+  sha256: e5eab30a97c7cce6b5a9905ae488981759c3d86cbce01d58a6c75e1fd9857a2b
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: opensubdiv-build
+    build:
+      script:
+        - if: unix
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DNO_EXAMPLES=ON \
+              -DNO_TUTORIALS=ON \
+              -DNO_REGRESSION=ON \
+              -DNO_TESTS=ON \
+              -DNO_GLTESTS=ON \
+              -DNO_PTEX=ON \
+              -DNO_DOC=ON \
+              -DNO_OMP=ON \
+              -DNO_TBB=ON \
+              -DNO_CUDA=ON \
+              -DNO_OPENCL=ON \
+              -DNO_CLEW=ON \
+              -DNO_OPENGL=ON \
+              -DNO_METAL=ON \
+              -DNO_DX=ON \
+              -DNO_GLEW=ON \
+              -DNO_GLFW=ON \
+              -DNO_GLFW_X11=ON \
+              -DNO_MACOS_FRAMEWORK=ON \
+              -B $SRC_DIR/../build \
+              -S .
+
+            cmake --build $SRC_DIR/../build --target install
+          else: |
+            cmake -E rm -rf %SRC_DIR%\..\build
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DNO_EXAMPLES=ON ^
+              -DNO_TUTORIALS=ON ^
+              -DNO_REGRESSION=ON ^
+              -DNO_TESTS=ON ^
+              -DNO_GLTESTS=ON ^
+              -DNO_PTEX=ON ^
+              -DNO_DOC=ON ^
+              -DNO_OMP=ON ^
+              -DNO_TBB=ON ^
+              -DNO_CUDA=ON ^
+              -DNO_OPENCL=ON ^
+              -DNO_CLEW=ON ^
+              -DNO_OPENGL=ON ^
+              -DNO_METAL=ON ^
+              -DNO_DX=ON ^
+              -DNO_GLEW=ON ^
+              -DNO_GLFW=ON ^
+              -DNO_GLFW_X11=ON ^
+              -DNO_MACOS_FRAMEWORK=ON ^
+              -B %SRC_DIR%\..\build ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build --target install --config Release
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
+        - cmake
+        - ninja
+
+  - staging:
+      name: opensubdiv-gpu-build
+    build:
+      script:
+        - if: linux
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-gpu
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DNO_EXAMPLES=ON \
+              -DNO_TUTORIALS=ON \
+              -DNO_REGRESSION=ON \
+              -DNO_TESTS=ON \
+              -DNO_GLTESTS=ON \
+              -DNO_PTEX=ON \
+              -DNO_DOC=ON \
+              -DNO_OMP=ON \
+              -DNO_TBB=OFF \
+              -DNO_CUDA=ON \
+              -DNO_OPENCL=ON \
+              -DNO_CLEW=ON \
+              -DNO_OPENGL=OFF \
+              -DNO_METAL=ON \
+              -DNO_DX=ON \
+              -DNO_GLEW=OFF \
+              -DNO_GLFW=OFF \
+              -DNO_GLFW_X11=OFF \
+              -DNO_MACOS_FRAMEWORK=ON \
+              -DTBB_ROOT=$PREFIX \
+              -DGLEW_LOCATION=$PREFIX \
+              -DGLFW_LOCATION=$PREFIX \
+              -B $SRC_DIR/../build-gpu \
+              -S .
+
+            cmake --build $SRC_DIR/../build-gpu --target install
+            cmake \
+              -DOPENSD_CONFIG=$PREFIX/lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake \
+              -DOPENSD_FIND_DEPENDENCIES="TBB CONFIG REQUIRED;OpenGL REQUIRED" \
+              -DOPENSD_TARGET_DEFINITIONS="OPENSUBDIV_HAS_TBB;OPENSUBDIV_HAS_OPENGL" \
+              -P "$recipe_dir/cmake/patch-opensubdiv-config.cmake"
+        - if: osx
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-gpu
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DNO_EXAMPLES=ON \
+              -DNO_TUTORIALS=ON \
+              -DNO_REGRESSION=ON \
+              -DNO_TESTS=ON \
+              -DNO_GLTESTS=ON \
+              -DNO_PTEX=ON \
+              -DNO_DOC=ON \
+              -DNO_OMP=ON \
+              -DNO_TBB=OFF \
+              -DNO_CUDA=ON \
+              -DNO_OPENCL=ON \
+              -DNO_CLEW=ON \
+              -DNO_OPENGL=OFF \
+              -DNO_METAL=OFF \
+              -DNO_DX=ON \
+              -DNO_GLEW=OFF \
+              -DNO_GLFW=OFF \
+              -DNO_GLFW_X11=OFF \
+              -DNO_MACOS_FRAMEWORK=ON \
+              -DTBB_ROOT=$PREFIX \
+              -DGLEW_LOCATION=$PREFIX \
+              -DGLFW_LOCATION=$PREFIX \
+              -B $SRC_DIR/../build-gpu \
+              -S .
+
+            cmake --build $SRC_DIR/../build-gpu --target install
+            cmake \
+              -DOPENSD_CONFIG=$PREFIX/lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake \
+              -DOPENSD_FIND_DEPENDENCIES="TBB CONFIG REQUIRED;OpenGL REQUIRED" \
+              -DOPENSD_TARGET_DEFINITIONS="OPENSUBDIV_HAS_TBB;OPENSUBDIV_HAS_OPENGL;OPENSUBDIV_HAS_METAL" \
+              -P "$recipe_dir/cmake/patch-opensubdiv-config.cmake"
+        - if: win
+          then: |
+            cmake -E rm -rf %SRC_DIR%\..\build-gpu
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DNO_EXAMPLES=ON ^
+              -DNO_TUTORIALS=ON ^
+              -DNO_REGRESSION=ON ^
+              -DNO_TESTS=ON ^
+              -DNO_GLTESTS=ON ^
+              -DNO_PTEX=ON ^
+              -DNO_DOC=ON ^
+              -DNO_OMP=ON ^
+              -DNO_TBB=OFF ^
+              -DNO_CUDA=ON ^
+              -DNO_OPENCL=ON ^
+              -DNO_CLEW=ON ^
+              -DNO_OPENGL=OFF ^
+              -DNO_METAL=ON ^
+              -DNO_DX=ON ^
+              -DNO_GLEW=OFF ^
+              -DNO_GLFW=OFF ^
+              -DNO_GLFW_X11=ON ^
+              -DNO_MACOS_FRAMEWORK=ON ^
+              -DTBB_ROOT=%LIBRARY_PREFIX% ^
+              -DGLEW_LOCATION=%LIBRARY_PREFIX% ^
+              -DGLFW_LOCATION=%LIBRARY_PREFIX% ^
+              -B %SRC_DIR%\..\build-gpu ^
+              -S .
+
+            cmake --build %SRC_DIR%\..\build-gpu --target install --config Release
+            cmake ^
+              -DOPENSD_CONFIG="%LIBRARY_LIB%\cmake\OpenSubdiv\OpenSubdivConfig.cmake" ^
+              -DOPENSD_FIND_DEPENDENCIES="TBB CONFIG REQUIRED;OpenGL REQUIRED" ^
+              -DOPENSD_TARGET_DEFINITIONS="OPENSUBDIV_HAS_TBB;OPENSUBDIV_HAS_OPENGL" ^
+              -P "%RECIPE_DIR_VAR%\cmake\patch-opensubdiv-config.cmake"
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
+        - cmake
+        - ninja
+        - if: linux
+          then:
+            - gcc_linux-64 <15
+            - gxx_linux-64 <15
+      host:
+        - tbb-devel >=2022.3,<2023
+        - glew
+        - glfw
+        - if: linux
+          then:
+            - libegl-devel
+            - libgl-devel
+            - xorg-libx11
+            - xorg-libxcursor
+            - xorg-libxext
+            - xorg-libxi
+            - xorg-libxinerama
+            - xorg-libxrandr
+            - xorg-libxxf86vm
+            - xorg-xorgproto
+
+  - staging:
+      name: opensubdiv-cuda-build
+    build:
+      script:
+        - if: linux
+          then: |
+            cmake -E rm -rf $SRC_DIR/../build-cuda
+            export PATH="$PREFIX/nvvm/bin:$PATH"
+            recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
+            if [ -z "$recipe_dir" ]; then
+              echo "RECIPE_DIR is not set" >&2
+              exit 1
+            fi
+            cuda_toolkit_root_dir="$PREFIX"
+            cuda_toolkit_include="$PREFIX/include"
+            cuda_include_dirs="$PREFIX/include"
+            if [ -d "$PREFIX/targets/x86_64-linux/include" ]; then
+              cuda_toolkit_root_dir="$PREFIX/targets/x86_64-linux"
+              cuda_toolkit_include="$cuda_toolkit_root_dir/include"
+              cuda_include_dirs="$cuda_toolkit_include;$cuda_include_dirs"
+            fi
+            cuda_cudart_library="$PREFIX/lib/libcudart.so"
+            if [ -f "$PREFIX/targets/x86_64-linux/lib/libcudart.so" ]; then
+              cuda_cudart_library="$PREFIX/targets/x86_64-linux/lib/libcudart.so"
+            fi
+            cuda_nvcc="$PREFIX/bin/nvcc"
+
+            cmake $CMAKE_ARGS \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$PREFIX \
+              -DCMAKE_INSTALL_LIBDIR=lib \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON \
+              -DBUILD_SHARED_LIBS=ON \
+              -DNO_EXAMPLES=ON \
+              -DNO_TUTORIALS=ON \
+              -DNO_REGRESSION=ON \
+              -DNO_TESTS=ON \
+              -DNO_GLTESTS=ON \
+              -DNO_PTEX=ON \
+              -DNO_DOC=ON \
+              -DNO_OMP=ON \
+              -DNO_TBB=OFF \
+              -DNO_CUDA=OFF \
+              -DNO_OPENCL=ON \
+              -DNO_CLEW=ON \
+              -DNO_OPENGL=OFF \
+              -DNO_METAL=ON \
+              -DNO_DX=ON \
+              -DNO_GLEW=OFF \
+              -DNO_GLFW=OFF \
+              -DNO_GLFW_X11=OFF \
+              -DNO_MACOS_FRAMEWORK=ON \
+              -DTBB_ROOT=$PREFIX \
+              -DGLEW_LOCATION=$PREFIX \
+              -DGLFW_LOCATION=$PREFIX \
+              -DCUDA_TOOLKIT_ROOT_DIR="$cuda_toolkit_root_dir" \
+              -DCUDA_TOOLKIT_INCLUDE="$cuda_toolkit_include" \
+              -DCUDA_INCLUDE_DIRS="$cuda_include_dirs" \
+              -DCUDA_CUDART_LIBRARY="$cuda_cudart_library" \
+              -DCUDA_NVCC_EXECUTABLE="$cuda_nvcc" \
+              -DOSD_CUDA_NVCC_FLAGS=--gpu-architecture=sm_60 \
+              -B $SRC_DIR/../build-cuda \
+              -S .
+
+            if ! grep -q '^CUDA_TOOLKIT_INCLUDE:PATH=' "$SRC_DIR/../build-cuda/CMakeCache.txt" || \
+               grep -q '^CUDA_TOOLKIT_INCLUDE:PATH=.*-NOTFOUND' "$SRC_DIR/../build-cuda/CMakeCache.txt" || \
+               grep -q '^CUDA_NVCC_EXECUTABLE:FILEPATH=.*-NOTFOUND' "$SRC_DIR/../build-cuda/CMakeCache.txt"; then
+              echo "OpenSubdiv CMake did not find a usable CUDA toolkit" >&2
+              grep '^CUDA_' "$SRC_DIR/../build-cuda/CMakeCache.txt" >&2 || true
+              exit 1
+            fi
+
+            cmake --build $SRC_DIR/../build-cuda --target install
+            test -f "$PREFIX/include/opensubdiv/osd/cudaEvaluator.h"
+            test -f "$PREFIX/include/opensubdiv/osd/cudaVertexBuffer.h"
+            cmake \
+              -DOPENSD_CONFIG=$PREFIX/lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake \
+              -DOPENSD_FIND_DEPENDENCIES="TBB CONFIG REQUIRED;OpenGL REQUIRED;Threads REQUIRED" \
+              -DOPENSD_TARGET_DEFINITIONS="OPENSUBDIV_HAS_TBB;OPENSUBDIV_HAS_OPENGL;OPENSUBDIV_HAS_CUDA" \
+              -P "$recipe_dir/cmake/patch-opensubdiv-config.cmake"
+        - if: win
+          then: |
+            cmake -E rm -rf %SRC_DIR%\..\build-cuda
+            set "RECIPE_DIR_VAR=%RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" set "RECIPE_DIR_VAR=%RATTLER_BUILD_RECIPE_DIR%"
+            if "%RECIPE_DIR_VAR%"=="" (
+              echo RECIPE_DIR is not set
+              exit /b 1
+            )
+            set "LIBRARY_PREFIX_FWD=%LIBRARY_PREFIX:\=/%"
+            set "CUDA_TOOLKIT_TARGET_DIR=%LIBRARY_PREFIX_FWD%"
+            set "CUDA_TOOLKIT_INCLUDE=%LIBRARY_PREFIX_FWD%/include"
+            if exist "%LIBRARY_INC%\targets\x64\device_functions.h" (
+              set "CUDA_TOOLKIT_INCLUDE=%LIBRARY_PREFIX_FWD%/include/targets/x64"
+            )
+            set "CUDA_INCLUDE_DIRS=%LIBRARY_PREFIX_FWD%/include;%LIBRARY_PREFIX_FWD%/include/targets/x64;%LIBRARY_PREFIX_FWD%/include/targets/x64/cccl"
+            set "CUDA_CUDART_LIBRARY=%LIBRARY_PREFIX_FWD%/lib/cudart.lib"
+            set "CUDA_NVCC=%LIBRARY_BIN%\nvcc.exe"
+            if not exist "%CUDA_NVCC%" set "CUDA_NVCC=%PREFIX%\bin\nvcc.exe"
+            set "CUDA_NVCC_FWD=%CUDA_NVCC:\=/%"
+
+            cmake %CMAKE_ARGS% ^
+              -GNinja ^
+              -DCMAKE_BUILD_TYPE=Release ^
+              -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
+              -DCMAKE_INSTALL_LIBDIR=lib ^
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
+              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON ^
+              -DBUILD_SHARED_LIBS=ON ^
+              -DNO_EXAMPLES=ON ^
+              -DNO_TUTORIALS=ON ^
+              -DNO_REGRESSION=ON ^
+              -DNO_TESTS=ON ^
+              -DNO_GLTESTS=ON ^
+              -DNO_PTEX=ON ^
+              -DNO_DOC=ON ^
+              -DNO_OMP=ON ^
+              -DNO_TBB=OFF ^
+              -DNO_CUDA=OFF ^
+              -DNO_OPENCL=ON ^
+              -DNO_CLEW=ON ^
+              -DNO_OPENGL=OFF ^
+              -DNO_METAL=ON ^
+              -DNO_DX=ON ^
+              -DNO_GLEW=OFF ^
+              -DNO_GLFW=OFF ^
+              -DNO_GLFW_X11=ON ^
+              -DNO_MACOS_FRAMEWORK=ON ^
+              -DTBB_ROOT=%LIBRARY_PREFIX% ^
+              -DGLEW_LOCATION=%LIBRARY_PREFIX% ^
+              -DGLFW_LOCATION=%LIBRARY_PREFIX% ^
+              -DCUDA_TOOLKIT_ROOT_DIR=%LIBRARY_PREFIX_FWD% ^
+              -DCUDA_TOOLKIT_TARGET_DIR="%CUDA_TOOLKIT_TARGET_DIR%" ^
+              -DCUDA_TOOLKIT_INCLUDE="%CUDA_TOOLKIT_INCLUDE%" ^
+              -DCUDA_INCLUDE_DIRS="%CUDA_INCLUDE_DIRS%" ^
+              -DCUDA_CUDART_LIBRARY="%CUDA_CUDART_LIBRARY%" ^
+              -DCUDA_NVCC_EXECUTABLE="%CUDA_NVCC_FWD%" ^
+              -DOSD_CUDA_NVCC_FLAGS=--gpu-architecture=sm_60 ^
+              -B %SRC_DIR%\..\build-cuda ^
+              -S .
+
+            findstr /B /C:"CUDA_TOOLKIT_INCLUDE:PATH=" "%SRC_DIR%\..\build-cuda\CMakeCache.txt" >NUL
+            if errorlevel 1 (
+              echo OpenSubdiv CMake did not find a CUDA include directory
+              findstr /B /C:"CUDA_" "%SRC_DIR%\..\build-cuda\CMakeCache.txt"
+              exit /b 1
+            )
+            findstr /C:"CUDA_TOOLKIT_INCLUDE:PATH=CUDA_TOOLKIT_INCLUDE-NOTFOUND" "%SRC_DIR%\..\build-cuda\CMakeCache.txt" >NUL
+            if not errorlevel 1 (
+              echo OpenSubdiv CMake did not find a usable CUDA toolkit
+              findstr /B /C:"CUDA_" "%SRC_DIR%\..\build-cuda\CMakeCache.txt"
+              exit /b 1
+            )
+            findstr /C:"CUDA_NVCC_EXECUTABLE:FILEPATH=CUDA_NVCC_EXECUTABLE-NOTFOUND" "%SRC_DIR%\..\build-cuda\CMakeCache.txt" >NUL
+            if not errorlevel 1 (
+              echo OpenSubdiv CMake did not find nvcc
+              findstr /B /C:"CUDA_" "%SRC_DIR%\..\build-cuda\CMakeCache.txt"
+              exit /b 1
+            )
+
+            cmake --build %SRC_DIR%\..\build-cuda --target install --config Release
+            if not exist "%LIBRARY_INC%\opensubdiv\osd\cudaEvaluator.h" exit /b 1
+            if not exist "%LIBRARY_INC%\opensubdiv\osd\cudaVertexBuffer.h" exit /b 1
+            cmake ^
+              -DOPENSD_CONFIG="%LIBRARY_LIB%\cmake\OpenSubdiv\OpenSubdivConfig.cmake" ^
+              -DOPENSD_FIND_DEPENDENCIES="TBB CONFIG REQUIRED;OpenGL REQUIRED;Threads REQUIRED" ^
+              -DOPENSD_TARGET_DEFINITIONS="OPENSUBDIV_HAS_TBB;OPENSUBDIV_HAS_OPENGL;OPENSUBDIV_HAS_CUDA" ^
+              -P "%RECIPE_DIR_VAR%\cmake\patch-opensubdiv-config.cmake"
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
+        - cmake
+        - ninja
+        - if: linux
+          then:
+            - gcc_linux-64 <15
+            - gxx_linux-64 <15
+      host:
+        - cuda-version ${{ cuda_version }}.*
+        - cuda-cudart-dev
+        - if: linux
+          then:
+            - cuda-nvcc
+        - if: win
+          then:
+            - cuda-nvcc_win-64
+        - tbb-devel >=2022.3,<2023
+        - glew
+        - glfw
+        - if: linux
+          then:
+            - libegl-devel
+            - libgl-devel
+            - xorg-libx11
+            - xorg-libxcursor
+            - xorg-libxext
+            - xorg-libxi
+            - xorg-libxinerama
+            - xorg-libxrandr
+            - xorg-libxxf86vm
+            - xorg-xorgproto
+
+  - package:
+      name: opensubdiv-lib
+    inherit: opensubdiv-build
+    build:
+      files:
+        - lib/libosdCPU.so*
+        - lib/libosdCPU*.dylib*
+        - Library/lib/osdCPU*.lib
+    requirements:
+      run_constraints:
+        - opensubdiv-gpu-lib <0a0
+        - opensubdiv-cuda-lib <0a0
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('opensubdiv-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/opensubdiv/version.h
+              - lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake
+              - lib/libosdCPU.a
+              - lib/libosdGPU.so
+              - lib/libosdGPU.dylib
+              - Library/include/opensubdiv/version.h
+              - Library/lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake
+              - Library/lib/osdGPU.lib
+      - script:
+          - if: linux
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libosdCPU.so*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: osx
+            then:
+              - python -c "import ctypes, glob, os; paths = glob.glob(os.path.join(os.environ['PREFIX'], 'lib', 'libosdCPU*.dylib*')); assert paths; ctypes.CDLL(paths[0])"
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\osdCPU.lib" exit /b 1
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: opensubdiv-dev
+    inherit: opensubdiv-build
+    build:
+      files:
+        - include/opensubdiv/**
+        - lib/cmake/OpenSubdiv/**
+        - lib/libosdCPU.a
+        - Library/include/opensubdiv/**
+        - Library/lib/cmake/OpenSubdiv/**
+    requirements:
+      run:
+        - ${{ pin_subpackage('opensubdiv-lib', exact=True) }}
+      run_constraints:
+        - opensubdiv-gpu-dev <0a0
+        - opensubdiv-cuda-dev <0a0
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('opensubdiv-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - opensubdiv/version.h
+            - opensubdiv/osd/cpuEvaluator.h
+          files:
+            not_exists:
+              - include/opensubdiv/osd/cudaEvaluator.h
+              - include/opensubdiv/osd/mtlComputeEvaluator.h
+              - include/opensubdiv/osd/glComputeEvaluator.h
+              - Library/include/opensubdiv/osd/cudaEvaluator.h
+              - Library/include/opensubdiv/osd/mtlComputeEvaluator.h
+              - Library/include/opensubdiv/osd/glComputeEvaluator.h
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake"
+              - test -f "$PREFIX/lib/cmake/OpenSubdiv/OpenSubdivConfigVersion.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENSUBDIV_CONSUMER_EXPECT_CPU_ONLY=ON
+              - cmake --build build
+              - ctest --test-dir build --output-on-failure
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OpenSubdiv\OpenSubdivConfig.cmake" exit /b 1
+              - if not exist "%LIBRARY_LIB%\cmake\OpenSubdiv\OpenSubdivConfigVersion.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENSUBDIV_CONSUMER_EXPECT_CPU_ONLY=ON
+              - cmake --build build --config Release
+              - ctest --test-dir build --output-on-failure
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/opensubdiv_consumer.cpp
+            - tests/opensubdiv_metal_consumer.mm
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: opensubdiv
+    requirements:
+      run:
+        - ${{ pin_subpackage('opensubdiv-lib', exact=True) }}
+        - ${{ pin_subpackage('opensubdiv-dev', exact=True) }}
+      run_constraints:
+        - opensubdiv-gpu <0a0
+        - opensubdiv-cuda <0a0
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('opensubdiv-lib', upper_bound='x.x') }}
+    tests:
+      - script:
+          - if: unix
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENSUBDIV_CONSUMER_EXPECT_CPU_ONLY=ON
+              - cmake --build build
+              - ctest --test-dir build --output-on-failure
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OpenSubdiv\OpenSubdivConfig.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENSUBDIV_CONSUMER_EXPECT_CPU_ONLY=ON
+              - cmake --build build --config Release
+              - ctest --test-dir build --output-on-failure
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/opensubdiv_consumer.cpp
+            - tests/opensubdiv_metal_consumer.mm
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: opensubdiv-gpu-lib
+    inherit: opensubdiv-gpu-build
+    build:
+      files:
+        - lib/libosdCPU.so*
+        - lib/libosdGPU.so*
+        - lib/libosdCPU*.dylib*
+        - lib/libosdGPU*.dylib*
+        - Library/lib/osdCPU*.lib
+        - Library/lib/osdGPU*.lib
+    requirements:
+      run:
+        - tbb >=2022.3,<2023
+      run_constraints:
+        - opensubdiv-lib <0a0
+        - opensubdiv-cuda-lib <0a0
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('opensubdiv-gpu-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/opensubdiv/version.h
+              - lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake
+              - lib/libosdCPU.a
+              - lib/libosdGPU.a
+      - script:
+          - if: linux
+            then:
+              - test -e "$PREFIX/lib/libosdGPU.so"
+              - python -c "import ctypes, glob, os; lib = os.path.join(os.environ['PREFIX'], 'lib'); [ctypes.CDLL(glob.glob(os.path.join(lib, pattern))[0]) for pattern in ('libosdCPU.so*', 'libosdGPU.so*')]"
+          - if: osx
+            then:
+              - test -e "$PREFIX/lib/libosdGPU.dylib"
+              - python -c "import ctypes, glob, os; lib = os.path.join(os.environ['PREFIX'], 'lib'); [ctypes.CDLL(glob.glob(os.path.join(lib, pattern))[0]) for pattern in ('libosdCPU*.dylib*', 'libosdGPU*.dylib*')]"
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\osdGPU.lib" exit /b 1
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: opensubdiv-gpu-dev
+    inherit: opensubdiv-gpu-build
+    build:
+      files:
+        - include/opensubdiv/**
+        - lib/cmake/OpenSubdiv/**
+        - lib/libosdCPU.a
+        - lib/libosdGPU.a
+        - Library/include/opensubdiv/**
+        - Library/lib/cmake/OpenSubdiv/**
+    requirements:
+      run:
+        - ${{ pin_subpackage('opensubdiv-gpu-lib', exact=True) }}
+        - tbb-devel >=2022.3,<2023
+        - if: linux
+          then:
+            - libgl-devel
+        - if: win
+          then:
+            - glew
+            - glfw
+      run_constraints:
+        - opensubdiv-dev <0a0
+        - opensubdiv-cuda-dev <0a0
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('opensubdiv-gpu-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - opensubdiv/version.h
+            - opensubdiv/osd/cpuEvaluator.h
+            - opensubdiv/osd/glComputeEvaluator.h
+            - opensubdiv/osd/glVertexBuffer.h
+          files:
+            not_exists:
+              - include/opensubdiv/osd/cudaEvaluator.h
+              - Library/include/opensubdiv/osd/cudaEvaluator.h
+      - script:
+          - if: linux
+            then:
+              - test ! -f "$PREFIX/include/opensubdiv/osd/cudaEvaluator.h"
+              - test ! -f "$PREFIX/include/opensubdiv/osd/mtlComputeEvaluator.h"
+              - test -f "$PREFIX/lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON -DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON -DOPENSUBDIV_CONSUMER_REQUIRE_TBB=ON -DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON -DOPENSUBDIV_CONSUMER_FORBID_METAL=ON
+              - cmake --build build
+              - ctest --test-dir build --output-on-failure
+          - if: osx
+            then:
+              - test -f "$PREFIX/include/opensubdiv/osd/mtlComputeEvaluator.h"
+              - test ! -f "$PREFIX/include/opensubdiv/osd/cudaEvaluator.h"
+              - test -f "$PREFIX/lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON -DOPENSUBDIV_CONSUMER_REQUIRE_METAL=ON -DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON
+              - cmake --build build
+              - ctest --test-dir build --output-on-failure
+          - if: win
+            then:
+              - if exist "%LIBRARY_INC%\opensubdiv\osd\cudaEvaluator.h" exit /b 1
+              - if not exist "%LIBRARY_LIB%\cmake\OpenSubdiv\OpenSubdivConfig.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON -DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON -DOPENSUBDIV_CONSUMER_REQUIRE_TBB=ON -DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON -DOPENSUBDIV_CONSUMER_FORBID_METAL=ON
+              - cmake --build build --config Release
+              - ctest --test-dir build --output-on-failure
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/opensubdiv_consumer.cpp
+            - tests/opensubdiv_metal_consumer.mm
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: opensubdiv-gpu
+    requirements:
+      run:
+        - ${{ pin_subpackage('opensubdiv-gpu-lib', exact=True) }}
+        - ${{ pin_subpackage('opensubdiv-gpu-dev', exact=True) }}
+      run_constraints:
+        - opensubdiv <0a0
+        - opensubdiv-cuda <0a0
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('opensubdiv-gpu-lib', upper_bound='x.x') }}
+    tests:
+      - script:
+          - if: linux
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON -DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON -DOPENSUBDIV_CONSUMER_REQUIRE_TBB=ON -DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON -DOPENSUBDIV_CONSUMER_FORBID_METAL=ON
+              - cmake --build build
+              - ctest --test-dir build --output-on-failure
+          - if: osx
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON -DOPENSUBDIV_CONSUMER_REQUIRE_METAL=ON -DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON
+              - cmake --build build
+              - ctest --test-dir build --output-on-failure
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OpenSubdiv\OpenSubdivConfig.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON -DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON -DOPENSUBDIV_CONSUMER_REQUIRE_TBB=ON -DOPENSUBDIV_CONSUMER_FORBID_CUDA=ON -DOPENSUBDIV_CONSUMER_FORBID_METAL=ON
+              - cmake --build build --config Release
+              - ctest --test-dir build --output-on-failure
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/opensubdiv_consumer.cpp
+            - tests/opensubdiv_metal_consumer.mm
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: opensubdiv-cuda-lib
+    inherit: opensubdiv-cuda-build
+    build:
+      skip:
+        - osx
+      files:
+        - lib/libosdCPU.so*
+        - lib/libosdGPU.so*
+        - Library/lib/osdCPU*.lib
+        - Library/lib/osdGPU*.lib
+    requirements:
+      run:
+        - cuda-version ${{ cuda_version }}.*
+        - cuda-cudart
+        - tbb >=2022.3,<2023
+      run_constraints:
+        - opensubdiv-lib <0a0
+        - opensubdiv-gpu-lib <0a0
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('opensubdiv-cuda-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          files:
+            not_exists:
+              - include/opensubdiv/version.h
+              - lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake
+              - lib/libosdCPU.a
+              - lib/libosdGPU.a
+              - Library/include/opensubdiv/version.h
+              - Library/lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake
+      - script:
+          - if: linux
+            then:
+              - test -e "$PREFIX/lib/libosdGPU.so"
+              - python -c "import ctypes, glob, os; lib = os.path.join(os.environ['PREFIX'], 'lib'); [ctypes.CDLL(glob.glob(os.path.join(lib, pattern))[0]) for pattern in ('libosdCPU.so*', 'libosdGPU.so*')]"
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\osdGPU.lib" exit /b 1
+        requirements:
+          run:
+            - python
+
+  - package:
+      name: opensubdiv-cuda-dev
+    inherit: opensubdiv-cuda-build
+    build:
+      skip:
+        - osx
+      files:
+        - include/opensubdiv/**
+        - lib/cmake/OpenSubdiv/**
+        - lib/libosdCPU.a
+        - lib/libosdGPU.a
+        - Library/include/opensubdiv/**
+        - Library/lib/cmake/OpenSubdiv/**
+    requirements:
+      run:
+        - ${{ pin_subpackage('opensubdiv-cuda-lib', exact=True) }}
+        - cuda-version ${{ cuda_version }}.*
+        - cuda-cudart-dev
+        - tbb-devel >=2022.3,<2023
+        - if: linux
+          then:
+            - libgl-devel
+        - if: win
+          then:
+            - glew
+            - glfw
+      run_constraints:
+        - opensubdiv-dev <0a0
+        - opensubdiv-gpu-dev <0a0
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('opensubdiv-cuda-lib', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          include:
+            - opensubdiv/version.h
+            - opensubdiv/osd/cpuEvaluator.h
+            - opensubdiv/osd/cudaEvaluator.h
+            - opensubdiv/osd/cudaVertexBuffer.h
+            - opensubdiv/osd/glComputeEvaluator.h
+            - opensubdiv/osd/glVertexBuffer.h
+      - script:
+          - if: linux
+            then:
+              - test ! -f "$PREFIX/include/opensubdiv/osd/mtlComputeEvaluator.h"
+              - test -f "$PREFIX/lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON -DOPENSUBDIV_CONSUMER_REQUIRE_CUDA=ON -DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON -DOPENSUBDIV_CONSUMER_REQUIRE_TBB=ON -DOPENSUBDIV_CONSUMER_FORBID_METAL=ON
+              - cmake --build build
+              - ctest --test-dir build --output-on-failure
+          - if: win
+            then:
+              - if not exist "%LIBRARY_INC%\opensubdiv\osd\cudaEvaluator.h" exit /b 1
+              - if not exist "%LIBRARY_LIB%\cmake\OpenSubdiv\OpenSubdivConfig.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON -DOPENSUBDIV_CONSUMER_REQUIRE_CUDA=ON -DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON -DOPENSUBDIV_CONSUMER_REQUIRE_TBB=ON -DOPENSUBDIV_CONSUMER_FORBID_METAL=ON
+              - cmake --build build --config Release
+              - ctest --test-dir build --output-on-failure
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/opensubdiv_consumer.cpp
+            - tests/opensubdiv_metal_consumer.mm
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
+            - cmake
+            - ninja
+
+  - package:
+      name: opensubdiv-cuda
+    build:
+      skip:
+        - osx
+    requirements:
+      run:
+        - ${{ pin_subpackage('opensubdiv-cuda-lib', exact=True) }}
+        - ${{ pin_subpackage('opensubdiv-cuda-dev', exact=True) }}
+      run_constraints:
+        - opensubdiv <0a0
+        - opensubdiv-gpu <0a0
+      run_exports:
+        weak:
+          - ${{ pin_subpackage('opensubdiv-cuda-lib', upper_bound='x.x') }}
+    tests:
+      - script:
+          - if: linux
+            then:
+              - test -f "$PREFIX/lib/cmake/OpenSubdiv/OpenSubdivConfig.cmake"
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX" -DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON -DOPENSUBDIV_CONSUMER_REQUIRE_CUDA=ON -DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON -DOPENSUBDIV_CONSUMER_REQUIRE_TBB=ON -DOPENSUBDIV_CONSUMER_FORBID_METAL=ON
+              - cmake --build build
+              - ctest --test-dir build --output-on-failure
+          - if: win
+            then:
+              - if not exist "%LIBRARY_LIB%\cmake\OpenSubdiv\OpenSubdivConfig.cmake" exit /b 1
+              - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -DOPENSUBDIV_CONSUMER_REQUIRE_GPU=ON -DOPENSUBDIV_CONSUMER_REQUIRE_CUDA=ON -DOPENSUBDIV_CONSUMER_REQUIRE_OPENGL=ON -DOPENSUBDIV_CONSUMER_REQUIRE_TBB=ON -DOPENSUBDIV_CONSUMER_FORBID_METAL=ON
+              - cmake --build build --config Release
+              - ctest --test-dir build --output-on-failure
+        files:
+          recipe:
+            - tests/CMakeLists.txt
+            - tests/opensubdiv_consumer.cpp
+            - tests/opensubdiv_metal_consumer.mm
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - if: linux
+              then: ${{ stdlib('c') }}
+            - cmake
+            - ninja
+
+about:
+  homepage: https://github.com/PixarAnimationStudios/OpenSubdiv
+  repository: https://github.com/PixarAnimationStudios/OpenSubdiv
+  license: LicenseRef-TOSL-1.0
+  license_file: LICENSE.txt
+  summary: Open-source subdivision surface libraries
