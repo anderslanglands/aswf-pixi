@@ -279,6 +279,7 @@ Recipe versions:
 - `3.1.19.0`
 - `3.2.1.1`
 - `3.2.1.2`
+- `3.2.2.0`
 
 OpenImageIO provides image file I/O libraries, command-line tools, texture utilities, and optional format plugins.
 
