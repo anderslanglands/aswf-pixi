@@ -333,6 +333,7 @@ Recipe versions:
 - `1.15.5.0`
 - `1.15.6.0`
 - `1.15.7.0`
+- `1.15.8.0`
 
 OpenShadingLanguage provides a production shading language, compiler, runtime libraries, and OpenImageIO integration.
 
