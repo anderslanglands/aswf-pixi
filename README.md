@@ -210,6 +210,7 @@ OpenQMC provides Quasi-Monte Carlo sampling APIs for rendering and graphics appl
 
 Recipe versions:
 - `3.7.0`
+- `3.8.0`
 
 OpenSubdiv provides subdivision surface evaluation libraries for CPU and GPU workflows.
 
