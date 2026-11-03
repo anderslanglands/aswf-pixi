@@ -313,6 +313,8 @@ Python-enabled OpenUSD packages are built for Python 3.11 through 3.13.
 - `openusd-minimal-python`: Minimal Python-enabled OpenUSD package containing runtime libraries, development files, tools, and `pxr` Python modules in one package. It uses only MaterialX, OpenSubdiv, TBB, and Python/Jinja dependencies and is mutually exclusive with the non-Python minimal split packages.
 - `openusd`: Full Python-enabled OpenUSD package containing runtime libraries, development files, tools, `pxr` Python modules, USD imaging, `usdview`, GUI dependencies, MaterialX render support, and supported plugins. It is mutually exclusive with all `openusd-minimal-*` packages.
 
+OpenUSD 26.11.1 carries a missing <type_traits> include fix for macOS compilation; Python consumer checks expect the 26.11 API version.
+
 ## OpenUSD Typhoon
 
 Recipe versions:

@@ -10,6 +10,7 @@ source:
   url: https://github.com/PixarAnimationStudios/OpenUSD/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 7670896e224ba18cd3cdb7cb58c149eea71af0d83c1120bc7040c1e581c1a559
   patches:
+    - trace-type-traits.patch
     - link-python-to-executables.patch
     - find-prefix-python-in-config.patch
 
@@ -1154,7 +1155,7 @@ outputs:
               - test -d "$SP_DIR/pxr"
               - test ! -d "$PREFIX/lib/python/pxr"
               - test -f "$PREFIX/etc/conda/activate.d/openusd-minimal-python.sh"
-              - PYTHONPATH= python -c "import os, pathlib, pxr; from pxr import Tf, Usd, UsdMtlx; root = pathlib.Path(os.environ['SP_DIR']).resolve(); location = pathlib.Path(pxr.__file__).resolve(); assert location.is_relative_to(root), (location, root); assert Usd.GetVersion()[1:] == (26, 8)"
+              - PYTHONPATH= python -c "import os, pathlib, pxr; from pxr import Tf, Usd, UsdMtlx; root = pathlib.Path(os.environ['SP_DIR']).resolve(); location = pathlib.Path(pxr.__file__).resolve(); assert location.is_relative_to(root), (location, root); assert Usd.GetVersion()[1:] == (26, 11)"
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/openusd_consumer
@@ -1167,7 +1168,7 @@ outputs:
               - if exist "%LIBRARY_LIB%\python\pxr" exit /b 1
               - if exist "%LIBRARY_LIB%\site-packages\pxr" exit /b 1
               - if not exist "%PREFIX%\etc\conda\activate.d\openusd-minimal-python.bat" exit /b 1
-              - set "PYTHONPATH=" && python -c "import os, pathlib, pxr; from pxr import Tf, Usd, UsdMtlx; root = pathlib.Path(os.environ['SP_DIR']).resolve(); location = pathlib.Path(pxr.__file__).resolve(); assert location.is_relative_to(root), (location, root); assert Usd.GetVersion()[1:] == (26, 8)"
+              - set "PYTHONPATH=" && python -c "import os, pathlib, pxr; from pxr import Tf, Usd, UsdMtlx; root = pathlib.Path(os.environ['SP_DIR']).resolve(); location = pathlib.Path(pxr.__file__).resolve(); assert location.is_relative_to(root), (location, root); assert Usd.GetVersion()[1:] == (26, 11)"
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
               - cmake --build build --config Release
               - build\openusd_consumer.exe
@@ -1241,7 +1242,7 @@ outputs:
               - test -d "$SP_DIR/pxr"
               - test ! -d "$PREFIX/lib/python/pxr"
               - test -f "$PREFIX/etc/conda/activate.d/openusd.sh"
-              - PYTHONPATH= python -c "import os, pathlib, pxr; from pxr import Tf, Usd, UsdImagingGL, UsdMtlx; root = pathlib.Path(os.environ['SP_DIR']).resolve(); location = pathlib.Path(pxr.__file__).resolve(); assert location.is_relative_to(root), (location, root); assert Usd.GetVersion()[1:] == (26, 8)"
+              - PYTHONPATH= python -c "import os, pathlib, pxr; from pxr import Tf, Usd, UsdImagingGL, UsdMtlx; root = pathlib.Path(os.environ['SP_DIR']).resolve(); location = pathlib.Path(pxr.__file__).resolve(); assert location.is_relative_to(root), (location, root); assert Usd.GetVersion()[1:] == (26, 11)"
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PREFIX"
               - cmake --build build
               - ./build/openusd_consumer
@@ -1254,7 +1255,7 @@ outputs:
               - if exist "%LIBRARY_LIB%\site-packages\pxr" exit /b 1
               - if not exist "%LIBRARY_BIN%\usdview" if not exist "%LIBRARY_BIN%\usdview.cmd" if not exist "%LIBRARY_BIN%\usdview.exe" exit /b 1
               - if not exist "%PREFIX%\etc\conda\activate.d\openusd.bat" exit /b 1
-              - set "PYTHONPATH=" && python -c "import os, pathlib, pxr; from pxr import Tf, Usd, UsdImagingGL, UsdMtlx; root = pathlib.Path(os.environ['SP_DIR']).resolve(); location = pathlib.Path(pxr.__file__).resolve(); assert location.is_relative_to(root), (location, root); assert Usd.GetVersion()[1:] == (26, 8)"
+              - set "PYTHONPATH=" && python -c "import os, pathlib, pxr; from pxr import Tf, Usd, UsdImagingGL, UsdMtlx; root = pathlib.Path(os.environ['SP_DIR']).resolve(); location = pathlib.Path(pxr.__file__).resolve(); assert location.is_relative_to(root), (location, root); assert Usd.GetVersion()[1:] == (26, 11)"
               - cmake -S tests -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%"
               - cmake --build build --config Release
               - build\openusd_consumer.exe

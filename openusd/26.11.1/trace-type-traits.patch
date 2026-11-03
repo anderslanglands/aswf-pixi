@@ -1,0 +1,10 @@
+--- a/pxr/base/trace/event.h
++++ b/pxr/base/trace/event.h
+@@ -16,6 +16,7 @@
+ 
+ #include "pxr/base/arch/timing.h"
+ 
++#include <type_traits>
+ #include <utility>
+ 
+ PXR_NAMESPACE_OPEN_SCOPE
