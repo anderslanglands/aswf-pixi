@@ -280,3 +280,11 @@ pbrt packaging decisions:
 - Use external `openexr-dev`/`openexr-lib` and zlib where upstream CMake supports them; keep the rest of upstream's required `src/ext` submodules vendored for now.
 
 - Upstream-release generation updates known encoded version checks for OpenEXR, OpenSubdiv, and OpenUSD, plus OpenEXR library suffixes. ABI numbers, dependency compatibility, and upstream API changes still require review; never blindly rewrite unrelated dependency versions.
+
+- OpenEXR 3.5.3 requires external OpenJPH 0.32; configuration fails instead of silently vendoring OpenJPH.
+
+- OpenUSD 26.11.1 carries a missing <type_traits> include fix for macOS compilation; Python consumer checks expect the 26.11 API version.
+
+- OpenImageIO 3.2.2.0 carries a Windows strerror_s portability fix for the optional RAW plugin.
+
+- Shader Slang 2026.20 pins Windows SPIRV-Tools to 2026.3 to match the glslang binary built before the C++ DLL export changes.
