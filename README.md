@@ -124,6 +124,7 @@ OpenColorIO is a color management solution for motion picture production.
 Recipe versions:
 - `13.0.0`
 - `13.1.0`
+- `14.0.0`
 
 OpenVDB provides sparse volumetric data structures, file I/O, and tools. NanoVDB provides compact mostly read-only VDB grids for GPU-friendly and header-only workflows.
 
@@ -137,6 +138,8 @@ OpenVDB provides sparse volumetric data structures, file I/O, and tools. NanoVDB
 - `nanovdb-tools`: Standalone NanoVDB command-line tools, currently `nanovdb_print` and `nanovdb_validate`. Does not depend on OpenVDB.
 - `nanovdb-openvdb-tools`: NanoVDB/OpenVDB bridge tool, currently `nanovdb_convert`. Depends on the matching `openvdb-lib`.
 - `nanovdb`: Default metapackage for standalone NanoVDB consumers. Depends on the matching `nanovdb-dev` and `nanovdb-tools`; OpenVDB conversion is opt-in.
+
+OpenVDB 14.0.0 consumer validation uses the new argument-free File::open API and retains the grid file roundtrip check.
 
 ## MaterialX
 
