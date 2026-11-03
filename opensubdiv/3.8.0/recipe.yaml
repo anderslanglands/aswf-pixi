@@ -11,6 +11,8 @@ recipe:
 source:
   url: https://github.com/PixarAnimationStudios/OpenSubdiv/archive/refs/tags/${{ tag }}.tar.gz
   sha256: e5eab30a97c7cce6b5a9905ae488981759c3d86cbce01d58a6c75e1fd9857a2b
+  patches:
+    - tessellation-cstdlib.patch
 
 build:
   number: ${{ build_number }}
