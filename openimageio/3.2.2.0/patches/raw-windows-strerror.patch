@@ -1,0 +1,14 @@
+--- a/src/raw.imageio/rawinput.cpp
++++ b/src/raw.imageio/rawinput.cpp
+@@ -306,7 +306,11 @@
+         // C style error code, use safe version of strerror
+         const size_t maxbuf = 100;
+         char buf[maxbuf]    = { 0 };
++#ifdef _WIN32
++        if (strerror_s(buf, maxbuf, ret) == 0)
++#else
+         if (strerror_r(ret, buf, maxbuf) == 0)
++#endif
+             msg = std::string(buf);
+     } else if (ret == 0) {
+         msg = "ok";  // 0 means "no error"

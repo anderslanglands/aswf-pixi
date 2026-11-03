@@ -1,0 +1,9 @@
+diff --git a/src/cmake/add_oiio_plugin.cmake b/src/cmake/add_oiio_plugin.cmake
+index fc2b8e3..86a5808 100644
+--- a/src/cmake/add_oiio_plugin.cmake
++++ b/src/cmake/add_oiio_plugin.cmake
+@@ -82,2 +82,2 @@ macro (add_oiio_plugin)
+-            target_link_libraries (${_plugin_NAME} PUBLIC OpenImageIO
+-                                                   PRIVATE ${_plugin_LINK_LIBRARIES})
++            target_link_libraries (${_plugin_NAME}
++                                  PRIVATE OpenImageIO ${_plugin_LINK_LIBRARIES})
