@@ -90,6 +90,7 @@ Recipe versions:
 - `3.4.16`
 - `3.4.17`
 - `3.5.2`
+- `3.5.3`
 
 OpenEXR provides high dynamic-range image file format libraries and tools.
 
@@ -100,6 +101,8 @@ OpenEXR provides high dynamic-range image file format libraries and tools.
 - `openexr-tools`: Command-line tools such as `exrinfo`, `exrheader`, and `exrmakepreview`. Depends on the matching `openexr-lib`.
 - `openexr-python`: Python bindings for OpenEXR, built per Python version, with NumPy support. Depends on the matching `openexr-lib`.
 - `openexr`: Default metapackage for C++ tool consumers. Depends on the matching `openexr-lib`, `openexr-dev`, and `openexr-tools`.
+
+OpenEXR 3.5.3 requires external OpenJPH 0.32; configuration fails instead of silently vendoring OpenJPH.
 
 ## OpenColorIO
 
