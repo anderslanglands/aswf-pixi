@@ -252,6 +252,37 @@ source:
                 "directory=1.2.1 context=1.2.1 directory-task=1-2-1 context-task=1-2-1\n",
             )
 
+    def test_package_metadata_updates_encoded_versions_without_touching_dependencies(self) -> None:
+        cases = [
+            ("openexr", "3.5.3", "recipe.yaml",
+             "- lib/libOpenEXR-3_4*.so*\n- lib/libOpenEXR-3_4*.dylib*\n- Library/bin/OpenEXR-3_4*.dll\n- Library/lib/OpenEXR-3_4*.lib\nctypes.CDLL('libOpenEXR-3_4.so')\n- imath-dev 3.2.*\n- openjph 0.32.*",
+             "- lib/libOpenEXR-3_5*.so*\n- lib/libOpenEXR-3_5*.dylib*\n- Library/bin/OpenEXR-3_5*.dll\n- Library/lib/OpenEXR-3_5*.lib\nctypes.CDLL('libOpenEXR-3_5.so')\n- imath-dev 3.2.*\n- openjph 0.32.*"),
+            ("openexr", "3.5.3", "tests/openexr_core_consumer.c",
+             "return (major == 3 && minor == 4 && patch == 12) ? 0 : 1;",
+             "return (major == 3 && minor == 5 && patch == 3) ? 0 : 1;"),
+            ("openexr", "3.5.3", "cmake/install-openexr-core-metadata.cmake",
+             'set(_api_suffix "-3_4")\nlibOpenEXRCore-3_4.so\nOpenEXRCore-3_4.dll',
+             'set(_api_suffix "-3_5")\nlibOpenEXRCore-3_5.so\nOpenEXRCore-3_5.dll'),
+            ("opensubdiv", "3.8.0", "tests/opensubdiv_consumer.cpp",
+             'static_assert(OPENSUBDIV_VERSION_NUMBER == 30700, "version");',
+             'static_assert(OPENSUBDIV_VERSION_NUMBER == 30800, "version");'),
+            ("openusd", "26.11.1", "recipe.yaml",
+             'assert Usd.GetVersion()[1:] == (26, 8)\n- python 3.13.*\n- imath-dev 3.2.*',
+             'assert Usd.GetVersion()[1:] == (26, 11)\n- python 3.13.*\n- imath-dev 3.2.*'),
+        ]
+        for package, target, name, before, after in cases:
+            with self.subTest(package=package, file=name), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(before)
+                upstream.update_package_version_metadata(root, "unrelated", target)
+                self.assertEqual(path.read_text(), before)
+                upstream.update_package_version_metadata(root, package, target)
+                self.assertEqual(path.read_text(), after)
+                upstream.update_package_version_metadata(root, package, target)
+                self.assertEqual(path.read_text(), after)
+
     def test_tree_replacement_rejects_conflicting_version_and_tag_aliases(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_raw:
             root = Path(tmp_raw)
@@ -289,6 +320,8 @@ source:
 
 about:
   repository: https://github.com/PixarAnimationStudios/OpenUSD
+
+# consumer: assert Usd.GetVersion()[1:] == (26, 5)
 """,
                 encoding="utf-8",
             )
@@ -324,6 +357,7 @@ about:
             new_recipe_file = root / "openusd" / "26.08" / "recipe.yaml"
             new_recipe = new_recipe_file.read_text(encoding="utf-8")
             self.assertIn('version: "26.08"', new_recipe)
+            self.assertIn("Usd.GetVersion()[1:] == (26, 8)", new_recipe)
             self.assertIn("build_number: 0", new_recipe)
             self.assertIn(f"sha256: {'a' * 64}", new_recipe)
             self.assertEqual(

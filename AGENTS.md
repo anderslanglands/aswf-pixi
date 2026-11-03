@@ -278,3 +278,5 @@ pbrt packaging decisions:
 - Disable `PBRT_BUILD_NATIVE_EXECUTABLE` for distributable packages so CI runner CPU flags are not baked into published binaries.
 - Build Linux packages with GLFW's X11 backend only; keep Wayland disabled unless Anders asks for Wayland runtime support.
 - Use external `openexr-dev`/`openexr-lib` and zlib where upstream CMake supports them; keep the rest of upstream's required `src/ext` submodules vendored for now.
+
+- Upstream-release generation updates known encoded version checks for OpenEXR, OpenSubdiv, and OpenUSD, plus OpenEXR library suffixes. ABI numbers, dependency compatibility, and upstream API changes still require review; never blindly rewrite unrelated dependency versions.
