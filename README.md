@@ -298,6 +298,8 @@ OpenImageIO provides image file I/O libraries, command-line tools, texture utili
 - `openimageio-format-openvdb`: OpenVDB input plugin. Depends on the matching OpenVDB runtime package.
 - `openimageio`: Default metapackage for C++ and tool consumers. Depends on the matching `openimageio-lib`, `openimageio-dev`, and `openimageio-tools`; Python bindings and extra format plugins are opt-in.
 
+OpenImageIO 3.2.2.0 carries a Windows strerror_s portability fix for the optional RAW plugin.
+
 ## OpenUSD
 
 Recipe versions:

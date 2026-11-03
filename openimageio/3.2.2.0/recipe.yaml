@@ -10,6 +10,7 @@ source:
   url: https://github.com/AcademySoftwareFoundation/OpenImageIO/releases/download/v${{ version }}/OpenImageIO-${{ version }}.tar.gz
   sha256: 215b467d1e68cb3e54230b30ff1977aaf79531a3c3829dd4c5945ab685590beb
   patches:
+    - patches/raw-windows-strerror.patch
     - patches/cmake-4-private-plugin-linking.patch
 
 build:
