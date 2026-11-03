@@ -298,6 +298,8 @@ OpenImageIO provides image file I/O libraries, command-line tools, texture utili
 
 ## OpenUSD
 
+OpenUSD 26.11.1 carries an explicit `<mutex>` include for the Metal graphics command header.
+
 Recipe versions:
 - `26.05`
 - `26.08`

@@ -10,6 +10,7 @@ source:
   url: https://github.com/PixarAnimationStudios/OpenUSD/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 7670896e224ba18cd3cdb7cb58c149eea71af0d83c1120bc7040c1e581c1a559
   patches:
+    - metal-mutex.patch
     - trace-type-traits.patch
     - link-python-to-executables.patch
     - find-prefix-python-in-config.patch
