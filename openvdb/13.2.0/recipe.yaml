@@ -65,7 +65,7 @@ outputs:
               -B $SRC_DIR/../build \
               -S .
 
-            cmake --build $SRC_DIR/../build --target install
+            cmake --build $SRC_DIR/../build --target install --parallel 2
 
             recipe_dir="${RECIPE_DIR:-${RATTLER_BUILD_RECIPE_DIR:-}}"
             if [ -z "$recipe_dir" ]; then
@@ -197,7 +197,7 @@ outputs:
               -B $SRC_DIR/../build-guitools \
               -S .
 
-            cmake --build $SRC_DIR/../build-guitools --target install
+            cmake --build $SRC_DIR/../build-guitools --target install --parallel 2
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build-guitools
 
@@ -323,7 +323,7 @@ outputs:
               -B $SRC_DIR/../build-python \
               -S .
 
-            cmake --build $SRC_DIR/../build-python --target install
+            cmake --build $SRC_DIR/../build-python --target install --parallel 2
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build-python
 
@@ -443,7 +443,7 @@ outputs:
               -B $SRC_DIR/../build-nanovdb \
               -S .
 
-            cmake --build $SRC_DIR/../build-nanovdb --target install
+            cmake --build $SRC_DIR/../build-nanovdb --target install --parallel 2
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build-nanovdb
 
@@ -561,7 +561,7 @@ outputs:
               -B $SRC_DIR/../build-nanovdb-openvdb \
               -S .
 
-            cmake --build $SRC_DIR/../build-nanovdb-openvdb --target install
+            cmake --build $SRC_DIR/../build-nanovdb-openvdb --target install --parallel 2
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build-nanovdb-openvdb
 

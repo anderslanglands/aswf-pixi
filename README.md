@@ -122,6 +122,8 @@ Recipe versions:
 - `13.1.0`
 - `13.2.0`
 
+OpenVDB 13.2.0 limits Unix builds to two concurrent compiler jobs to reduce memory pressure on hosted runners.
+
 OpenVDB provides sparse volumetric data structures, file I/O, and tools. NanoVDB provides compact mostly read-only VDB grids for GPU-friendly and header-only workflows.
 
 - `openvdb-lib`: Shared OpenVDB runtime library. Depends on Boost, Blosc, TBB, and zlib runtime libraries.
