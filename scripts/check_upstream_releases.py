@@ -429,6 +429,42 @@ def replace_text_in_tree(
             path.write_text(updated, encoding="utf-8")
 
 
+def update_package_version_metadata(root: Path, package: str, version: str) -> None:
+    """Update known encoded versions without rewriting unrelated dependency pins.
+
+    Plain text replacement cannot recognize C integer checks, USD's version
+    tuple, or OpenEXR's library suffix. Keep these adaptations package-scoped.
+    ABI numbers and upstream API changes still require review.
+    """
+    parts = [int(part) for part in version.split(".")]
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or path.suffix not in {".yaml", ".c", ".cpp", ".cmake"}:
+            continue
+        text = path.read_text(encoding="utf-8")
+        updated = text
+        if package == "openexr" and len(parts) == 3:
+            major, minor, patch = parts
+            if path.name == "openexr_core_consumer.c":
+                updated = re.sub(
+                    r"major == \d+ && minor == \d+ && patch == \d+",
+                    f"major == {major} && minor == {minor} && patch == {patch}",
+                    updated,
+                )
+            if path.name in {"recipe.yaml", "install-openexr-core-metadata.cmake"}:
+                updated = re.sub(r"(?<=-)\d+_\d+(?=[.*\"])", f"{major}_{minor}", updated)
+        elif package == "opensubdiv" and len(parts) == 3 and path.name == "opensubdiv_consumer.cpp":
+            encoded = parts[0] * 10000 + parts[1] * 100 + parts[2]
+            updated = re.sub(r"OPENSUBDIV_VERSION_NUMBER == \d+", f"OPENSUBDIV_VERSION_NUMBER == {encoded}", updated)
+        elif package == "openusd" and len(parts) >= 2 and path.name == "recipe.yaml":
+            updated = re.sub(
+                r"Usd\.GetVersion\(\)\[1:\] == \(\d+,\s*\d+\)",
+                f"Usd.GetVersion()[1:] == ({parts[0]}, {parts[1]})",
+                updated,
+            )
+        if updated != text:
+            path.write_text(updated, encoding="utf-8")
+
+
 def render_template_value(recipe_file: Path, template: str, context: dict[str, str]) -> str:
     def replace(match: re.Match[str]) -> str:
         key = match.group(1)
@@ -663,6 +699,7 @@ def create_recipe_copy(
             new_tag=release.tag,
         )
         recipe_file = destination / "recipe.yaml"
+        update_package_version_metadata(destination, source.package, release_version_text)
         source_sha = update_recipe_source(
             recipe_file,
             source,

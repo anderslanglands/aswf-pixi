@@ -385,3 +385,5 @@ pbrt is the physically based rendering system described by the PBRT book.
 
 - `pbrt`: CPU-only command-line application package installing `pbrt`, `imgtool`, `pspec`, `plytool`, and `cyhair2pbrt`.
 - `pbrt-optix`: Linux and Windows CUDA/OptiX application package built with `optix-dev 9.1.*`, CUDA 13.2, `cuda-nvcc`, and a fixed `PBRT_GPU_SHADER_MODEL=sm_75` so package builds do not require probing a local GPU. It installs the same command names as `pbrt` and is mutually exclusive with the CPU-only package.
+
+The upstream-release copier updates encoded OpenEXR/OpenSubdiv/OpenUSD consumer version checks and OpenEXR library suffixes. ABI changes and dependency or API compatibility still require build validation and review.

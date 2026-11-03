@@ -278,3 +278,15 @@ pbrt packaging decisions:
 - Disable `PBRT_BUILD_NATIVE_EXECUTABLE` for distributable packages so CI runner CPU flags are not baked into published binaries.
 - Build Linux packages with GLFW's X11 backend only; keep Wayland disabled unless Anders asks for Wayland runtime support.
 - Use external `openexr-dev`/`openexr-lib` and zlib where upstream CMake supports them; keep the rest of upstream's required `src/ext` submodules vendored for now.
+
+- Upstream-release generation updates known encoded version checks for OpenEXR, OpenSubdiv, and OpenUSD, plus OpenEXR library suffixes. ABI numbers, dependency compatibility, and upstream API changes still require review; never blindly rewrite unrelated dependency versions.
+
+- OpenEXR 3.5.3 requires external OpenJPH 0.32; configuration fails instead of silently vendoring OpenJPH.
+
+- OpenUSD 26.11.1 carries a missing <type_traits> include fix for macOS compilation; Python consumer checks expect the 26.11 API version.
+
+- OpenImageIO 3.2.2.0 carries a Windows strerror_s portability fix for the optional RAW plugin.
+
+- Shader Slang 2026.20 pins Windows SPIRV-Tools to 2026.3 to match the glslang binary built before the C++ DLL export changes.
+
+- OpenSubdiv 3.8.0 uses modern CMake CUDA discovery: set CUDAToolkit_ROOT, CMAKE_CUDA_COMPILER, CMAKE_CUDA_HOST_COMPILER=$CXX on Linux to preserve the sysroot baseline, and CMAKE_CUDA_ARCHITECTURES=60, require CUDAToolkit, and provide CUDA::cudart from the packaged runtime headers/library in CUDA consumer configs without requiring nvcc. Do not copy the 3.7 legacy FindCUDA cache guards into newer recipes.
