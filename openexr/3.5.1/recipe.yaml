@@ -149,6 +149,8 @@ outputs:
           else: |
             cmake -E rm -rf %SRC_DIR%\..\build-python
 
+            set "CXXFLAGS=%CXXFLAGS% /bigobj"
+
             cmake %CMAKE_ARGS% ^
               -GNinja ^
               -DCMAKE_BUILD_TYPE=Release ^
