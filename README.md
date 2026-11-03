@@ -261,6 +261,8 @@ Shader Slang is a shading language and compiler for real-time graphics, with cod
 
 ## OpenImageIO
 
+OpenImageIO 3.2.1.0 uses the upstream HEIF symbol linkage fix and drops the obsolete recipe patch. It pins JPEG XL 0.11 and FFmpeg 8 in both build and runtime dependencies so optional plugins load against matching library ABI versions.
+
 Recipe versions:
 - `2.5.19.1`
 - `3.0.19.1`
@@ -289,6 +291,8 @@ OpenImageIO provides image file I/O libraries, command-line tools, texture utili
 - `openimageio-format-ffmpeg`: FFmpeg movie input plugin.
 - `openimageio-format-openvdb`: OpenVDB input plugin. Depends on the matching OpenVDB runtime package.
 - `openimageio`: Default metapackage for C++ and tool consumers. Depends on the matching `openimageio-lib`, `openimageio-dev`, and `openimageio-tools`; Python bindings and extra format plugins are opt-in.
+
+OpenImageIO 3.2.1.0 refreshes the existing private plugin linkage patch for the upstream CMake layout.
 
 ## OpenUSD
 
