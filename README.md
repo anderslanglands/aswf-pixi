@@ -263,6 +263,8 @@ Shader Slang is a shading language and compiler for real-time graphics, with cod
 - `shader-slang-tools`: Headless command-line tools: `slang`, `slangc`, `slangd`, and `slangi`. Depends on the matching `shader-slang-lib`.
 - `shader-slang`: Default metapackage for compiler and C++ consumers. Depends on the matching runtime, development surface, and tools.
 
+Shader Slang 2026.20 pins Windows SPIRV-Tools to 2026.3 to match the glslang binary built before the C++ DLL export changes.
+
 ## OpenImageIO
 
 Recipe versions:

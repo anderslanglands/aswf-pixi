@@ -130,7 +130,10 @@ outputs:
         - glslang
         - miniz
         - spirv-headers
-        - spirv-tools
+        # Windows glslang 16.6 was built before SPIRV-Tools changed DLL exports.
+        - if: win
+          then: spirv-tools ==2026.3
+          else: spirv-tools
 
   - package:
       name: shader-slang-lib
@@ -156,6 +159,8 @@ outputs:
         - Library/bin/slang-standard-module-*/**
     requirements:
       run:
+        - if: win
+          then: spirv-tools ==2026.3
         - glslang
         - miniz
       run_exports:
