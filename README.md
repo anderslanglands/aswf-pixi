@@ -258,6 +258,7 @@ Recipe versions:
 - `2026.18.2`
 - `2026.18.3`
 - `2026.19`
+- `2026.20`
 
 Shader Slang is a shading language and compiler for real-time graphics, with code generation for APIs such as Vulkan, Direct3D, Metal, CUDA, and CPU-oriented workflows.
 
@@ -265,6 +266,8 @@ Shader Slang is a shading language and compiler for real-time graphics, with cod
 - `shader-slang-dev`: C++ headers, CMake package files, pkg-config metadata on Unix, and Windows import libraries. Depends on the matching `shader-slang-lib` and `shader-slang-tools` because upstream's installed CMake target set exports `slangc`.
 - `shader-slang-tools`: Headless command-line tools: `slang`, `slangc`, `slangd`, and `slangi`. Depends on the matching `shader-slang-lib`.
 - `shader-slang`: Default metapackage for compiler and C++ consumers. Depends on the matching runtime, development surface, and tools.
+
+Shader Slang 2026.20 pins Windows SPIRV-Tools to 2026.3 to match the glslang binary built before the C++ DLL export changes.
 
 ## OpenImageIO
 
