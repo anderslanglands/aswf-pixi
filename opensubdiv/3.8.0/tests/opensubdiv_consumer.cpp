@@ -15,7 +15,7 @@
 
 int main()
 {
-    static_assert(OPENSUBDIV_VERSION_NUMBER == 30700, "unexpected OpenSubdiv version");
+    static_assert(OPENSUBDIV_VERSION_NUMBER == 30800, "unexpected OpenSubdiv version");
 
 #if defined(OPENSUBDIV_CONSUMER_REQUIRE_CUDA)
     OpenSubdiv::Osd::CudaVertexBuffer* cudaVertices = nullptr;

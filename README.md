@@ -224,6 +224,8 @@ OpenSubdiv provides subdivision surface evaluation libraries for CPU and GPU wor
 - `opensubdiv-cuda-dev`: CUDA-enabled headers and CMake package files. Depends on the matching `opensubdiv-cuda-lib` and conflicts with the CPU and non-CUDA GPU development flavors.
 - `opensubdiv-cuda`: CUDA-enabled compatibility/default metapackage. Depends on the matching `opensubdiv-cuda-lib` and `opensubdiv-cuda-dev`, and conflicts with `opensubdiv` and `opensubdiv-gpu`.
 
+OpenSubdiv 3.8.0 uses modern CMake CUDA discovery, uses the pinned Linux host compiler, explicitly targets SM 60, and provides the CUDA runtime target for consumers without requiring nvcc. Its consumer validation checks the 3.8.0 encoded version alongside the existing CPU and GPU interface checks.
+
 ## SeExpr
 
 Recipe versions:
