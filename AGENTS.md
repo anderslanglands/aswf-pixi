@@ -289,4 +289,4 @@ pbrt packaging decisions:
 
 - Shader Slang 2026.20 pins Windows SPIRV-Tools to 2026.3 to match the glslang binary built before the C++ DLL export changes.
 
-- OpenSubdiv 3.8.0 uses modern CMake CUDA discovery: set CUDAToolkit_ROOT, CMAKE_CUDA_COMPILER, and CMAKE_CUDA_ARCHITECTURES=60, require CUDAToolkit, and load its imported targets in CUDA consumer configs. Do not copy the 3.7 legacy FindCUDA cache guards into newer recipes.
+- OpenSubdiv 3.8.0 uses modern CMake CUDA discovery: set CUDAToolkit_ROOT, CMAKE_CUDA_COMPILER, CMAKE_CUDA_HOST_COMPILER=$CXX on Linux to preserve the sysroot baseline, and CMAKE_CUDA_ARCHITECTURES=60, require CUDAToolkit, and provide CUDA::cudart from the packaged runtime headers/library in CUDA consumer configs without requiring nvcc. Do not copy the 3.7 legacy FindCUDA cache guards into newer recipes.
