@@ -82,7 +82,7 @@ Imath is a C++ math library for 2D and 3D graphics.
 
 ## OpenEXR
 
-OpenEXR 3.5.1 uses MSVC `/bigobj` for its large Python binding translation unit.
+OpenEXR 3.5.1 uses MSVC `/bigobj` for its large Python binding translation unit and relocates bindings from `Library/Lib/site-packages` into Python’s site-packages directory.
 
 Recipe versions:
 - `3.4.12`
