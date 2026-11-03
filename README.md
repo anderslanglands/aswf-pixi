@@ -212,8 +212,13 @@ OpenQMC provides Quasi-Monte Carlo sampling APIs for rendering and graphics appl
 
 ## OpenSubdiv
 
+OpenSubdiv 3.8.0 carries an explicit `<cstdlib>` include for portable `std::abs` lookup.
+
+OpenSubdiv 3.8.0 consumer checks require C++17 (and Objective-C++17 for Metal), matching the upstream public headers.
+
 Recipe versions:
 - `3.7.0`
+- `3.8.0`
 
 OpenSubdiv provides subdivision surface evaluation libraries for CPU and GPU workflows.
 
@@ -226,6 +231,8 @@ OpenSubdiv provides subdivision surface evaluation libraries for CPU and GPU wor
 - `opensubdiv-cuda-lib`: CUDA-enabled implementation libraries, carrying both `osdCPU` and `osdGPU`. Linux and Windows builds use the CUDA 12.9 package line and enable CUDA, OpenGL, GLEW, GLFW, and TBB; macOS CUDA outputs are not built.
 - `opensubdiv-cuda-dev`: CUDA-enabled headers and CMake package files. Depends on the matching `opensubdiv-cuda-lib` and conflicts with the CPU and non-CUDA GPU development flavors.
 - `opensubdiv-cuda`: CUDA-enabled compatibility/default metapackage. Depends on the matching `opensubdiv-cuda-lib` and `opensubdiv-cuda-dev`, and conflicts with `opensubdiv` and `opensubdiv-gpu`.
+
+OpenSubdiv 3.8.0 uses modern CMake CUDA discovery, uses the pinned Linux host compiler, explicitly targets SM 60, and provides the CUDA runtime target for consumers without requiring nvcc. Its consumer validation checks the 3.8.0 encoded version alongside the existing CPU and GPU interface checks.
 
 ## SeExpr
 

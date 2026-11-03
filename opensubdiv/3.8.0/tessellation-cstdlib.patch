@@ -1,0 +1,10 @@
+--- a/opensubdiv/bfr/tessellation.cpp
++++ b/opensubdiv/bfr/tessellation.cpp
+@@ -9,6 +9,7 @@
+ #include "../vtr/stackBuffer.h"
+ 
+ #include <cstring>
++#include <cstdlib>
+ #include <cstdio>
+ #include <cassert>
+ #include <limits>

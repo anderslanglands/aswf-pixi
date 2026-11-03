@@ -1,0 +1,46 @@
+[workspace]
+name = "opensubdiv-3.8.0-consumer"
+channels = [
+  "https://conda.anaconda.org/anderslanglands",
+  "conda-forge",
+]
+platforms = ["linux-64"]
+channel-priority = "strict"
+
+[feature.opensubdiv-lib.dependencies]
+opensubdiv-lib = "==3.8.0"
+
+[feature.opensubdiv-dev.dependencies]
+opensubdiv-dev = "==3.8.0"
+
+[feature.opensubdiv.dependencies]
+opensubdiv = "==3.8.0"
+
+[feature.opensubdiv-gpu-lib.dependencies]
+opensubdiv-gpu-lib = "==3.8.0"
+
+[feature.opensubdiv-gpu-dev.dependencies]
+opensubdiv-gpu-dev = "==3.8.0"
+
+[feature.opensubdiv-gpu.dependencies]
+opensubdiv-gpu = "==3.8.0"
+
+[feature.opensubdiv-cuda-lib.dependencies]
+opensubdiv-cuda-lib = "==3.8.0"
+
+[feature.opensubdiv-cuda-dev.dependencies]
+opensubdiv-cuda-dev = "==3.8.0"
+
+[feature.opensubdiv-cuda.dependencies]
+opensubdiv-cuda = "==3.8.0"
+
+[environments]
+opensubdiv-lib = ["opensubdiv-lib"]
+opensubdiv-dev = ["opensubdiv-dev"]
+opensubdiv = ["opensubdiv"]
+opensubdiv-gpu-lib = ["opensubdiv-gpu-lib"]
+opensubdiv-gpu-dev = ["opensubdiv-gpu-dev"]
+opensubdiv-gpu = ["opensubdiv-gpu"]
+opensubdiv-cuda-lib = ["opensubdiv-cuda-lib"]
+opensubdiv-cuda-dev = ["opensubdiv-cuda-dev"]
+opensubdiv-cuda = ["opensubdiv-cuda"]
