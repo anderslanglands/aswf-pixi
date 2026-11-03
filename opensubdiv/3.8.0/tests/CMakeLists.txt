@@ -66,7 +66,7 @@ if(OPENSUBDIV_GPU_TARGET)
 endif()
 
 add_executable(opensubdiv_consumer opensubdiv_consumer.cpp)
-target_compile_features(opensubdiv_consumer PRIVATE cxx_std_14)
+target_compile_features(opensubdiv_consumer PRIVATE cxx_std_17)
 target_link_libraries(opensubdiv_consumer PRIVATE ${OPENSUBDIV_LINK_TARGETS})
 
 foreach(_opensubdiv_consumer_feature IN ITEMS GPU CUDA OPENGL METAL TBB)
@@ -78,7 +78,7 @@ endforeach()
 if(OPENSUBDIV_CONSUMER_REQUIRE_METAL)
   enable_language(OBJCXX)
   add_library(opensubdiv_metal_header_check OBJECT opensubdiv_metal_consumer.mm)
-  set_target_properties(opensubdiv_metal_header_check PROPERTIES OBJCXX_STANDARD 14 OBJCXX_STANDARD_REQUIRED YES)
+  set_target_properties(opensubdiv_metal_header_check PROPERTIES OBJCXX_STANDARD 17 OBJCXX_STANDARD_REQUIRED YES)
   target_link_libraries(opensubdiv_metal_header_check PRIVATE ${OPENSUBDIV_LINK_TARGETS})
 endif()
 

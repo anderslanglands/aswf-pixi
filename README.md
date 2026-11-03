@@ -208,6 +208,8 @@ OpenQMC provides Quasi-Monte Carlo sampling APIs for rendering and graphics appl
 
 ## OpenSubdiv
 
+OpenSubdiv 3.8.0 consumer checks require C++17 (and Objective-C++17 for Metal), matching the upstream public headers.
+
 Recipe versions:
 - `3.7.0`
 - `3.8.0`
