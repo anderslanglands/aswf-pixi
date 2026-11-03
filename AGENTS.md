@@ -288,3 +288,5 @@ pbrt packaging decisions:
 - OpenImageIO 3.2.2.0 carries a Windows strerror_s portability fix for the optional RAW plugin.
 
 - Shader Slang 2026.20 pins Windows SPIRV-Tools to 2026.3 to match the glslang binary built before the C++ DLL export changes.
+
+- OpenSubdiv 3.8.0 uses modern CMake CUDA discovery: set CUDAToolkit_ROOT, CMAKE_CUDA_COMPILER, and CMAKE_CUDA_ARCHITECTURES=60, require CUDAToolkit, and load its imported targets in CUDA consumer configs. Do not copy the 3.7 legacy FindCUDA cache guards into newer recipes.
