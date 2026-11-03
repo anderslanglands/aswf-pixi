@@ -40,7 +40,7 @@ outputs:
               -DOPENEXR_INSTALL_DOCS=OFF \
               -DOPENEXR_FORCE_INTERNAL_IMATH=OFF \
               -DOPENEXR_FORCE_INTERNAL_DEFLATE=OFF \
-              -DOPENEXR_FORCE_INTERNAL_OPENJPH=OFF \
+              -DCMAKE_REQUIRE_FIND_PACKAGE_openjph=ON \
               -B $SRC_DIR/../build \
               -S .
 
@@ -80,7 +80,7 @@ outputs:
               -DOPENEXR_INSTALL_DOCS=OFF ^
               -DOPENEXR_FORCE_INTERNAL_IMATH=OFF ^
               -DOPENEXR_FORCE_INTERNAL_DEFLATE=OFF ^
-              -DOPENEXR_FORCE_INTERNAL_OPENJPH=OFF ^
+              -DCMAKE_REQUIRE_FIND_PACKAGE_openjph=ON ^
               -B %SRC_DIR%\..\build ^
               -S .
 
@@ -105,7 +105,7 @@ outputs:
       host:
         - imath-dev 3.2.*
         - libdeflate
-        - openjph
+        - openjph 0.32.*
         - zlib
 
   - staging:
@@ -134,7 +134,7 @@ outputs:
               -DOPENEXR_INSTALL_DOCS=OFF \
               -DOPENEXR_FORCE_INTERNAL_IMATH=OFF \
               -DOPENEXR_FORCE_INTERNAL_DEFLATE=OFF \
-              -DOPENEXR_FORCE_INTERNAL_OPENJPH=OFF \
+              -DCMAKE_REQUIRE_FIND_PACKAGE_openjph=ON \
               -DPython3_EXECUTABLE=$PYTHON \
               -B $SRC_DIR/../build-python \
               -S .
@@ -169,7 +169,7 @@ outputs:
               -DOPENEXR_INSTALL_DOCS=OFF ^
               -DOPENEXR_FORCE_INTERNAL_IMATH=OFF ^
               -DOPENEXR_FORCE_INTERNAL_DEFLATE=OFF ^
-              -DOPENEXR_FORCE_INTERNAL_OPENJPH=OFF ^
+              -DCMAKE_REQUIRE_FIND_PACKAGE_openjph=ON ^
               -DPython3_EXECUTABLE=%PYTHON% ^
               -B %SRC_DIR%\..\build-python ^
               -S .
@@ -194,7 +194,7 @@ outputs:
         - imath-dev 3.2.*
         - libdeflate
         - numpy
-        - openjph
+        - openjph 0.32.*
         - pybind11
         - python
         - zlib
@@ -212,7 +212,7 @@ outputs:
         - imath-lib 3.2.*
         - libdeflate
         - libzlib
-        - openjph
+        - openjph 0.32.*
       run_exports:
         weak:
           - ${{ pin_subpackage('openexr-core-lib', upper_bound='x.x') }}
