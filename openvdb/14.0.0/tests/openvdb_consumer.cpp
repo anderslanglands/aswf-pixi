@@ -26,7 +26,7 @@ int main(int argc, char** argv)
     output.close();
 
     openvdb::io::File input(path);
-    input.open(false);
+    input.open();
     openvdb::FloatGrid::Ptr readGrid = openvdb::gridPtrCast<openvdb::FloatGrid>(
         input.readGrid("density"));
     input.close();

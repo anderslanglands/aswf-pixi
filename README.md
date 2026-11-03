@@ -135,6 +135,8 @@ OpenVDB provides sparse volumetric data structures, file I/O, and tools. NanoVDB
 - `nanovdb-openvdb-tools`: NanoVDB/OpenVDB bridge tool, currently `nanovdb_convert`. Depends on the matching `openvdb-lib`.
 - `nanovdb`: Default metapackage for standalone NanoVDB consumers. Depends on the matching `nanovdb-dev` and `nanovdb-tools`; OpenVDB conversion is opt-in.
 
+OpenVDB 14.0.0 consumer validation uses the new argument-free File::open API and retains the grid file roundtrip check.
+
 ## MaterialX
 
 Recipe versions:
