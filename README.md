@@ -92,6 +92,7 @@ Recipe versions:
 - `3.4.18`
 - `3.5.2`
 - `3.5.3`
+- `3.5.4`
 
 OpenEXR provides high dynamic-range image file format libraries and tools.
 
