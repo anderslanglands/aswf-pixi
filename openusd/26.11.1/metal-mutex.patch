@@ -1,0 +1,10 @@
+--- a/pxr/imaging/hgiMetal/graphicsCmds.h
++++ b/pxr/imaging/hgiMetal/graphicsCmds.h
+@@ -13,6 +13,7 @@
+ #include "pxr/imaging/hgiMetal/stepFunctions.h"
+ #include "pxr/imaging/hgi/graphicsCmds.h"
+ #include <cstdint>
++#include <mutex>
+ 
+ #include <Metal/Metal.h>
+ 
