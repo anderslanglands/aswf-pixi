@@ -1,0 +1,12 @@
+c_stdlib:
+  - if: linux
+    then: sysroot
+
+c_stdlib_version:
+  - if: linux
+    then: "2.17"
+
+python:
+  - 3.11
+  - 3.12
+  - 3.13
